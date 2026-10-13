@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Slot Reserved | ASTROJAK</title>
+<title>Payment Received | Book Your Appointment | ASTROJAK</title>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-46W6R6SFS6"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -13,52 +13,190 @@
   gtag('config', 'G-46W6R6SFS6');
 </script>
 <script src="/pricing.js"></script>
+<script src="/slots.js"></script>
 <style>
-:root{--gold:linear-gradient(135deg,#F8B700,#FF9800);--ink:#1A1A1A;--muted:#5C5C5C;--border:#FFE49A;--bg:#FFFBEE}
-@media (prefers-color-scheme: dark){:root{--ink:#F5F5F5;--muted:#BDBDBD;--border:#5A4B1A;--bg:#15120A}}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;padding:24px 16px}
-.box{max-width:520px;margin:6vh auto;text-align:center}
-.ok{width:68px;height:68px;border-radius:50%;background:#25D366;color:#fff;font-size:34px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
-h1{font-size:25px;margin-bottom:8px}
+:root{--gold:linear-gradient(135deg,#F8B700,#FF9800);--ink:#1A1A1A;--muted:#5C5C5C;--border:#F2E4C4;--bg:#FFFBEE;--card:#fff;--dark:#E65100;--soft:#FFF6DC}
+@media (prefers-color-scheme: dark){:root{--ink:#F5F5F5;--muted:#BDBDBD;--border:#5A4B1A;--bg:#15120A;--card:#1E1A10;--soft:#2A2312;--dark:#FFB74D}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;padding:22px 14px 40px}
+.box{max-width:520px;margin:2vh auto 0;text-align:center}
+.ok{width:64px;height:64px;border-radius:50%;background:#25D366;color:#fff;font-size:32px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 8px 20px rgba(37,211,102,.35)}
+h1{font-size:25px;margin-bottom:6px}
 p{color:var(--muted);font-size:15px}
-.card{margin-top:20px;text-align:left;border:1.5px solid var(--border);border-radius:18px;padding:16px;background:rgba(255,255,255,.55)}
-.card h2{font-size:17px;margin-bottom:8px}
-.card li{margin-left:18px;margin-bottom:4px;font-size:14.5px;color:var(--muted)}
-.btn{display:block;margin-top:20px;padding:16px;border-radius:999px;background:#25D366;color:#fff;font-weight:800;font-size:16px;text-decoration:none}
-.id{margin-top:14px;font-size:12.5px}
-a.back{display:inline-block;margin-top:16px;color:#E65100;font-weight:700;font-size:14px}
+.id{margin-top:6px;font-size:12.5px}
+.card{margin-top:20px;text-align:left;border:1.5px solid var(--border);border-radius:20px;padding:18px 16px;background:var(--card);box-shadow:0 10px 30px rgba(248,183,0,.14)}
+.card h2{font-size:18px;margin-bottom:4px}
+.hint{font-size:13px;margin-bottom:12px}
+.lbl{display:block;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+.days{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity}
+.day{flex:0 0 auto;scroll-snap-align:start;min-width:68px;text-align:center;font:inherit;color:var(--ink);background:var(--card);border:2px solid var(--border);border-radius:14px;padding:9px 6px;cursor:pointer;transition:.15s}
+.day b{display:block;font-size:13px;color:var(--muted)}.day span{display:block;font-size:15px;font-weight:800}
+.day.on{border-color:#FF6F00;background:var(--soft);box-shadow:0 6px 16px rgba(255,111,0,.18)}.day.on b{color:var(--dark)}
+.times{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.time{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--card);border:2px solid var(--border);border-radius:12px;padding:11px 4px;cursor:pointer;transition:.15s}
+.time.on{border-color:#FF6F00;background:var(--soft);color:var(--dark);box-shadow:0 6px 16px rgba(255,111,0,.18)}
+.empty{font-size:14px;color:var(--muted);padding:6px 0}
+input{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:13px 12px}
+input:focus{outline:2px solid #F8B700;outline-offset:1px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:18px;padding:16px;border:0;border-radius:999px;font:inherit;font-size:16px;font-weight:800;text-decoration:none;cursor:pointer}
+.go{background:var(--gold);color:#3D2600;box-shadow:0 10px 24px rgba(255,111,0,.28)}
+.go:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+.wa{background:#25D366;color:#fff}
+.alt{background:transparent;color:var(--dark);border:2px solid var(--border);margin-top:10px;font-size:15px}
+.err{margin-top:10px;font-size:13.5px;color:#C62828;font-weight:600}
+.sum{background:var(--soft);border:1.5px solid #F8B700;border-radius:16px;padding:14px;margin:12px 0;text-align:center}
+.sum b{display:block;font-size:19px}.sum span{font-size:14px;color:var(--muted)}
+.card ul{margin:8px 0 0 18px}.card li{font-size:14.5px;color:var(--muted);margin-bottom:3px}
+a.back{display:inline-block;margin-top:18px;color:var(--dark);font-weight:700;font-size:14px}
 </style>
 </head>
 <body>
 <main class="box">
   <div class="ok">✓</div>
   <h1 id="t">Thank you!</h1>
-  <p id="s">If your payment went through, your slot is reserved. Send your birth details on WhatsApp so Acharya Narender Ji can prepare your detailed horoscope PDF report.</p>
-  <div class="card">
-    <h2>Send these on WhatsApp</h2>
-    <ul><li>Full name</li><li>Date of birth</li><li>Exact time of birth</li><li>Place of birth</li><li>Your question or worry</li></ul>
-  </div>
-  <a class="btn" id="wa" href="https://wa.me/917827673637">Send Birth Details on WhatsApp</a>
+  <p id="s">If your payment went through, choose your appointment time below.</p>
   <p class="id" id="pid"></p>
+
+  <section class="card" id="slotCard" hidden>
+    <h2>📅 Choose your appointment time</h2>
+    <p class="hint">All times are India time (IST). Pick a day, then a time.</p>
+    <span class="lbl">Select day</span>
+    <div class="days" id="days"></div>
+    <span class="lbl">Select time</span>
+    <div class="times" id="times"></div>
+    <span class="lbl">Your name</span>
+    <input id="nm" type="text" autocomplete="name" placeholder="Full name">
+    <span class="lbl">WhatsApp number</span>
+    <input id="ph" type="tel" inputmode="tel" autocomplete="tel" placeholder="10-digit mobile number">
+    <button type="button" class="btn go" id="confirm" disabled>Confirm Appointment</button>
+    <p class="err" id="err" hidden></p>
+  </section>
+
+  <section class="card" id="doneCard" hidden>
+    <h2>✅ Appointment requested</h2>
+    <div class="sum"><b id="sumWhen"></b><span id="sumWhat"></span></div>
+    <p>Acharya Narender Ji's team will confirm your time on WhatsApp. To make it quick, send your birth details now:</p>
+    <ul><li>Full name</li><li>Date of birth</li><li>Exact time of birth</li><li>Place of birth</li><li>Your question or worry</li></ul>
+    <a class="btn wa" id="wa" href="https://wa.me/917827673637">Send Details on WhatsApp</a>
+    <a class="btn alt" id="ics" href="#" download="astrojak-appointment.ics">📆 Add to my calendar</a>
+  </section>
+
+  <section class="card" id="plainCard" hidden>
+    <h2>Need to book your time?</h2>
+    <p>Message us on WhatsApp with your payment ID and your preferred time, and we will confirm your appointment.</p>
+    <a class="btn wa" id="wa2" href="https://wa.me/917827673637">Message on WhatsApp</a>
+  </section>
+
   <a class="back" href="/home">Visit our website</a>
 </main>
 <script>
 (function(){
+  var $ = function(i){return document.getElementById(i)};
   var q = new URLSearchParams(location.search);
-  var id = q.get('razorpay_payment_id') || '';
+  var payId = q.get('razorpay_payment_id') || '';
   var paid = q.get('razorpay_payment_link_status') === 'paid';
   var ref = (q.get('razorpay_payment_link_reference_id') || '').split('_')[0];
   var plan = window.PRICING && PRICING.plans[ref];
-  var what = plan ? plan.name : 'your booking';
+  var planName = plan ? plan.name : 'your booking';
   var amt = plan ? PRICING.symbol + plan.price : '';
-  var msg = 'Hi! I paid ' + (amt ? amt + ' ' : '') + 'for ' + what + (id ? ' (Payment ID: ' + id + ')' : '') + '.\nName:\nDate of birth:\nTime of birth:\nPlace of birth:\nMy question:';
-  document.getElementById('wa').href = 'https://wa.me/917827673637?text=' + encodeURIComponent(msg);
+  var FORMSPREE = 'https://formspree.io/f/moejvjbn', WA = '917827673637';
+  var KEY = 'astrojak_appt_' + (payId || 'x');
+  var DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var pick = { date: null, time: null };
+
+  function pad(n){return (n<10?'0':'')+n}
+  function istNow(){var d=new Date();return new Date(d.getTime()+d.getTimezoneOffset()*60000+330*60000)}
+  function mins(hhmm){var p=hhmm.split(':');return +p[0]*60+ +p[1]}
+  function label(m){var h=Math.floor(m/60),mm=m%60,ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+pad(mm)+' '+ap}
+  function key(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+  function longDate(d){return DAYS[d.getDay()]+', '+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()}
+
+  function buildDays(){
+    var now = istNow(), nowM = now.getHours()*60+now.getMinutes(), out = [];
+    var start = mins(SLOTS.start), end = mins(SLOTS.end), len = SLOTS.slotMinutes;
+    for (var i = 0; i <= SLOTS.daysAhead; i++) {
+      var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      if (SLOTS.closedWeekdays.indexOf(d.getDay()) > -1 || SLOTS.closedDates.indexOf(key(d)) > -1) continue;
+      var times = [];
+      for (var t = start; t + len <= end; t += len) { if (i > 0 || t >= nowM + SLOTS.minNoticeHours * 60) times.push(t); }
+      if (times.length) out.push({ d: d, times: times });
+    }
+    return out;
+  }
+  var avail = buildDays();
+
+  function renderTimes(){
+    var box = $('times'); box.innerHTML = '';
+    var day = avail.filter(function(x){return key(x.d) === pick.date})[0];
+    if (!day) { box.innerHTML = '<p class="empty" style="grid-column:1/-1">Pick a day first.</p>'; return; }
+    day.times.forEach(function(t){
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'time' + (pick.time === t ? ' on' : ''); b.textContent = label(t);
+      b.onclick = function(){ pick.time = t; renderTimes(); check(); };
+      box.appendChild(b);
+    });
+  }
+  function renderDays(){
+    var box = $('days'); box.innerHTML = '';
+    if (!avail.length) { box.innerHTML = '<p class="empty">No slots are open right now. Please message us on WhatsApp.</p>'; return; }
+    avail.forEach(function(x){
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'day' + (pick.date === key(x.d) ? ' on' : '');
+      b.innerHTML = '<b>' + DAYS[x.d.getDay()] + '</b><span>' + x.d.getDate() + ' ' + MONTHS[x.d.getMonth()] + '</span>';
+      b.onclick = function(){ pick.date = key(x.d); pick.time = null; renderDays(); renderTimes(); check(); };
+      box.appendChild(b);
+    });
+  }
+  function check(){ $('confirm').disabled = !(pick.date && pick.time != null); }
+
+  // pre-fill name / phone saved by the booking form (cookie)
+  try {
+    var m = document.cookie.match(/(?:^|; )astrojak_form=([^;]*)/);
+    if (m) { var f = (JSON.parse(decodeURIComponent(m[1])) || {}).f || {}; if (f.name) $('nm').value = f.name; if (f.phone) $('ph').value = f.phone; }
+  } catch (e) {}
+
+  function showDone(a){
+    $('slotCard').hidden = true; $('doneCard').hidden = false;
+    $('sumWhen').textContent = a.when; $('sumWhat').textContent = planName + (amt ? ' (' + amt + ')' : '') + ' · IST';
+    var msg = 'Hi! I booked my appointment.\n' + planName + (amt ? ' (' + amt + ')' : '') + '\nDate & time: ' + a.when + ' IST' + (payId ? '\nPayment ID: ' + payId : '') + '\nName: ' + a.name + '\nDate of birth:\nTime of birth:\nPlace of birth:\nMy question:';
+    $('wa').href = 'https://wa.me/' + WA + '?text=' + encodeURIComponent(msg);
+    // calendar file (IST -> UTC)
+    var p = a.date.split('-'), st = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2], 0, a.t - 330, 0)), en = new Date(st.getTime() + SLOTS.slotMinutes * 60000);
+    var z = function(d){return d.getUTCFullYear()+pad(d.getUTCMonth()+1)+pad(d.getUTCDate())+'T'+pad(d.getUTCHours())+pad(d.getUTCMinutes())+'00Z'};
+    var ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//ASTROJAK//EN\r\nBEGIN:VEVENT\r\nUID:' + (payId || Date.now()) + '@astrojak\r\nDTSTAMP:' + z(new Date()) + '\r\nDTSTART:' + z(st) + '\r\nDTEND:' + z(en) + '\r\nSUMMARY:Astrology consultation with Acharya Narender Ji\r\nDESCRIPTION:' + planName + '. Confirmation on WhatsApp.\r\nEND:VEVENT\r\nEND:VCALENDAR';
+    $('ics').href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+  }
+
+  $('confirm').onclick = function(){
+    var name = $('nm').value.trim(), phone = $('ph').value.replace(/\D/g, '').slice(-10);
+    var err = $('err'); err.hidden = true;
+    if (name.length < 2) { err.textContent = 'Please enter your name.'; err.hidden = false; return; }
+    if (!/^[6-9]\d{9}$/.test(phone)) { err.textContent = 'Please enter a valid 10-digit WhatsApp number.'; err.hidden = false; return; }
+    var p = pick.date.split('-'), d = new Date(+p[0], +p[1] - 1, +p[2]);
+    var a = { date: pick.date, t: pick.time, when: longDate(d) + ' · ' + label(pick.time), name: name, phone: phone };
+    try {
+      var fd = new FormData();
+      fd.append('_subject', 'ASTROJAK appointment: ' + a.when + ' (' + planName + ')');
+      fd.append('appointment', a.when + ' IST'); fd.append('plan', planName); fd.append('amount', amt);
+      fd.append('payment_id', payId); fd.append('reference_id', q.get('razorpay_payment_link_reference_id') || ''); fd.append('name', name); fd.append('phone', phone); fd.append('page', location.href);
+      fetch(FORMSPREE, { method: 'POST', headers: { Accept: 'application/json' }, body: fd, keepalive: true }).catch(function(){});
+    } catch (e) {}
+    try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {}
+    try { if (window.gtag) gtag('event', 'schedule_appointment', { plan: ref, value: plan ? plan.price : 0, currency: 'INR' }); } catch (e) {}
+    showDone(a);
+    window.scrollTo(0, 0);
+  };
+
+  // ---- page state ----
   if (paid) {
-    document.getElementById('t').textContent = 'Payment received. Thank you!';
-    document.getElementById('s').textContent = (plan ? plan.name + ' (' + amt + ') is confirmed. ' : 'Your booking is confirmed. ') + 'Send your birth details on WhatsApp so Acharya Narender Ji can start your reading' + (ref === 'reserve' ? ' and prepare your detailed horoscope PDF report.' : '.');
-    if (id) document.getElementById('pid').textContent = 'Payment ID: ' + id;
-    try { if (window.gtag) gtag('event', 'purchase', { transaction_id: id, value: plan ? plan.price : 0, currency: 'INR', items: plan ? [{ item_id: ref, item_name: plan.name, price: plan.price }] : [] }); } catch (e) {}
+    $('t').textContent = 'Payment received. Thank you!';
+    $('s').textContent = (plan ? planName + (amt ? ' (' + amt + ')' : '') + ' is confirmed. ' : 'Your booking is confirmed. ') + 'Now choose a time for your appointment.';
+    if (payId) $('pid').textContent = 'Payment ID: ' + payId;
+    try { if (window.gtag) gtag('event', 'purchase', { transaction_id: payId, value: plan ? plan.price : 0, currency: 'INR', items: plan ? [{ item_id: ref, item_name: plan.name, price: plan.price }] : [] }); } catch (e) {}
+    var saved = null; try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+    if (saved) { $('s').textContent = 'Your appointment request is saved below.'; showDone(saved); }
+    else { $('slotCard').hidden = false; renderDays(); renderTimes(); check(); }
+  } else {
+    $('plainCard').hidden = false;
+    $('wa2').href = 'https://wa.me/' + WA + '?text=' + encodeURIComponent('Hi! I want to book my appointment time.' + (payId ? '\nPayment ID: ' + payId : ''));
   }
 })();
 </script>

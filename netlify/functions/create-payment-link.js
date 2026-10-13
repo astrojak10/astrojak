@@ -49,7 +49,12 @@ exports.handler = async (event) => {
   const plan = Object.prototype.hasOwnProperty.call(PRICING.plans, planId) ? PRICING.plans[planId] : null;
   if (!plan) return reply(400, { error: 'Unknown plan' });
 
-  const site = (process.env.URL || 'https://astrojak.netlify.app').replace(/\/$/, '');
+  // Always send the customer back to the exact address they paid from (works for netlify.app, custom domains, previews)
+  const h = event.headers || {};
+  const host = String(h['x-forwarded-host'] || h.host || '').split(',')[0].trim();
+  const site = /^[a-z0-9.-]+(:\d+)?$/i.test(host)
+    ? (/^localhost/i.test(host) ? 'http://' : 'https://') + host
+    : (process.env.URL || 'https://astrojak.netlify.app').replace(/\/$/, '');
   const payload = {
     amount: Math.round(plan.price * 100), // paise, from pricing.js
     currency: 'INR',
@@ -64,9 +69,13 @@ exports.handler = async (event) => {
     callback_method: 'get',
     notes: { plan: planId, position: String(input.position || '').slice(0, 20), source: String(input.source || '').slice(0, 30) },
   };
+  // customer details also go into Notes, so they show on every payment in the Razorpay dashboard and exports
+  const customer = cleanCustomer(input.customer);
+  if (customer.name) payload.notes.customer_name = customer.name;
+  if (customer.contact) payload.notes.customer_phone = customer.contact;
+  if (customer.email) payload.notes.customer_email = customer.email;
 
   const auth = 'Basic ' + Buffer.from(keyId + ':' + keySecret).toString('base64');
-  const customer = cleanCustomer(input.customer);
 
   try {
     let r = await createLink(auth, Object.keys(customer).length ? { ...payload, customer } : payload);
@@ -75,7 +84,7 @@ exports.handler = async (event) => {
       console.error('Razorpay error', r.status, JSON.stringify(r.data));
       return reply(502, { error: 'Could not create payment link' });
     }
-    return reply(200, { url: r.data.short_url });
+    return reply(200, { url: r.data.short_url, ref: payload.reference_id });
   } catch (err) {
     console.error('Request failed', err);
     return reply(502, { error: 'Could not create payment link' });

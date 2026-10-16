@@ -1,6 +1,6 @@
 name = "astrojak-payment-api"
 main = "cloudflare/worker.mjs"
-compatibility_date = "2026-10-17"
+compatibility_date = "2025-03-01"
 workers_dev = false
 
 routes = [

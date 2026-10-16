@@ -1,8 +1,9 @@
 /* =====================================================================
    ASTROJAK PRICING: THE ONE PLACE TO CHANGE PRICES
    ---------------------------------------------------------------------
-   Change a number below, save, and push to GitHub. After Netlify
-   redeploys (about a minute):
+   Change a number below, save, and push to GitHub. The website uses this file,
+   and the Cloudflare payment Worker imports the same plans for server-side prices.
+   GitHub Actions redeploys the Worker when this file changes:
      1. every price on the website updates (home page, booking page,
         comparison table, buttons, thank-you page)
      2. the Razorpay payment link is created with the new amount

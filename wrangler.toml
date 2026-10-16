@@ -1,0 +1,11 @@
+name = "astrojak-payment-api"
+main = "cloudflare/worker.mjs"
+compatibility_date = "2026-10-17"
+workers_dev = false
+
+routes = [
+  { pattern = "api.astrojak.in", custom_domain = true }
+]
+
+[vars]
+SITE_URL = "https://www.astrojak.in"

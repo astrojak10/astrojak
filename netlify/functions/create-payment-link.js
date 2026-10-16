@@ -3,11 +3,22 @@
 // Keys live ONLY in Netlify environment variables: RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET.
 const PRICING = require('../../pricing.js');
 
-const reply = (statusCode, body) => ({
-  statusCode,
-  headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-  body: JSON.stringify(body),
-});
+const allowedOrigins = new Set([
+  'https://www.astrojak.in',
+  'https://astrojak.in',
+  'http://localhost:8765',
+]);
+
+const reply = (statusCode, body, origin) => {
+  const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+  if (allowedOrigins.has(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
+    headers['Access-Control-Allow-Headers'] = 'Content-Type';
+    headers.Vary = 'Origin';
+  }
+  return { statusCode, headers, body: JSON.stringify(body) };
+};
 
 function cleanCustomer(c) {
   const out = {};
@@ -29,23 +40,28 @@ async function createLink(auth, payload) {
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') return reply(405, { error: 'Use POST' });
+  const headers = event.headers || {};
+  const origin = headers.origin || headers.Origin || '';
+  if (event.httpMethod === 'OPTIONS') return reply(204, {}, origin);
+  if (event.httpMethod !== 'POST') return reply(405, { error: 'Use POST' }, origin);
 
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!keyId || !keySecret) {
     console.error('Missing RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET');
-    return reply(500, { error: 'Payment is not configured' });
+    return reply(500, { error: 'Payment is not configured' }, origin);
   }
 
   let input = {};
-  try { input = JSON.parse(event.body || '{}'); } catch (e) {}
+  try { input = JSON.parse(event.body || '{}'); } catch (e) {
+    return reply(400, { error: 'Invalid request' }, origin);
+  }
 
   const planId = String(input.plan || '');
   const plan = Object.prototype.hasOwnProperty.call(PRICING.plans, planId) ? PRICING.plans[planId] : null;
-  if (!plan) return reply(400, { error: 'Unknown plan' });
+  if (!plan) return reply(400, { error: 'Unknown plan' }, origin);
   const customer = cleanCustomer(input.customer);
-  if (!customer.contact) return reply(400, { error: 'A valid mobile number is required' });
+  if (!customer.contact) return reply(400, { error: 'A valid mobile number is required' }, origin);
 
   const appointment = input.appointment || {};
   const date = String(appointment.date || '');
@@ -57,7 +73,7 @@ exports.handler = async (event) => {
   const noAppointment = !date && !time;
   const validAppointment = validDate && date >= todayIst && slotLabels.indexOf(time) !== -1;
   if (!(planId === 'reserve' && noAppointment) && !validAppointment) {
-    return reply(400, { error: 'Choose a valid future appointment date and time slot' });
+    return reply(400, { error: 'Choose a valid future appointment date and time slot' }, origin);
   }
 
   // Return customers to the domain that served the payment request.
@@ -102,11 +118,11 @@ exports.handler = async (event) => {
     const r = await createLink(auth, { ...payload, customer });
     if (!r.ok) {
       console.error('Razorpay error', r.status, JSON.stringify(r.data));
-      return reply(502, { error: 'Could not create payment link' });
+      return reply(502, { error: 'Could not create payment link' }, origin);
     }
-    return reply(200, { url: r.data.short_url, ref: payload.reference_id });
+    return reply(200, { url: r.data.short_url, ref: payload.reference_id }, origin);
   } catch (err) {
     console.error('Request failed', err);
-    return reply(502, { error: 'Could not create payment link' });
+    return reply(502, { error: 'Could not create payment link' }, origin);
   }
 };

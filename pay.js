@@ -1,19 +1,14 @@
 /* ASTROJAK shared payment + price code. Needs pricing.js loaded first.
    - fills every [data-price="plan-id"] with the price from pricing.js
    - any element with data-pay="plan-id" becomes a Pay button: it asks the server
-     (Netlify function) for a fresh Razorpay link and opens it. If that fails, the
-     visitor is sent to WhatsApp instead. */
+     (Netlify function) for a fresh Razorpay link and opens it. */
 (function () {
   var PR = window.PRICING; if (!PR) return;
-  var WA = '917827673637', API = '/.netlify/functions/create-payment-link';
+  var API = 'https://api.astrojak.in/create-payment-link';
   function money(id) { var p = PR.plans[id]; return p ? PR.symbol + p.price : ''; }
   function discount(id) {
     var p = PR.plans[id];
     return p && p.listPrice > p.price ? Math.round((p.listPrice - p.price) / p.listPrice * 100) : 0;
-  }
-  function waLink(id) {
-    var p = PR.plans[id]; if (!p) return '#';
-    return 'https://wa.me/' + WA + '?text=' + encodeURIComponent('Hi! I want to ' + (id === 'reserve' ? 'reserve my slot' : 'book ' + p.name) + ' for ' + money(id) + '.');
   }
   window.fmtPrice = money;
   function fill() {
@@ -26,7 +21,6 @@
       var percent = discount(e.getAttribute('data-discount'));
       if (percent) e.textContent = percent + '% OFF';
     });
-    [].forEach.call(document.querySelectorAll('a[data-pay]'), function (a) { var id = a.getAttribute('data-pay'); if (PR.plans[id]) a.href = waLink(id); });
   }
   window.applyPrices = fill;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fill); else fill();
@@ -125,13 +119,23 @@
       } catch (_) {}
       b.__busy = 1; b.__label = b.innerHTML; b.classList.add('busy'); b.textContent = 'Opening secure payment…';
       fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j.url) throw new Error('no link'); return j; }); })
+        .then(function (r) {
+          return r.json().catch(function () { return {}; }).then(function (j) {
+            if (!r.ok || !j.url) throw new Error(j.error || 'Could not create payment link');
+            return j;
+          });
+        })
         .then(function (j) {
           if (fromModal) lead(id, p, c, j.ref, b.getAttribute('data-pos'));
           try { if (hook.paymentLinkCreated) hook.paymentLinkCreated(id, j); } catch (err) { console.error('Could not update local slot estimate', err); }
           setTimeout(function () { location.href = j.url; }, fromModal ? 250 : 0);
         })
-        .catch(function () { reset(b); location.href = waLink(id); });
+        .catch(function (err) {
+          reset(b);
+          console.error('Razorpay checkout could not be opened:', err);
+          alert('Unable to open Razorpay checkout right now. Your number is saved; please try again in a moment.' +
+            (err && err.message && err.message !== 'Failed to fetch' ? '\n\n' + err.message : ''));
+        });
     }
     openModal(id, p, cust, go);
   });

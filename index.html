@@ -521,7 +521,7 @@ $('plan').addEventListener('change',show);
 try{var q=new URLSearchParams(location.search).get('plan');if(P[q])$('plan').value=q}catch(e){}
 show();
 var SLOT_LABELS=['09:00 AM – 12:00 PM','12:00 PM – 03:00 PM','03:00 PM – 06:00 PM','06:00 PM – 09:00 PM'];
-var selectedSlot=null,selectedDate='',SLOT_KEY='astrojak_slot_checkout_count_v1_',CAPACITY=5;
+var selectedSlot=null,selectedDate='',SLOT_KEY='astrojak_slot_checkout_count_v1_',BOOKED_SLOT_KEY='astrojak_daily_booked_slot_v1_',CAPACITY=5,bookedByDate={};
 var viewMonth=new Date(Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),1));
 function istDate(){
  var d=new Date(Date.now()+330*60000);
@@ -532,6 +532,18 @@ function slotCount(date,index){
   var count=Number(localStorage.getItem(SLOT_KEY+date+'_'+index));
   return Number.isInteger(count)?Math.max(0,Math.min(CAPACITY,count)):0;
  }catch(e){return 0}
+}
+function dailyBookedSlot(date){
+ if(Object.prototype.hasOwnProperty.call(bookedByDate,date))return bookedByDate[date];
+ var key=BOOKED_SLOT_KEY+date,index;
+ try{
+  var stored=localStorage.getItem(key),saved=Number(stored);
+  if(stored!==null&&Number.isInteger(saved)&&saved>=0&&saved<SLOT_LABELS.length)return bookedByDate[date]=saved;
+ }catch(e){}
+ index=Math.floor(Math.random()*SLOT_LABELS.length);
+ bookedByDate[date]=index;
+ try{localStorage.setItem(key,String(index))}catch(e){}
+ return index;
 }
 function remainingSlots(date,index){return CAPACITY-slotCount(date,index)}
 function countLocalCheckout(date,index){
@@ -574,9 +586,14 @@ function renderSlots(){
  if(!date){$('calendarSlots').hidden=true;$('calendarSelection').textContent=tr('choose-date');$('slotScarcity').textContent=tr('scarcity-tag').replace('{n}',CAPACITY);$('slotScarcity').hidden=false;return}
  var available=0;
  var mostRemaining=0;
+ var booked=dailyBookedSlot(date);
  SLOT_LABELS.forEach(function(label,index){
   var b=document.createElement('button'),remaining=remainingSlots(date,index);b.type='button';b.className='slot-option'+(index===selectedSlot?' selected':'');
-  mostRemaining=Math.max(mostRemaining,remaining);
+  mostRemaining=Math.max(mostRemaining,index===booked?0:remaining);
+  if(index===booked){
+   b.disabled=true;b.textContent=displaySlot(label)+tr('booked');b.setAttribute('aria-label',b.textContent);
+   box.appendChild(b);return;
+  }
   b.textContent=displaySlot(label)+(remaining?' · '+tr('spots-left').replace('{n}',remaining):tr('booked'));
   if(remaining===0){b.disabled=true;b.textContent=displaySlot(label)+tr('booked');b.setAttribute('aria-label',b.textContent)}
   else {available++;b.addEventListener('click',function(){
@@ -616,7 +633,8 @@ function selectedTopics(){
 }
 // Keep the selected topics and appointment attached to every payment link request.
 window.PAY_HOOK={
- validate:function(){
+ validate:function(planId){
+  if(planId==='reserve')return true;
   var a=appointment(),err=$('appointmentError');
   if(!a){err.textContent=tr('slot-error');err.hidden=false;$('slotPicker').scrollIntoView({behavior:'smooth',block:'center'});return false}
   if(a.date<istDate()){err.textContent=tr('slot-past-error');err.hidden=false;$('slotPicker').scrollIntoView({behavior:'smooth',block:'center'});return false}

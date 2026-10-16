@@ -109,8 +109,12 @@
     if (id === 'selected') { var s = document.getElementById('plan'); id = s ? s.value : ''; }
     var p = PR.plans[id]; if (!p) return;
     var hook = window.PAY_HOOK || {};
+    if (!hook.validate && id !== 'reserve') {
+      location.href = '/?plan=' + encodeURIComponent(id) + '#slotPicker';
+      return;
+    }
     var cust = {}; try { cust = (hook.customer && hook.customer()) || {}; } catch (_) {}
-    try { if (hook.validate && hook.validate() === false) return; } catch (_) { return; }
+    try { if (hook.validate && hook.validate(id) === false) return; } catch (_) { return; }
     function go(c, fromModal) {
       try { if (hook.before) hook.before(id); } catch (_) {}
       if (window.gtag) gtag('event', 'begin_checkout', { currency: 'INR', value: p.price, items: [{ item_id: id, item_name: p.name, price: p.price }], position: b.getAttribute('data-pos') || '' });

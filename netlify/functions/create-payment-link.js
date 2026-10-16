@@ -54,11 +54,13 @@ exports.handler = async (event) => {
   const parsedDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(date + 'T00:00:00Z') : null;
   const validDate = parsedDate && !Number.isNaN(parsedDate.getTime()) && parsedDate.toISOString().slice(0, 10) === date;
   const todayIst = new Date(Date.now() + 330 * 60 * 1000).toISOString().slice(0, 10);
-  if (!validDate || date < todayIst || slotLabels.indexOf(time) === -1) {
+  const noAppointment = !date && !time;
+  const validAppointment = validDate && date >= todayIst && slotLabels.indexOf(time) !== -1;
+  if (!(planId === 'reserve' && noAppointment) && !validAppointment) {
     return reply(400, { error: 'Choose a valid future appointment date and time slot' });
   }
 
-  // Always send the customer back to the exact address they paid from (works for netlify.app, custom domains, previews)
+  // Return customers to the domain that served the payment request.
   const h = event.headers || {};
   const host = String(h['x-forwarded-host'] || h.host || '').split(',')[0].trim();
   const site = /^[a-z0-9.-]+(:\d+)?$/i.test(host)
@@ -76,8 +78,10 @@ exports.handler = async (event) => {
     reminder_enable: false,
     callback_url: (() => {
       const callback = new URL(site + '/thank-you');
-      callback.searchParams.set('appointment_date', date);
-      callback.searchParams.set('appointment_time', time);
+      if (validAppointment) {
+        callback.searchParams.set('appointment_date', date);
+        callback.searchParams.set('appointment_time', time);
+      }
       return callback.toString();
     })(),
     callback_method: 'get',
@@ -85,8 +89,8 @@ exports.handler = async (event) => {
       plan: planId,
       position: String(input.position || '').slice(0, 20),
       source: String(input.source || '').slice(0, 30),
-      appointment_date: date,
-      appointment_time: time,
+      appointment_date: validAppointment ? date : '',
+      appointment_time: validAppointment ? time : '',
       topics: Array.isArray(input.topics) ? input.topics.map(String).join(', ').slice(0, 240) : '',
     },
   };

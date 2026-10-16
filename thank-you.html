@@ -179,7 +179,8 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     $('status').textContent='Your payment for '+planName+(amount?' ('+amount+')':'')+' is confirmed. Add your birth details below.';
     if(paymentId)$('paymentId').textContent='Payment ID: '+paymentId;
     $('detailsCard').hidden=false;
-    $('appointmentWhen').textContent=appointment||'Appointment time will be confirmed on WhatsApp';
+    if(appointment)$('appointmentWhen').textContent=appointment;
+    else $('appointmentWhen').parentNode.hidden=true;
     $('whatsapp').href='https://wa.me/'+wa+'?text='+encodeURIComponent('I have booked the consultation from your website'+
       '\nPlan: '+planName+(amount?' ('+amount+')':'')+
       (appointment?'\nAppointment: '+appointment+' IST':'')+

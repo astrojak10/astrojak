@@ -10,7 +10,7 @@
   
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F8B700'/%3E%3Ccircle cx='32' cy='32' r='11' fill='none' stroke='white' stroke-width='5'/%3E%3C/svg%3E">
   <meta name="theme-color" content="#F8B700">
-  <link rel="canonical" href="https://astrojak.netlify.app/home">
+  <link rel="canonical" href="https://www.astrojak.in/home">
 
   <!-- Open Graph (WhatsApp / Instagram / Facebook previews) -->
   <meta property="og:type" content="website">
@@ -18,8 +18,8 @@
   <meta property="og:locale" content="en_IN">
   <meta property="og:title" content="ASTROJAK - Vedic Astrology Consultation on WhatsApp">
   <meta property="og:description" content="Kundli, Vivah Yog, Love aur Career ki uljhan ka shuddh Vedic upay. Kundali Analysis online, seedha Acharya Ji se.">
-  <meta property="og:url" content="https://astrojak.netlify.app/home">
-  <meta property="og:image" content="https://astrojak.netlify.app/og-image.jpg">
+  <meta property="og:url" content="https://www.astrojak.in/home">
+  <meta property="og:image" content="https://www.astrojak.in/og-image.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <link rel="preload" as="image" href="/pandit.webp" type="image/webp">
@@ -27,7 +27,21 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="ASTROJAK - Vedic Astrology Consultation on WhatsApp">
   <meta name="twitter:description" content="Kundli, Vivah Yog, Love and Career guidance by Acharya Narender Ji. Kundali Analysis online.">
-  <meta name="twitter:image" content="https://astrojak.netlify.app/og-image.jpg">
+  <meta name="twitter:image" content="https://www.astrojak.in/og-image.jpg">
+  <!-- Meta Pixel Code -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '2057261584904971');
+  fbq('track', 'PageView');
+  </script>
+  <!-- End Meta Pixel Code -->
 
   <script type="application/ld+json">
 {
@@ -35,17 +49,17 @@
  "@graph": [
   {
    "@type": "WebSite",
-   "@id": "https://astrojak.netlify.app/#website",
-   "url": "https://astrojak.netlify.app/",
+   "@id": "https://www.astrojak.in/#website",
+   "url": "https://www.astrojak.in/",
    "name": "ASTROJAK",
    "inLanguage": "en-IN"
   },
   {
    "@type": "ProfessionalService",
-   "@id": "https://astrojak.netlify.app/#business",
+   "@id": "https://www.astrojak.in/#business",
    "name": "ASTROJAK",
-   "url": "https://astrojak.netlify.app/",
-   "image": "https://astrojak.netlify.app/pandit.webp",
+   "url": "https://www.astrojak.in/",
+   "image": "https://www.astrojak.in/pandit.webp",
    "description": "Online Vedic astrology consultation by Acharya Narender Ji over call and WhatsApp.",
    "telephone": "+917827673637",
    "areaServed": "IN",
@@ -134,12 +148,12 @@
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-P95LFD42');</script>
   <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-46W6R6SFS6"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DB1MQGC3LS"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-46W6R6SFS6');
+  gtag('config', 'G-DB1MQGC3LS');
 </script>
 
   <!-- Google Fonts -->
@@ -1100,8 +1114,9 @@
     .plan-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: var(--gold-gradient); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; padding: 5px 14px; border-radius: var(--radius-full); white-space: nowrap; }
     .plan-emoji { font-size: 34px; margin-bottom: 8px; }
     .plan-duration { font-size: 18px; font-weight: 800; color: var(--text-charcoal); margin-bottom: 10px; }
-    .plan-price { font-size: 34px; font-weight: 800; color: var(--saffron-accent); line-height: 1.1; margin-bottom: 4px; }
-    .plan-price s { font-size: 18px; font-weight: 600; color: var(--text-light); margin-right: 6px; }
+    .plan-price { display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:34px; font-weight:800; color:var(--saffron-accent); line-height:1.1; margin-bottom:4px; }
+    .plan-price del { font-size:18px; font-weight:600; color:var(--text-light); }
+    .plan-price small { font-size:10px; font-weight:800; color:#9B1C1C; background:#FFF0EC; border-radius:999px; padding:3px 7px; }
     .plan-note { font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; }
     .plan-btn { margin-top: auto; width: 100%; background: var(--whatsapp-green); color: #fff; font-size: 14.5px; font-weight: 800; padding: 12px 16px; border-radius: 14px; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.35); }
     .plan-pay { margin: auto 0 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 56px; padding: 0; overflow: visible; position: relative; }
@@ -1277,6 +1292,7 @@
 
 </head>
 <body>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2057261584904971&ev=PageView&noscript=1" alt=""></noscript>
 
   <!-- Google Tag Manager (noscript) -->
   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P95LFD42"
@@ -1519,7 +1535,7 @@
           
           <div class="plan-emoji">⭐</div>
           <div class="plan-duration">Kundali Analysis</div>
-          <div class="plan-price" data-price="kundali">₹999</div>
+          <div class="plan-price"><del data-list-price="kundali">₹4999</del><span data-price="kundali">₹999</span><small data-discount="kundali">80% OFF</small></div>
           <div class="plan-note">Clear reading of your birth chart</div>
           <div class="plan-pay"><button type="button" class="paybtn" data-pay="kundali" data-pos="home">Pay Now · <span data-price="kundali">₹999</span></button></div>
         </div>
@@ -1527,7 +1543,7 @@
           <span class="plan-badge">Most Popular</span>
           <div class="plan-emoji">💫</div>
           <div class="plan-duration">Detailed Kundali Analysis</div>
-          <div class="plan-price" data-price="detailed-kundali">₹1499</div>
+          <div class="plan-price"><del data-list-price="detailed-kundali">₹9999</del><span data-price="detailed-kundali">₹1499</span><small data-discount="detailed-kundali">85% OFF</small></div>
           <div class="plan-note">In-depth Dasha, timing &amp; upay</div>
           <div class="plan-pay"><button type="button" class="paybtn" data-pay="detailed-kundali" data-pos="home">Pay Now · <span data-price="detailed-kundali">₹1499</span></button></div>
         </div>
@@ -1535,7 +1551,7 @@
           
           <div class="plan-emoji">💍</div>
           <div class="plan-duration">Marriage Matchmaking Analysis</div>
-          <div class="plan-price" data-price="matchmaking">₹1499</div>
+          <div class="plan-price"><del data-list-price="matchmaking">₹9999</del><span data-price="matchmaking">₹1499</span><small data-discount="matchmaking">85% OFF</small></div>
           <div class="plan-note">Kundli Milan &amp; compatibility for two</div>
           <div class="plan-pay"><button type="button" class="paybtn" data-pay="matchmaking" data-pos="home">Pay Now · <span data-price="matchmaking">₹1499</span></button></div>
         </div>

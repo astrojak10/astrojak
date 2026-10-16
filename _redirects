@@ -1,4 +1,6 @@
 # Booking page is the main page (/). Old links keep working.
+https://astrojak.in/*              https://www.astrojak.in/:splat  301!
+https://astrojak.netlify.app/*     https://www.astrojak.in/:splat  301!
 /book         /            301!
 /book.html    /            301!
 /home         /home.html   200

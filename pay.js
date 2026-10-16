@@ -7,6 +7,10 @@
   var PR = window.PRICING; if (!PR) return;
   var WA = '917827673637', API = '/.netlify/functions/create-payment-link';
   function money(id) { var p = PR.plans[id]; return p ? PR.symbol + p.price : ''; }
+  function discount(id) {
+    var p = PR.plans[id];
+    return p && p.listPrice > p.price ? Math.round((p.listPrice - p.price) / p.listPrice * 100) : 0;
+  }
   function waLink(id) {
     var p = PR.plans[id]; if (!p) return '#';
     return 'https://wa.me/' + WA + '?text=' + encodeURIComponent('Hi! I want to ' + (id === 'reserve' ? 'reserve my slot' : 'book ' + p.name) + ' for ' + money(id) + '.');
@@ -14,6 +18,14 @@
   window.fmtPrice = money;
   function fill() {
     [].forEach.call(document.querySelectorAll('[data-price]'), function (e) { var t = money(e.getAttribute('data-price')); if (t) e.textContent = t; });
+    [].forEach.call(document.querySelectorAll('[data-list-price]'), function (e) {
+      var p = PR.plans[e.getAttribute('data-list-price')];
+      if (p && p.listPrice) e.textContent = PR.symbol + p.listPrice;
+    });
+    [].forEach.call(document.querySelectorAll('[data-discount]'), function (e) {
+      var percent = discount(e.getAttribute('data-discount'));
+      if (percent) e.textContent = percent + '% OFF';
+    });
     [].forEach.call(document.querySelectorAll('a[data-pay]'), function (a) { var id = a.getAttribute('data-pay'); if (PR.plans[id]) a.href = waLink(id); });
   }
   window.applyPrices = fill;
@@ -46,44 +58,44 @@
   var ov = null;
   function digits10(v) { var d = String(v || '').replace(/\D/g, ''); return d.length >= 10 ? d.slice(-10) : ''; }
   function validPhone(v) { return /^[6-9]\d{9}$/.test(digits10(v)); }
-  function saved() {
-    var o = {};
-    try { o = JSON.parse(localStorage.getItem('astrojak_cust') || '{}') || {}; } catch (_) {}
-    try { var m = document.cookie.match(/(?:^|; )astrojak_form=([^;]*)/); if (m) { var f = (JSON.parse(decodeURIComponent(m[1])) || {}).f || {}; o.name = o.name || f.name; o.phone = o.phone || f.phone; o.email = o.email || f.email; } } catch (_) {}
-    return o;
+  function saved() { try { return JSON.parse(localStorage.getItem('astrojak_cust') || '{}') || {}; } catch (_) { return {}; } }
+  function words() {
+    var lang = window.ASTROJAK_LANGUAGE || 'en';
+    var copy = {
+      en: ['Enter your mobile number', 'We will use this number for your booking and WhatsApp updates.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Please enter a valid 10-digit mobile number.', 'Continue to Pay', 'Cancel'],
+      hing: ['Apna mobile number darj karein', 'Booking aur WhatsApp updates ke liye is number ka use hoga.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Sahi 10-digit mobile number darj karein.', 'Payment ke liye aage badhein', 'Cancel'],
+      hi: ['अपना मोबाइल नंबर दर्ज करें', 'बुकिंग और WhatsApp अपडेट के लिए इस नंबर का उपयोग होगा।', 'मोबाइल / WhatsApp नंबर', '10 अंकों का मोबाइल नंबर', 'कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें।', 'भुगतान के लिए आगे बढ़ें', 'रद्द करें']
+    };
+    return copy[lang] || copy.en;
   }
   function closeModal() { if (ov) { ov.remove(); ov = null; } }
   function openModal(id, p, pre, done) {
-    var s = saved();
+    var s = saved(), w = words();
     ov = document.createElement('div'); ov.className = 'pm-ov';
-    ov.innerHTML = '<div class="pm" role="dialog" aria-modal="true" aria-label="Your details"><h3>Almost there!</h3><p>Enter your details so we can reach you about your booking' + (id === 'reserve' ? ' and send your PDF report' : '') + '.</p>'
-      + '<label>Your name</label><input id="pmN" type="text" autocomplete="name" placeholder="Full name">'
-      + '<label>Mobile / WhatsApp number</label><input id="pmP" type="tel" inputmode="tel" autocomplete="tel" placeholder="10-digit mobile number">'
-      + '<label>Email <span>(optional)</span></label><input id="pmE" type="email" autocomplete="email" placeholder="you@example.com">'
+    ov.innerHTML = '<div class="pm" role="dialog" aria-modal="true" aria-label="' + w[0] + '"><h3>' + w[0] + '</h3><p>' + w[1] + '</p>'
+      + '<label>' + w[2] + '</label><input id="pmP" type="tel" inputmode="tel" autocomplete="tel" placeholder="' + w[3] + '">'
       + '<p class="pm-err" id="pmX" hidden></p>'
-      + '<button type="button" class="paybtn" id="pmGo">Continue to Pay ' + money(id) + ' →</button>'
-      + '<button type="button" class="pm-x" id="pmC">Cancel</button></div>';
+      + '<button type="button" class="paybtn" id="pmGo">' + w[5] + ' ' + money(id) + ' →</button>'
+      + '<button type="button" class="pm-x" id="pmC">' + w[6] + '</button></div>';
     document.body.appendChild(ov);
     var g = function (i) { return document.getElementById(i); };
-    g('pmN').value = pre.name || s.name || ''; g('pmP').value = pre.contact || s.phone || ''; g('pmE').value = pre.email || s.email || '';
+    g('pmP').value = pre.contact || s.phone || '';
     g('pmC').onclick = closeModal;
     ov.addEventListener('click', function (e) { if (e.target === ov) closeModal(); });
     g('pmGo').onclick = function () {
-      var n = g('pmN').value.trim(), ph = g('pmP').value, em = g('pmE').value.trim(), x = g('pmX'); x.hidden = true;
-      if (n.length < 2) { x.textContent = 'Please enter your name.'; x.hidden = false; return; }
-      if (!validPhone(ph)) { x.textContent = 'Please enter a valid 10-digit mobile number.'; x.hidden = false; return; }
-      if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { x.textContent = 'That email does not look right.'; x.hidden = false; return; }
-      try { localStorage.setItem('astrojak_cust', JSON.stringify({ name: n, phone: digits10(ph), email: em })); } catch (_) {}
-      closeModal(); done({ name: n, contact: digits10(ph), email: em }, true);
+      var ph = g('pmP').value, x = g('pmX'); x.hidden = true;
+      if (!validPhone(ph)) { x.textContent = w[4]; x.hidden = false; return; }
+      try { localStorage.setItem('astrojak_cust', JSON.stringify({ phone: digits10(ph) })); } catch (_) {}
+      closeModal(); done({ contact: digits10(ph) }, true);
     };
-    setTimeout(function () { g('pmN').focus(); }, 50);
+    setTimeout(function () { g('pmP').focus(); }, 50);
   }
   function lead(id, p, c, ref, pos) {
     try {
       var fd = new FormData();
       fd.append('_subject', 'ASTROJAK payment started: ' + p.name + ' (' + money(id) + ')');
       fd.append('status', 'Payment link opened (check Razorpay for paid status)'); fd.append('plan', p.name); fd.append('amount', money(id));
-      fd.append('name', c.name || ''); fd.append('phone', c.contact || ''); if (c.email) fd.append('email', c.email);
+      fd.append('phone', c.contact || '');
       fd.append('reference_id', ref || ''); fd.append('button', pos || ''); fd.append('page', location.href);
       fetch(LEAD, { method: 'POST', headers: { Accept: 'application/json' }, body: fd, keepalive: true }).catch(function () {});
     } catch (_) {}
@@ -98,16 +110,25 @@
     var p = PR.plans[id]; if (!p) return;
     var hook = window.PAY_HOOK || {};
     var cust = {}; try { cust = (hook.customer && hook.customer()) || {}; } catch (_) {}
+    try { if (hook.validate && hook.validate() === false) return; } catch (_) { return; }
     function go(c, fromModal) {
       try { if (hook.before) hook.before(id); } catch (_) {}
       if (window.gtag) gtag('event', 'begin_checkout', { currency: 'INR', value: p.price, items: [{ item_id: id, item_name: p.name, price: p.price }], position: b.getAttribute('data-pos') || '' });
       var body = { plan: id, position: b.getAttribute('data-pos') || '', source: location.pathname, customer: c };
+      try {
+        if (hook.appointment) body.appointment = hook.appointment();
+        if (hook.topics) body.topics = hook.topics();
+      } catch (_) {}
       b.__busy = 1; b.__label = b.innerHTML; b.classList.add('busy'); b.textContent = 'Opening secure payment…';
       fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
         .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j.url) throw new Error('no link'); return j; }); })
-        .then(function (j) { if (fromModal) lead(id, p, c, j.ref, b.getAttribute('data-pos')); setTimeout(function () { location.href = j.url; }, fromModal ? 250 : 0); })
+        .then(function (j) {
+          if (fromModal) lead(id, p, c, j.ref, b.getAttribute('data-pos'));
+          try { if (hook.paymentLinkCreated) hook.paymentLinkCreated(id, j); } catch (err) { console.error('Could not update local slot estimate', err); }
+          setTimeout(function () { location.href = j.url; }, fromModal ? 250 : 0);
+        })
         .catch(function () { reset(b); location.href = waLink(id); });
     }
-    if (validPhone(cust.contact)) go(cust, false); else openModal(id, p, cust, go);
+    openModal(id, p, cust, go);
   });
 })();

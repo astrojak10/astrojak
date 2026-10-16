@@ -5,17 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Book Consultation | Vedic Astrology with Acharya Narender Ji | ASTROJAK</title>
 <meta name="description" content="Book a Vedic astrology consultation with Acharya Narender Ji. Choose Kundali Analysis, Detailed Kundali Analysis or Marriage Matchmaking, pay securely with Razorpay and get guidance by call and WhatsApp.">
-<link rel="canonical" href="https://astrojak.netlify.app/">
+<link rel="canonical" href="https://www.astrojak.in/">
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-P95LFD42');</script>
 <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-46W6R6SFS6"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DB1MQGC3LS"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-46W6R6SFS6');
+  gtag('config', 'G-DB1MQGC3LS');
 </script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2057261584904971');
+fbq('track', 'PageView');
+</script>
+<!-- End Meta Pixel Code -->
 <script src="/pricing.js"></script>
 <link rel="preconnect" href="https://checkout.razorpay.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,6 +46,7 @@ header{background:#fff;border-bottom:1px solid var(--border)}
 .bar{display:flex;align-items:center;justify-content:space-between;height:60px}
 .brand{font-weight:800;font-size:20px;letter-spacing:1px;color:var(--ink);text-decoration:none}.brand span{color:var(--saffron)}
 .back{font-size:14px;font-weight:600;text-decoration:none}
+.header-tools{display:flex;align-items:center;gap:10px}
 .tag{text-align:center;margin-top:24px;font-size:12px;font-weight:800;letter-spacing:3px;color:var(--dark)}
 .crumb{text-align:center;font-size:13px;color:var(--muted);margin-top:4px}
 h1{text-align:center;font-size:26px;line-height:1.25;margin:10px 0 18px;font-weight:800}
@@ -41,10 +56,6 @@ label:first-child{margin-top:0}
 input,select{width:100%;font:inherit;font-size:16px;padding:13px 12px;border:1.5px solid var(--border);border-radius:14px;background:#fff;color:var(--ink)}
 input:focus,select:focus{outline:none;border-color:var(--saffron)}
 .row{display:flex;gap:8px}.row select{flex:1;min-width:0;padding-left:10px;padding-right:6px}.row .sep{align-self:center;font-weight:700}
-.sum{display:block;margin-top:18px;background:#FFF6DC;border:1.5px solid var(--yellow);border-radius:14px;padding:14px 16px;color:var(--ink);font-size:15px}
-.sum .l{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.sum .l+.l{margin-top:6px}
-.sum b{color:var(--dark);font-size:24px;font-weight:800}
 .paywrap{position:relative;margin-top:14px;border-radius:14px}
 .pay{display:block;width:100%;border:0;border-radius:14px;padding:15px;font:inherit;font-weight:800;font-size:15px;letter-spacing:1.5px;text-transform:uppercase;color:#3D2600;background:var(--gold);box-shadow:0 6px 18px rgba(255,111,0,.3);cursor:pointer}
 .rzhost form{margin:0;display:none;text-align:center;min-height:56px}
@@ -74,46 +85,44 @@ footer{margin-top:44px;padding:24px 16px;text-align:center;font-size:13px;color:
 footer a{margin:0 6px}
 
 /* ---- form UI ---- */
-.card{padding:24px 20px;border-radius:24px;box-shadow:0 14px 40px rgba(248,183,0,.18),0 2px 6px rgba(0,0,0,.04);position:relative;overflow:hidden}
+.card{padding:20px 16px;border-radius:24px;box-shadow:0 14px 40px rgba(248,183,0,.18),0 2px 6px rgba(0,0,0,.04);position:relative;overflow:hidden}
 .card::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:var(--gold)}
-label{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#7A5A12;margin:18px 0 7px}
-input,select{background:#FFFDF7;border:1.5px solid var(--border);border-radius:14px;padding:14px 14px;min-height:50px;transition:border-color .2s,box-shadow .2s,background .2s;box-shadow:inset 0 1px 2px rgba(0,0,0,.03)}
+label{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#7A5A12;margin:15px 0 6px}
+input,select{background:#FFFDF7;border:1.5px solid var(--border);border-radius:14px;padding:12px 13px;min-height:46px;transition:border-color .2s,box-shadow .2s,background .2s;box-shadow:inset 0 1px 2px rgba(0,0,0,.03)}
 input::placeholder{color:#B5A98C}
 input:hover,select:hover{border-color:var(--accent);background:#fff}
 input:focus,select:focus{outline:none;border-color:var(--saffron);background:#fff;box-shadow:0 0 0 4px rgba(255,111,0,.14)}
 select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23E65100' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
 #plan{font-weight:700;color:var(--dark);background-color:#FFF6DC;border-color:var(--yellow)}
 .row{gap:10px}.row select{padding-left:12px;padding-right:26px;background-position:right 9px center}
-.sum{border-radius:16px;background:linear-gradient(135deg,#FFF6DC,#FFEFC2)}
 .paywrap{margin-top:16px}
 
 /* ---- what is on your mind ---- */
-.mind{margin-top:22px;padding:16px 14px 12px;background:#FFFBEE;border:1.5px dashed var(--accent);border-radius:18px}
-.mind .q{font-size:17px;font-weight:800;color:var(--ink);text-align:center}
-.mind .hint{text-align:center;font-size:12.5px;color:var(--muted);margin:2px 0 12px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.mind{margin-top:16px;padding:10px 10px 7px;background:#FFFBEE;border:1.5px dashed var(--accent);border-radius:18px}
+.mind .q{font-size:16px;font-weight:800;color:var(--ink);text-align:center}
+.mind .hint{text-align:center;font-size:12px;color:var(--muted);margin:2px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .chip{display:block;margin:0;padding:0;font-size:13px;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink);position:relative;cursor:pointer}
 .chip input{position:absolute;opacity:0;width:1px;height:1px;min-height:0;padding:0;border:0;box-shadow:none}
-.chip span{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;background:#fff;border:1.5px solid var(--border);border-radius:999px;line-height:1.2;transition:all .18s;user-select:none}
-.chip span i{font-style:normal;font-size:15px}
+.chip span{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;background:#fff;border:1.5px solid var(--border);border-radius:999px;line-height:1.15;transition:all .18s;user-select:none}
+.chip span i{font-style:normal;font-size:13px}
 .chip:hover span{border-color:var(--yellow);transform:translateY(-1px)}
 .chip input:checked+span{background:var(--gold);border-color:var(--saffron);color:#3D2600;font-weight:700;box-shadow:0 4px 12px rgba(255,111,0,.25)}
 .chip input:focus-visible+span{outline:3px solid rgba(255,111,0,.35);outline-offset:2px}
-.mind .count{text-align:center;font-size:12.5px;font-weight:700;color:var(--dark);min-height:18px;margin-top:10px}
+.mind .count{text-align:center;font-size:12px;font-weight:700;color:var(--dark);min-height:0;margin-top:5px}
 
 .chips.collapsed .chip.more:not(:has(input:checked)){display:none}
 .chip.other{order:99}
 .other-txt{margin-top:12px}.other-txt[hidden]{display:none}
 .more-btn{display:block;margin:12px auto 0;background:none;border:1.5px solid var(--accent);border-radius:999px;padding:7px 16px;font:inherit;font-size:13px;font-weight:700;color:var(--dark);cursor:pointer;transition:background .2s}
 .more-btn:hover{background:#FFF1C9}
-#savedNote a{font-weight:700}
 
 /* ---- Rs 101 reserve hero + client experience ---- */
 .hero101{text-align:center;padding-top:22px}
 .hname{font-size:13px;font-weight:800;letter-spacing:5px;color:var(--dark);text-transform:uppercase}
 .hrole{font-size:12.5px;color:var(--muted);margin-top:4px}
 .hrow{display:flex;gap:16px;align-items:center;text-align:left;margin-top:20px}
-.hphoto{flex:0 0 118px;width:118px;height:118px;border-radius:50%;object-fit:cover;background:#FFF1C9;border:4px solid #fff;box-shadow:0 0 0 3px var(--accent),0 10px 24px rgba(248,183,0,.28)}
+.hphoto{flex:0 0 118px;width:118px;height:118px;border-radius:50%;object-fit:cover;object-position:center 40%;background:#FFF1C9;border:4px solid #fff;box-shadow:0 0 0 3px var(--accent),0 10px 24px rgba(248,183,0,.28)}
 .hq{font-size:21px;line-height:1.22;font-weight:800;margin:0;text-align:left}
 .hq em{display:block;color:var(--saffron);font-style:italic}
 .hline{height:2px;width:90px;background:var(--accent);margin:10px 0 8px;border-radius:2px}
@@ -131,9 +140,46 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
 .rsvcard p{font-size:14px;color:var(--muted)}
 .divider{margin:30px 0 0;border:0;border-top:1px solid var(--border)}
 .exp .shots{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 2px 12px;-webkit-overflow-scrolling:touch}
-.exp .shot{flex:0 0 78%;scroll-snap-align:center;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 6px 18px rgba(248,183,0,.14)}
-.exp .shot img{display:block;width:100%;height:auto}
+.exp .shot{flex:0 0 78%;scroll-snap-align:center;border:1.5px solid var(--border);border-radius:22px;overflow:hidden;background:#fff;box-shadow:0 6px 18px rgba(248,183,0,.14)}
+.exp .shot img{display:block;width:100%;height:auto;border-radius:20px}
 .exp .privacy{font-size:12px;margin:2px 0 4px;color:var(--muted)}
+.slot-picker{margin-top:14px;padding:14px 12px;background:#FFFBEE;border:1.5px solid var(--border);border-radius:18px}
+.slot-picker h3{text-align:left;font-size:17px;margin:0 0 4px}
+.slot-heading-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.slot-scarcity{flex:0 0 auto;border-radius:999px;background:#FFF0EC;color:#9B1C1C;padding:5px 9px;font-size:10px;font-weight:800;line-height:1.2;white-space:nowrap}
+.slot-scarcity[hidden]{display:none}
+.slot-picker .hint{font-size:13px;color:var(--muted);margin-bottom:12px}
+.calendar{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px}
+.calendar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.calendar-head strong{font-size:15px}
+.cal-nav{width:34px;height:34px;border:1px solid var(--border);border-radius:10px;background:#FFF9E9;color:var(--dark);font:inherit;font-size:20px;line-height:1;cursor:pointer}
+.cal-nav:disabled{opacity:.35;cursor:not-allowed}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.cal-weekday{font-size:10px;font-weight:800;color:var(--muted);padding:4px 0}
+.cal-day{aspect-ratio:1;min-width:0;border:1px solid transparent;border-radius:9px;background:#fff;color:var(--ink);font:inherit;font-size:12px;cursor:pointer}
+.cal-day:hover:not(:disabled){border-color:var(--accent);background:#FFF9E9}
+.cal-day.selected{background:var(--gold);color:#3D2600;font-weight:800}
+.cal-day:disabled{color:#ccc;cursor:not-allowed}
+.cal-day.today:not(.selected){border-color:var(--yellow);font-weight:800}
+.calendar-selection{min-height:20px;margin-top:8px;text-align:center;font-size:12px;font-weight:700;color:var(--dark)}
+.calendar-slots{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.calendar-slots[hidden]{display:none}
+.slot-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.slot-option{font:inherit;font-size:13px;font-weight:700;color:var(--ink);background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:10px 6px;cursor:pointer}
+.slot-option.selected{border-color:var(--saffron);background:#FFF1C9;color:var(--dark)}
+.slot-option:disabled{color:#999;background:#f4f1e9;text-decoration:line-through;cursor:not-allowed}
+.slot-error{margin-top:10px;color:#C62828;font-size:13px;font-weight:700}
+.slot-summary{margin-top:10px;font-size:13px;font-weight:700;color:var(--dark);text-align:center}
+.slot-note{text-align:center;margin:2px 0 4px;font-size:13px;font-weight:700;color:var(--dark)}
+.deal-inline{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;white-space:nowrap}
+.deal-inline del,.price-stack del{font-size:.72em;font-weight:600;color:#777}
+.deal-inline b{font-size:1em!important}
+.deal-inline small,.price-stack small{font-size:10px;font-weight:800;color:#9B1C1C;background:#FFF0EC;border-radius:999px;padding:2px 6px}
+.price-stack{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.price-stack>span{display:flex;align-items:center;gap:5px}
+.lang-switch{display:flex;gap:2px;padding:3px;background:#FFF5D2;border:1px solid var(--accent);border-radius:999px}
+.lang-switch button{border:0;border-radius:999px;background:transparent;padding:5px 8px;color:var(--muted);font:inherit;font-size:11px;font-weight:800;cursor:pointer}
+.lang-switch button.on{background:var(--gold);color:#3D2600}
 .ready{margin-top:36px;background:#fff;border:1.5px solid var(--accent);border-radius:24px;padding:26px 18px;text-align:center;box-shadow:0 14px 40px rgba(248,183,0,.16)}
 .ready .rt{font-size:23px;line-height:1.25;margin:0 0 8px}
 .ready>p{color:var(--muted);font-size:14.5px}
@@ -165,6 +211,8 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
 .pc i{font-style:normal;font-size:21px;flex:0 0 40px;height:40px;border-radius:50%;background:#FFF1C9;display:flex;align-items:center;justify-content:center}
 .pc .tx{flex:1;min-width:0}.pc b{display:block;font-size:14.5px;line-height:1.25}.pc small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .pc .pp{font-weight:800;font-size:19px;color:var(--dark);white-space:nowrap}
+.pc .price-stack{align-items:flex-start}
+.pc .price-stack>span{gap:4px}
 .pc.on{border-color:var(--saffron);background:linear-gradient(135deg,#FFF9E6,#FFF0C4);box-shadow:0 8px 22px rgba(255,111,0,.18)}
 .pc.on::after{content:"✓";position:absolute;right:-8px;bottom:-8px;width:22px;height:22px;border-radius:50%;background:var(--saffron);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .pc .pop{position:absolute;top:-10px;right:14px;background:var(--gold);color:#3D2600;font-size:10.5px;font-weight:800;font-style:normal;padding:2px 10px;border-radius:999px;box-shadow:0 3px 8px rgba(255,152,0,.3)}
@@ -190,163 +238,281 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
 .js .rv.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.js .rv{opacity:1;transform:none;transition:none}.hphoto,.rsv::after{animation:none}.rsv::after{display:none}}
 @media(min-width:420px){.hq{font-size:23px}.hphoto{flex-basis:132px;width:132px;height:132px}}
+@media(min-width:900px){
+  body{font-size:15px}
+  .wrap{max-width:1200px;padding-left:28px;padding-right:28px}
+  header .wrap{max-width:1200px}
+  main.wrap{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);grid-template-areas:"hero title" "hero card";column-gap:32px;row-gap:0;margin-top:24px}
+  .hero101{grid-area:hero;align-self:stretch;padding:28px 22px;background:#fff;border:1.5px solid var(--border);border-radius:24px;box-shadow:0 14px 40px rgba(248,183,0,.12)}
+  .hero101 .hrow{gap:14px}
+  .hero101 .hphoto{flex-basis:112px;width:112px;height:112px;object-position:center 40%}
+  .hero101 .hq{font-size:21px}
+  .hero101 .hstats{gap:12px}
+  .hero101 .rsv{font-size:15px;padding:14px}
+  .hero101 .get{padding:16px 12px}
+  .hero101 .get li{gap:9px;padding:9px 8px}
+  .divider{display:none}
+  main.wrap>h1{grid-area:title;text-align:left;font-size:clamp(18px,2vw,25px);letter-spacing:-.7px;white-space:nowrap;margin:0 0 10px}
+  .card{grid-area:card;padding:16px 18px;border-radius:20px}
+  .card label{margin-top:10px}
+  .card input,.card select{min-height:42px;padding:9px 11px}
+  .card .mind{margin-top:10px;padding:9px 9px 6px}
+  .card .chips{gap:5px}
+  .card .chip span{padding:5px 8px}
+  .card .more-btn{margin-top:6px;padding:5px 12px}
+  .card .slot-picker{margin-top:12px;padding:12px 10px}
+  .card .slot-picker .hint{margin-bottom:8px}
+  .calendar{padding:9px}
+  .cal-day{font-size:11px}
+  .card .calendar{max-width:500px;margin-left:auto;margin-right:auto;padding:8px}
+  .card .calendar-head{margin-bottom:7px}
+  .card .cal-nav{width:30px;height:30px}
+  .card .cal-grid{gap:3px}
+  .card .cal-day{font-size:10px;border-radius:7px}
+  .card .pcards{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:8px 0 2px}
+  .card .pc{display:grid;grid-template-columns:34px minmax(0,1fr);grid-template-rows:auto auto;gap:4px 7px;padding:10px 9px}
+  .card .pc i{grid-column:1;grid-row:1/3;width:34px;height:34px;flex-basis:34px;font-size:18px}
+  .card .pc .tx{grid-column:2;grid-row:1;margin:0}
+  .card .pc .tx b{font-size:12px}
+  .card .pc .tx small{font-size:10px}
+  .card .pc .pp{grid-column:2;grid-row:2;justify-self:start;font-size:14px;line-height:1.1}
+  .card .pc .pop{font-size:8px;right:4px;padding:2px 6px}
+  .paywrap{margin-top:10px}
+  .fine{margin-top:8px}
+  main.wrap>.intro,main.wrap>.wa,main.wrap>h2,main.wrap>.sub,main.wrap>.tbl,main.wrap>.fine,main.wrap>.exp,main.wrap>.ready,main.wrap>.faq{grid-column:1/-1}
+  .intro{max-width:900px;margin:30px auto 12px}
+  .wa{max-width:420px;margin:12px auto 0}
+  main.wrap>h2{margin-top:34px}
+  .tbl{max-width:1000px;width:100%;justify-self:center}
+  .tbl table{font-size:14px}
+  .tbl th,.tbl td{padding:12px 10px}
+  .exp{max-width:1000px;width:100%;justify-self:center}
+  .exp .shots{overflow:visible;justify-content:center}
+  .exp .shot{flex:1 1 0;max-width:320px}
+  .ready{max-width:900px;width:100%;justify-self:center}
+  .faq{max-width:900px;width:100%;justify-self:center}
+}
+@media(max-width:390px){.header-tools{gap:6px}.lang-switch button{padding:5px 6px;font-size:10px}.back{font-size:12px}}
 </style>
 </head>
 <body>
-<header><div class="wrap bar"><a class="brand" href="/">ASTRO<span>JAK</span></a><a class="back" href="/home">← Back to Home</a></div></header>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2057261584904971&ev=PageView&noscript=1" alt=""></noscript>
+<header><div class="wrap bar"><a class="brand" href="/">ASTRO<span>JAK</span></a><div class="header-tools"><div class="lang-switch" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="true" class="on">EN</button><button type="button" data-lang="hing" aria-pressed="false">Hinglish</button><button type="button" data-lang="hi" aria-pressed="false">हिन्दी</button></div><a class="back" href="/home" data-i18n="back-home">Home</a></div></div></header>
 
 <main class="wrap">
 <section class="hero101">
-  <div class="hname">Acharya Narender Ji</div>
-  <div class="hrole">Vedic Astrologer · Kundli Expert</div>
+  <div class="hname" data-i18n="acharya-name">Acharya Narender Ji</div>
+  <div class="hrole" data-i18n="hero-role">Vedic Astrologer · Kundli Expert</div>
   <div class="hrow">
     <img class="hphoto" src="/pandit.webp" alt="Acharya Narender Ji" width="132" height="132" decoding="async">
     <div>
-      <h2 class="hq">Need Clear Answers?<em>Ask Your Kundli</em></h2>
+      <h2 class="hq"><span data-i18n="hero-question">Need Clear Answers?</span><em data-i18n="hero-ask">Ask Your Kundli</em></h2>
       <div class="hline"></div>
-      <p class="hsub">Understand what your Kundli shows, what is happening now, and the right upay to move forward.</p>
+      <p class="hsub" data-i18n="hero-description">Understand what your Kundli shows, what is happening now, and the right upay to move forward.</p>
     </div>
   </div>
-  <div class="hpills"><span>💍 Marriage</span><span>🚀 Career</span><span>❤️ Love Life</span></div>
-  <div class="hstats"><div><b>20+ Years</b><small>of Experience</small></div><i></i><div><b>1000+</b><small>Consultations</small></div></div>
-  <a class="rsv" data-pay="reserve" data-pos="top" href="https://wa.me/917827673637?text=Hi!%20I%20want%20to%20reserve%20my%20slot%20for%20%E2%82%B9101." target="_blank" rel="noopener noreferrer">Reserve Your Slot — <span data-price="reserve">₹101</span> →</a>
-  <p class="trust">🔒 Secure Razorpay payment · UPI, cards &amp; netbanking</p>
+  <div class="hpills"><span data-i18n="pill-marriage">💍 Marriage</span><span data-i18n="pill-career">🚀 Career</span><span data-i18n="pill-love">❤️ Love Life</span></div>
+  <div class="hstats"><div><b data-i18n="years">20+ Years</b><small data-i18n="experience">of Experience</small></div><i></i><div><b>1000+</b><small data-i18n="consultations">Consultations</small></div></div>
+  <a class="rsv" data-pay="reserve" data-pos="top" href="#"><span data-i18n="reserve">Reserve Your Slot</span> — <span class="deal-inline"><del data-list-price="reserve">₹499</del><b data-price="reserve">₹101</b><small data-discount="reserve">80% OFF</small></span> →</a>
+  <p class="slot-note" data-i18n="call-duration">10-minute 1:1 call with astrologer</p>
+  <p class="trust" data-i18n="secure-pay">🔒 Secure Razorpay checkout · UPI, cards &amp; netbanking</p>
 
   <div class="get">
-    <h3>What you get for <span data-price="reserve">₹101</span></h3>
+    <h3><span data-i18n="what-get">What you get for</span> <span data-price="reserve">₹101</span></h3>
     <ul>
-      <li class="hl"><span class="ic">📄</span><div><b>Detailed PDF report of your horoscope</b><small>Your Kundli explained in a personal report you can keep and share</small></div></li>
-      <li><span class="ic">🎧</span><div><b>Private time with Acharya Narender Ji</b><small>Explain your situation in your own words, with no hurry</small></div></li>
-      <li><span class="ic">🧭</span><div><b>Clear direction on your next step</b><small>Know which session suits you: Kundali Analysis or Detailed Kundali Analysis</small></div></li>
-      <li><span class="ic">🤝</span><div><b>100% private, no per-minute charges</b><small>Your birth details and conversation stay confidential</small></div></li>
+      <li class="hl"><span class="ic">📄</span><div><b data-i18n="pdf-report">Detailed PDF report of your horoscope</b><small data-i18n="pdf-description">Your Kundli explained in a personal report you can keep and share</small></div></li>
+      <li><span class="ic">🧭</span><div><b data-i18n="clear-direction">Clear direction on your next step</b><small data-i18n="direction-description">Know which session suits you: Kundali Analysis or Detailed Kundali Analysis</small></div></li>
+      <li><span class="ic">🤝</span><div><b data-i18n="private">100% private, no per-minute charges</b><small data-i18n="private-description">Your birth details and conversation stay confidential</small></div></li>
     </ul>
   </div>
 
-  <h3 class="hh">How it works</h3>
+  <h3 class="hh" data-i18n="how-works">How it works</h3>
   <div class="steps">
-    <div class="step"><i>1</i><b>Pay <span data-price="reserve">₹101</span></b><small>Reserve your slot securely</small></div>
-    <div class="step"><i>2</i><b>Share details</b><small>Send birth details and your question on WhatsApp</small></div>
-    <div class="step"><i>3</i><b>Get guidance</b><small>Talk to Acharya Ji and receive your PDF report</small></div>
+    <div class="step"><i>1</i><b><span data-i18n="pay-label">Pay</span> <span data-price="reserve">₹101</span></b><small data-i18n="reserve-secure">Reserve your slot securely</small></div>
+    <div class="step"><i>2</i><b data-i18n="share-details">Share details</b><small data-i18n="share-details-description">Send birth details and your question on WhatsApp</small></div>
+    <div class="step"><i>3</i><b data-i18n="get-guidance">Get guidance</b><small data-i18n="guidance-description">Talk to Acharya Ji and receive your PDF report</small></div>
   </div>
 </section>
 <hr class="divider">
-<div class="tag">CONSULTATION</div>
-<div class="crumb"><a href="/home">Home</a> › Book Consultation</div>
-<h1>Book Consultation with Acharya Narender Ji</h1>
+<h1 data-i18n="booking-title">Book Consultation with Acharya Narender Ji</h1>
 
 <div class="card">
-  <label>Choose your analysis</label>
-  <div class="pcards" id="pcards" role="radiogroup" aria-label="Choose your analysis"></div>
-  <select id="plan" hidden aria-hidden="true"></select>
-
   <div class="mind">
-    <div class="q" id="mindq">What is on your mind?</div>
-    <p class="hint">Select all that apply</p>
+    <div class="q" id="mindq" data-i18n="mind-title">What is on your mind?</div>
     <div class="chips collapsed" id="chips" role="group" aria-labelledby="mindq"><label class="chip"><input type="checkbox" name="topic" value="Business"><span><i>💼</i>Business</span></label><label class="chip"><input type="checkbox" name="topic" value="Career"><span><i>🚀</i>Career</span></label><label class="chip"><input type="checkbox" name="topic" value="Finance"><span><i>💰</i>Finance</span></label><label class="chip"><input type="checkbox" name="topic" value="Marriage"><span><i>💍</i>Marriage</span></label><label class="chip"><input type="checkbox" name="topic" value="Relationships"><span><i>❤️</i>Relationships</span></label><label class="chip"><input type="checkbox" name="topic" value="Health"><span><i>🩺</i>Health</span></label><label class="chip more"><input type="checkbox" name="topic" value="Education"><span><i>🎓</i>Education</span></label><label class="chip more"><input type="checkbox" name="topic" value="Children"><span><i>👶</i>Children</span></label><label class="chip more"><input type="checkbox" name="topic" value="Family"><span><i>👨‍👩‍👧</i>Family</span></label><label class="chip more"><input type="checkbox" name="topic" value="Property"><span><i>🏠</i>Property</span></label><label class="chip more"><input type="checkbox" name="topic" value="Legal Matters"><span><i>⚖️</i>Legal Matters</span></label><label class="chip more"><input type="checkbox" name="topic" value="Foreign Opportunities"><span><i>✈️</i>Foreign Opportunities</span></label><label class="chip more"><input type="checkbox" name="topic" value="Relocation"><span><i>📦</i>Relocation</span></label><label class="chip more"><input type="checkbox" name="topic" value="Personal Growth"><span><i>🌱</i>Personal Growth</span></label><label class="chip more"><input type="checkbox" name="topic" value="Life Purpose"><span><i>🧭</i>Life Purpose</span></label><label class="chip more"><input type="checkbox" name="topic" value="Spiritual Growth"><span><i>🕉️</i>Spiritual Growth</span></label><label class="chip more"><input type="checkbox" name="topic" value="Major Decisions"><span><i>🔀</i>Major Decisions</span></label><label class="chip more"><input type="checkbox" name="topic" value="Timing"><span><i>⏳</i>Timing</span></label><label class="chip more"><input type="checkbox" name="topic" value="Obstacles &amp; Delays"><span><i>🚧</i>Obstacles &amp; Delays</span></label><label class="chip more"><input type="checkbox" name="topic" value="Reputation &amp; Status"><span><i>🏅</i>Reputation &amp; Status</span></label><label class="chip more"><input type="checkbox" name="topic" value="Partnership"><span><i>🤝</i>Partnership</span></label><label class="chip more"><input type="checkbox" name="topic" value="Investments"><span><i>📈</i>Investments</span></label><label class="chip more"><input type="checkbox" name="topic" value="Success &amp; Recognition"><span><i>🏆</i>Success &amp; Recognition</span></label><label class="chip more"><input type="checkbox" name="topic" value="Life Transitions"><span><i>🦋</i>Life Transitions</span></label><label class="chip other"><input type="checkbox" name="topic" value="Other" id="otherChk"><span><i>✍️</i>Other</span></label></div>
     <input type="text" id="otherTxt" class="other-txt" placeholder="Type what is on your mind" maxlength="120" hidden>
-    <button type="button" class="more-btn" id="moreBtn" aria-expanded="false" aria-controls="chips">Show more topics ▾</button>
+    <button type="button" class="more-btn" id="moreBtn" aria-expanded="false" aria-controls="chips" data-i18n="more-topics">Show more topics ▾</button>
     <p class="count" id="cnt" aria-live="polite"></p>
   </div>
 
-  <label for="name">Your name</label>
-  <input id="name" type="text" autocomplete="name">
-  <label for="phone">Phone / WhatsApp number</label>
-  <input id="phone" type="tel" autocomplete="tel">
-  <label for="email">Email address</label>
-  <input id="email" type="email" autocomplete="email">
+  <section class="slot-picker" id="slotPicker" aria-labelledby="slotHeading">
+    <div class="slot-heading-row"><h3 id="slotHeading" data-i18n="slot-title">Choose your 1:1 call appointment</h3><span class="slot-scarcity" id="slotScarcity" data-i18n="scarcity-tag">Only 5 slots left · per time slot</span></div>
+    <p class="hint" data-i18n="slot-hint">Select a date, then choose an available 3-hour time slot. All times are India time (IST).</p>
+    <div class="calendar">
+      <div class="calendar-head"><button type="button" class="cal-nav" id="calPrev" aria-label="Previous month">‹</button><strong id="calMonth"></strong><button type="button" class="cal-nav" id="calNext" aria-label="Next month">›</button></div>
+      <div class="cal-grid" id="calendarGrid" role="grid"></div>
+      <p class="calendar-selection" id="calendarSelection" aria-live="polite">Choose a date to see available times.</p>
+      <div class="calendar-slots" id="calendarSlots" hidden>
+        <p class="hint" data-i18n="slot-select">Available appointment times</p>
+        <div class="slot-grid" id="appointmentSlots" role="group" aria-label="Available appointment times"></div>
+      </div>
+    </div>
+    <p class="slot-error" id="appointmentError" role="alert" hidden></p>
+  </section>
 
-  <label>Date of birth</label>
-  <div class="row"><select id="yy" aria-label="Year"><option value="">Year</option></select><select id="mm" aria-label="Month"><option value="">Month</option></select><select id="dd" aria-label="Day"><option value="">Day</option></select></div>
-
-  <label>Exact birth time</label>
-  <div class="row"><select id="hh" aria-label="Hour"><option value="">HH</option></select><span class="sep">:</span><select id="mi" aria-label="Minute"><option value="">MM</option></select><select id="ap" aria-label="AM or PM"><option value="">--</option><option>AM</option><option>PM</option></select></div>
-
-  <label for="place">Birth place</label>
-  <input id="place" type="text" placeholder="City, State, Country">
-
-  <div class="sum">
-    <div class="l"><span>Selected:</span><strong id="sel">Detailed Kundali Analysis</strong></div>
-    <div class="l"><span>Amount payable:</span><b id="amt">₹1499</b></div>
-  </div>
+  <label data-i18n="choose-plan">Choose your analysis</label>
+  <div class="pcards" id="pcards" role="radiogroup" aria-label="Choose your analysis"></div>
+  <select id="plan" hidden aria-hidden="true"></select>
 
   <div class="paywrap">
-    <button type="button" class="paybtn" id="payNow" data-pay="selected" data-pos="form">Pay Now · <span id="payAmt">₹1499</span> →</button>
-    <p class="paynote">🔒 Secure Razorpay checkout · UPI, cards &amp; netbanking</p>
+    <button type="button" class="paybtn" id="payNow" data-pay="selected" data-pos="form"><span data-i18n="pay-now">Pay Now</span> · <span id="payAmt">₹1499</span> →</button>
+    <p class="paynote" data-i18n="secure-pay">🔒 Secure Razorpay checkout · UPI, cards &amp; netbanking</p>
   </div>
-  <p class="fine" id="savedNote" hidden>Your details are saved on this device for next time. <a href="#" id="clr">Clear</a></p>
-  <p class="fine"><span id="fine">₹1499 for Detailed Kundali Analysis</span> · after payment, share your birth details on WhatsApp</p>
+  <p class="fine"><span id="fine">₹1499 for Detailed Kundali Analysis</span><span data-i18n="after-payment"> · after payment, add your birth details on the next page</span></p>
 </div>
 
-<p class="intro">A <b>consultation with Acharya Narender Ji</b> is a <b>1:1 consultation on audio call with our astrologer</b>, a personal reading of your Kundli. Pick the analysis that suits your need, pay once, and get honest Vedic guidance with a clear upay.</p>
-<a class="wa" id="wa" href="https://wa.me/917827673637?text=Hi!%20I%20want%20to%20book%20astrology%20consultation." target="_blank" rel="noopener noreferrer">Book on WhatsApp</a>
+<p class="intro" data-i18n="intro">A consultation with Acharya Narender Ji is a 1:1 audio call with our astrologer and a personal reading of your Kundli. Pick the analysis that suits your need, pay once, and get honest Vedic guidance with a clear upay.</p>
+<a class="wa" id="wa" data-i18n="book-whatsapp" href="https://wa.me/917827673637?text=Hi!%20I%20want%20to%20book%20astrology%20consultation." target="_blank" rel="noopener noreferrer">Book on WhatsApp</a>
 
-<h2>What You Get</h2>
-<p class="sub">Compare the three plans</p>
+<h2 data-i18n="what-you-get">What You Get</h2>
+<p class="sub" data-i18n="compare-plans">Compare the three plans</p>
 <div class="tbl"><table>
-<thead><tr><th>What you get</th><th>Kundali</th><th class="f">Detailed Kundali</th><th>Matchmaking</th></tr></thead>
+<thead><tr><th data-i18n="table-feature">What you get</th><th data-i18n="table-kundali">Kundali</th><th class="f" data-i18n="table-detailed">Detailed Kundali</th><th data-i18n="table-matchmaking">Matchmaking</th></tr></thead>
 <tbody>
-<tr><td>Price</td><td><span data-price="kundali">₹999</span></td><td class="f"><span data-price="detailed-kundali">₹1499</span></td><td><span data-price="matchmaking">₹1499</span></td></tr>
-<tr><td>1:1 audio call with our astrologer</td><td class="y">✔</td><td class="y f">✔</td><td class="y">✔</td></tr>
-<tr><td>Birth chart (Kundli) reading</td><td class="y">✔</td><td class="y f">✔</td><td class="y">✔</td></tr>
-<tr><td>Dasha &amp; timing guidance</td><td class="n">—</td><td class="y f">✔</td><td class="y">✔</td></tr>
-<tr><td>Personal upay (remedies)</td><td class="n">—</td><td class="y f">✔</td><td class="y">✔</td></tr>
-<tr><td>Two Kundlis compared (Guna Milan, Manglik)</td><td class="n">—</td><td class="n f">—</td><td class="y">✔</td></tr>
-<tr><td>Best for</td><td>Overview of your chart</td><td class="f">Full life review</td><td>Marriage decision</td></tr>
+<tr><td data-i18n="table-price">Price</td><td><span data-price="kundali">₹999</span></td><td class="f"><span data-price="detailed-kundali">₹1499</span></td><td><span data-price="matchmaking">₹1499</span></td></tr>
+<tr><td data-i18n="table-audio">1:1 audio call with our astrologer</td><td class="y">✔</td><td class="y f">✔</td><td class="y">✔</td></tr>
+<tr><td data-i18n="table-chart">Birth chart (Kundli) reading</td><td class="y">✔</td><td class="y f">✔</td><td class="y">✔</td></tr>
+<tr><td data-i18n="table-dasha">Dasha &amp; timing guidance</td><td class="n">—</td><td class="y f">✔</td><td class="y">✔</td></tr>
+<tr><td data-i18n="table-remedies">Personal upay (remedies)</td><td class="n">—</td><td class="y f">✔</td><td class="y">✔</td></tr>
+<tr><td data-i18n="table-match">Two Kundlis compared (Guna Milan, Manglik)</td><td class="n">—</td><td class="n f">—</td><td class="y">✔</td></tr>
+<tr><td data-i18n="table-best">Best for</td><td data-i18n="table-overview">Overview of your chart</td><td class="f" data-i18n="table-review">Full life review</td><td data-i18n="table-marriage">Marriage decision</td></tr>
 </tbody></table></div>
-<p class="fine">Flat fee per plan. No hidden charges, no upsells.</p>
+<p class="fine" data-i18n="flat-fee">Flat fee per plan. No hidden charges, no upsells.</p>
 
 <section class="exp" id="reviews">
-<h2>Client Experience</h2>
-<p class="sub">⭐ 4.98 rating · 1000+ consultations</p>
+<h2 data-i18n="customer-reviews">Customer Reviews</h2>
+<p class="sub" data-i18n="reviews-rating">⭐ 4.98 rating · 1000+ consultations</p>
 <div class="shots" id="shots">
-  <a class="shot" href="/reviews/review-1.jpg" target="_blank" rel="noopener"><img src="/reviews/review-1.jpg" alt="Client feedback on WhatsApp, 1" loading="lazy" decoding="async" onerror="this.parentNode.remove();window.rvChk&&rvChk()"></a>
-  <a class="shot" href="/reviews/review-2.jpg" target="_blank" rel="noopener"><img src="/reviews/review-2.jpg" alt="Client feedback on WhatsApp, 2" loading="lazy" decoding="async" onerror="this.parentNode.remove();window.rvChk&&rvChk()"></a>
-  <a class="shot" href="/reviews/review-3.jpg" target="_blank" rel="noopener"><img src="/reviews/review-3.jpg" alt="Client feedback on WhatsApp, 3" loading="lazy" decoding="async" onerror="this.parentNode.remove();window.rvChk&&rvChk()"></a>
+  <a class="shot" href="/reviews/review-01.jpg" target="_blank" rel="noopener"><img src="/reviews/review-01.jpg" alt="Customer review screenshot 1" loading="lazy" decoding="async" onerror="this.parentNode.remove();window.rvChk&&rvChk()"></a>
+  <a class="shot" href="/reviews/review-02.jpg" target="_blank" rel="noopener"><img src="/reviews/review-02.jpg" alt="Customer review screenshot 2" loading="lazy" decoding="async" onerror="this.parentNode.remove();window.rvChk&&rvChk()"></a>
+  <a class="shot" href="/reviews/review-03.jpg" target="_blank" rel="noopener"><img src="/reviews/review-03.jpg" alt="Customer review screenshot 3" loading="lazy" decoding="async" onerror="this.parentNode.remove();window.rvChk&&rvChk()"></a>
 </div>
-<p class="fine privacy">🔒 Customer names, photos and phone numbers are hidden to protect their privacy.</p>
-<p class="fine">Swipe to see more. Experiences vary and no outcome is guaranteed.</p>
+<p class="fine privacy" data-i18n="reviews-privacy">🔒 Customer names, photos and phone numbers are hidden to protect their privacy.</p>
+<p class="fine" data-i18n="reviews-disclaimer">Experiences vary and no outcome is guaranteed.</p>
 </section>
 <script>function rvChk(){var s=document.getElementById('shots');if(s&&!s.children.length)document.getElementById('reviews').hidden=true}window.addEventListener('load',rvChk)</script>
 
 <section class="ready">
-  <h2 class="rt">Ready to get clarity about your situation?</h2>
-  <p>Book your personal consultation slot and continue privately with Acharya Narender Ji.</p>
-  <a class="rsv" data-pay="reserve" data-pos="bottom" href="https://wa.me/917827673637?text=Hi!%20I%20want%20to%20reserve%20my%20slot%20for%20%E2%82%B9101." target="_blank" rel="noopener noreferrer">Reserve Your Slot — <span data-price="reserve">₹101</span></a>
+  <h2 class="rt" data-i18n="ready-title">Ready to get clarity about your situation?</h2>
+  <p data-i18n="ready-description">Book your personal consultation slot and continue privately with Acharya Narender Ji.</p>
+  <a class="rsv" data-pay="reserve" data-pos="bottom" href="#"><span data-i18n="reserve">Reserve Your Slot</span> — <span class="deal-inline"><del data-list-price="reserve">₹499</del><b data-price="reserve">₹101</b><small data-discount="reserve">80% OFF</small></span> →</a>
   <div class="rsvbox">
-    <h3>Pay <span data-price="reserve">₹101</span> &amp; Reserve Your Slot</h3>
-    <p class="pdfline">📄 <b>Includes a detailed PDF report of your horoscope</b></p>
-    <p>Take your time to explain your situation directly to Acharya Narender Ji. Once he understands it, you can choose the session that is right for you.</p>
-    <b>No Time Pressure. No Hurry.</b><span>No Per Minute charges</span>
+    <h3><span data-i18n="pay-label">Pay</span> <span data-price="reserve">₹101</span> <span data-i18n="reserve">Reserve Your Slot</span></h3>
+    <p class="pdfline">📄 <b data-i18n="pdf-includes">Includes a detailed PDF report of your horoscope</b></p>
+    <p data-i18n="reserve-description">After you share your birth details, the Acharya will help you choose the session that is right for you.</p>
+    <b data-i18n="no-pressure">No Time Pressure. No Hurry.</b><span data-i18n="no-per-minute">No Per Minute charges</span>
   </div>
 </section>
 
-<h2>Common Questions</h2>
+<h2 data-i18n="common-questions">Common Questions</h2>
 <div class="faq" style="margin-top:16px">
-<details><summary>How does the consultation work?</summary><p>Choose your plan and pay. Then send your date of birth, time, place and question on WhatsApp. Acharya Narender Ji guides you on call, and you receive a written summary on WhatsApp afterwards.</p></details>
-<details><summary>Which plan is right for me?</summary><p>Kundali Analysis (<span data-price="kundali">₹999</span>) gives a clear reading of your birth chart. Detailed Kundali Analysis (<span data-price="detailed-kundali">₹1499</span>) adds deeper Dasha, timing and upay. Marriage Matchmaking Analysis (<span data-price="matchmaking">₹1499</span>) compares two Kundlis for marriage compatibility.</p></details>
-<details><summary>Is payment safe?</summary><p>Yes. Payment happens on Razorpay's secure page. We never store your card or UPI details.</p></details>
-<details><summary>What if I don't know my birth time?</summary><p>Share whatever you know, even an approximate time. Acharya will explain what guidance is possible with it.</p></details>
-<details><summary>Do I have to fill the form before paying?</summary><p>No, every field is optional. You can pay first and send your details on WhatsApp.</p></details>
-<details><summary>Is my information private?</summary><p>Yes. Your birth details and conversation are kept confidential.</p></details>
-<details><summary>Is a result guaranteed?</summary><p>Astrology is guidance based on Vedic tradition, so no specific result can be guaranteed. See our Refund Policy for refund terms.</p></details>
+<details><summary data-i18n="faq-how">How does the consultation work?</summary><p data-i18n="faq-how-answer">Choose your plan, select an appointment slot and pay securely. Then add your birth details on the next page. Acharya Narender Ji guides you on a call, and you receive a written summary on WhatsApp afterwards.</p></details>
+<details><summary data-i18n="faq-plan">Which plan is right for me?</summary><p><span data-i18n="faq-plan-kundali">Kundali Analysis</span> (<span data-price="kundali">₹999</span>) <span data-i18n="faq-plan-kundali-desc">gives a clear reading of your birth chart.</span> <span data-i18n="faq-plan-detailed">Detailed Kundali Analysis</span> (<span data-price="detailed-kundali">₹1499</span>) <span data-i18n="faq-plan-detailed-desc">adds deeper Dasha, timing and upay.</span> <span data-i18n="faq-plan-match">Marriage Matchmaking Analysis</span> (<span data-price="matchmaking">₹1499</span>) <span data-i18n="faq-plan-match-desc">compares two Kundlis for marriage compatibility.</span></p></details>
+<details><summary data-i18n="faq-payment">Is payment safe?</summary><p data-i18n="faq-payment-answer">Yes. Payment happens on Razorpay's secure page. We never store your card or UPI details.</p></details>
+<details><summary data-i18n="faq-time">What if I don't know my birth time?</summary><p data-i18n="faq-time-answer">Share whatever you know, even an approximate time. Acharya will explain what guidance is possible with it.</p></details>
+<details><summary data-i18n="faq-form">Do I have to fill the form before paying?</summary><p data-i18n="faq-form-answer">No, you can choose your appointment and pay first, then share your birth details on the next page.</p></details>
+<details><summary data-i18n="faq-private">Is my information private?</summary><p data-i18n="faq-private-answer">Yes. Your birth details and conversation are kept confidential.</p></details>
+<details><summary data-i18n="faq-result">Is a result guaranteed?</summary><p data-i18n="faq-result-answer">Astrology is guidance based on Vedic tradition, so no specific result can be guaranteed. See our Refund Policy for refund terms.</p></details>
 </div>
 </main>
-<footer>© 2026 ASTROJAK · <a href="/home">Home</a> · <a href="/home#plans">Plans</a> · <a href="/home#refund-policy">Refund Policy</a> · <a href="/home#privacy-policy">Privacy Policy</a></footer>
+<footer>© 2026 ASTROJAK · <a href="/home" data-i18n="footer-home">Home</a> · <a href="/home#plans" data-i18n="footer-plans">Plans</a> · <a href="/home#refund-policy" data-i18n="footer-refund">Refund Policy</a> · <a href="/home#privacy-policy" data-i18n="footer-privacy">Privacy Policy</a></footer>
 
 <script>
 (function(){
-var P={};Object.keys(PRICING.plans).forEach(function(k){if(k!=='reserve')P[k]={n:PRICING.plans[k].name,p:PRICING.symbol+PRICING.plans[k].price}});
+var P={};Object.keys(PRICING.plans).forEach(function(k){if(k!=='reserve')P[k]={n:PRICING.plans[k].name,p:PRICING.symbol+PRICING.plans[k].price,price:PRICING.plans[k].price,listPrice:PRICING.plans[k].listPrice}});
 var $=function(i){return document.getElementById(i)};
+var LANG={
+ en:{
+  'booking-title':'Book Consultation with Acharya Narender Ji','back-home':'Home','acharya-name':'Acharya Narender Ji','hero-role':'Vedic Astrologer · Kundli Expert','hero-question':'Need Clear Answers?','hero-ask':'Ask Your Kundli','hero-description':'Understand what your Kundli shows, what is happening now, and the right upay to move forward.','pill-marriage':'💍 Marriage','pill-career':'🚀 Career','pill-love':'❤️ Love Life','years':'20+ Years','experience':'of Experience','consultations':'Consultations','reserve':'Reserve Your Slot','call-duration':'10-minute 1:1 call with astrologer','secure-pay':'🔒 Secure Razorpay checkout · UPI, cards & netbanking','what-get':'What you get for','pdf-report':'Detailed PDF report of your horoscope','pdf-includes':'Includes a detailed PDF report of your horoscope','pdf-description':'Your Kundli explained in a personal report you can keep and share','clear-direction':'Clear direction on your next step','direction-description':'Know which session suits you: Kundali Analysis or Detailed Kundali Analysis','private':'100% private, no per-minute charges','private-description':'Your birth details and conversation stay confidential','how-works':'How it works','pay-label':'Pay','reserve-secure':'Reserve your slot securely','share-details':'Share details','share-details-description':'Send birth details and your question on WhatsApp','get-guidance':'Get guidance','guidance-description':'Talk to Acharya Ji and receive your PDF report','mind-title':'Which problem you want to discuss?','mind-hint':'Select all that apply','more-topics':'Show more topics ▾','more-topics-less':'Show fewer topics ▴','slot-title':'Choose your 1:1 call appointment','slot-hint':'Select a date, then choose an available 3-hour time slot. All times are India time (IST).','slot-select':'Available appointment times','choose-date':'Choose a date to see available times.','calendar-empty':'One time is booked. Select one of the remaining slots.','booked':' · Booked','selected':'Selected:','amount-payable':'Amount payable:','choose-plan':'Choose your analysis','pay-now':'Pay Now','what-you-get':'What You Get','compare-plans':'Compare the three plans','customer-reviews':'Customer Reviews','reviews-rating':'⭐ 4.98 rating · 1000+ consultations','flat-fee':'Flat fee per plan. No hidden charges, no upsells.','reviews-privacy':'🔒 Customer names, photos and phone numbers are hidden to protect their privacy.','reviews-disclaimer':'Experiences vary and no outcome is guaranteed.','book-whatsapp':'Book on WhatsApp','intro':'A consultation with Acharya Narender Ji is a 1:1 audio call with our astrologer and a personal reading of your Kundli. Pick the analysis that suits your need, pay once, and get honest Vedic guidance with a clear upay.','ready-title':'Ready to get clarity about your situation?','ready-description':'Book your personal consultation slot and continue privately with Acharya Narender Ji.','reserve-description':'After you share your birth details, the Acharya will help you choose the session that is right for you.','no-pressure':'No Time Pressure. No Hurry.','no-per-minute':'No Per Minute charges','common-questions':'Common Questions','other-placeholder':'Type what is on your mind','topics-count':'{n} selected','slot-error':'Please choose an appointment date and an available time slot.','slot-past-error':'Please choose today or a future date.','calendar-label':'Calendar','prev-month':'Previous month','next-month':'Next month','today':'Today','table-feature':'What you get','table-kundali':'Kundali','table-detailed':'Detailed Kundali','table-matchmaking':'Matchmaking','table-price':'Price','table-audio':'1:1 audio call with our astrologer','table-chart':'Birth chart (Kundli) reading','table-dasha':'Dasha & timing guidance','table-remedies':'Personal upay (remedies)','table-match':'Two Kundlis compared (Guna Milan, Manglik)','table-best':'Best for','table-overview':'Overview of your chart','table-review':'Full life review','table-marriage':'Marriage decision','faq-how':'How does the consultation work?','faq-how-answer':'Choose your plan, select an appointment slot and pay securely. Then add your birth details on the next page. Acharya Narender Ji guides you on a call, and you receive a written summary on WhatsApp afterwards.','faq-plan':'Which plan is right for me?','faq-plan-answer':'Kundali Analysis gives a clear reading of your birth chart. Detailed Kundali Analysis adds deeper Dasha, timing and upay. Marriage Matchmaking Analysis compares two Kundlis for marriage compatibility.','faq-payment':'Is payment safe?','faq-payment-answer':"Yes. Payment happens on Razorpay's secure page. We never store your card or UPI details.",'faq-time':'What if I don’t know my birth time?','faq-time-answer':'Share whatever you know, even an approximate time. Acharya will explain what guidance is possible with it.','faq-form':'Do I have to fill the form before paying?','faq-form-answer':'No, you can choose your appointment and pay first, then share your birth details on the next page.','faq-private':'Is my information private?','faq-private-answer':'Yes. Your birth details and conversation are kept confidential.','faq-result':'Is a result guaranteed?','faq-result-answer':'Astrology is guidance based on Vedic tradition, so no specific result can be guaranteed. See our Refund Policy for refund terms.'
+ },
+ hing:{
+  'booking-title':'Acharya Narender Ji ke saath Consultation Book Karein','back-home':'Home','acharya-name':'Acharya Narender Ji','hero-role':'Vedic Astrologer · Kundli Expert','hero-question':'Clear Answers Chahiye?','hero-ask':'Apni Kundli Poochhein','hero-description':'Apni Kundli mein kya hai, abhi kya chal raha hai aur aage badhne ka sahi upay samjhein.','pill-marriage':'💍 Marriage','pill-career':'🚀 Career','pill-love':'❤️ Love Life','years':'20+ Saal','experience':'ka Experience','consultations':'Consultations','reserve':'Apna Slot Reserve Karein','call-duration':'Astrologer ke saath 10-minute ki 1:1 call','secure-pay':'🔒 Secure Razorpay payment · UPI, cards aur netbanking','what-get':'Aapko milega','pdf-report':'Aapki horoscope ki detailed PDF report','pdf-includes':'Aapki horoscope ki detailed PDF report shaamil hai','pdf-description':'Aapki Kundli ek personal report mein samjhai jayegi, jise aap save aur share kar sakte hain','clear-direction':'Agle kadam ke liye saaf raasta','direction-description':'Jaanein aapke liye kaunsa session sahi hai: Kundali Analysis ya Detailed Kundali Analysis','private':'100% private, per-minute charges nahi','private-description':'Aapki birth details aur baatcheet confidential rahegi','how-works':'Kaise kaam karta hai','pay-label':'Pay karein','reserve-secure':'Apna slot securely reserve karein','share-details':'Details share karein','share-details-description':'Birth details aur apna sawaal WhatsApp par bhejein','get-guidance':'Guidance paayein','guidance-description':'Acharya Ji se baat karein aur PDF report paayein','mind-title':'Aap kis problem par baat karna chahte hain?','mind-hint':'Jo lagu ho, sab chunein','more-topics':'Aur topics dekhein ▾','more-topics-less':'Kam topics dekhein ▴','slot-title':'Apni 1:1 call ka appointment chunein','slot-hint':'Date chunein, phir available 3-hour time slot select karein. Sabhi samay India time (IST) hain.','slot-select':'Available appointment times','choose-date':'Available time dekhne ke liye date chunein.','calendar-empty':'Ek time booked hai. Baaki slots mein se chunein.','booked':' · Booked','selected':'Chuna gaya:','amount-payable':'Pay karne ki rakam:','choose-plan':'Apna analysis chunein','pay-now':'Abhi pay karein','what-you-get':'Aapko kya milega','compare-plans':'Teen plans compare karein','customer-reviews':'Customer Reviews','reviews-rating':'⭐ 4.98 rating · 1000+ consultations','flat-fee':'Har plan ki fixed fee. Koi hidden charge ya upsell nahi.','reviews-privacy':'🔒 Privacy ke liye customers ke naam, photos aur phone numbers hide kiye gaye hain.','reviews-disclaimer':'Har experience alag ho sakta hai; kisi result ki guarantee nahi.','book-whatsapp':'WhatsApp par book karein','intro':'Acharya Narender Ji ke saath consultation, hamare astrologer ke saath 1:1 audio call aur aapki Kundli ka personal reading hai. Apni zaroorat ka analysis chunein, ek baar payment karein aur sahi Vedic guidance aur upay paayein.','ready-title':'Apni situation ko samajhne ke liye taiyaar hain?','ready-description':'Apna personal consultation slot book karein aur Acharya Narender Ji se private guidance paayein.','reserve-description':'Birth details share karne ke baad Acharya Ji aapke liye sahi session chunne mein madad karenge.','no-pressure':'Koi jaldi nahi. Aaram se baat karein.','no-per-minute':'Per-minute charge nahi','common-questions':'Aam sawaal','other-placeholder':'Apna sawaal yahan likhein','topics-count':'{n} select kiye','slot-error':'Payment se pehle appointment date aur available time slot chunein.','slot-past-error':'Aaj ya aage ki date chunein.','calendar-label':'Calendar','prev-month':'Pichhla mahina','next-month':'Agla mahina','today':'Aaj','table-feature':'Aapko kya milega','table-kundali':'Kundali','table-detailed':'Detailed Kundali','table-matchmaking':'Marriage Matchmaking','table-price':'Price','table-audio':'Astrologer ke saath 1:1 audio call','table-chart':'Janam Kundli reading','table-dasha':'Dasha aur timing guidance','table-remedies':'Personal upay (remedies)','table-match':'Do Kundli ka milan (Guna Milan, Manglik)','table-best':'Kis ke liye','table-overview':'Aapki Kundli ka overview','table-review':'Poore jeevan ka review','table-marriage':'Shaadi ka faisla'
+ },
+ hi:{
+  'booking-title':'आचार्य नरेंद्र जी से परामर्श बुक करें','back-home':'Home','acharya-name':'आचार्य नरेंद्र जी','hero-role':'वैदिक ज्योतिषी · कुंडली विशेषज्ञ','hero-question':'स्पष्ट जवाब चाहिए?','hero-ask':'अपनी कुंडली पूछें','hero-description':'जानें कि आपकी कुंडली क्या बताती है, अभी क्या चल रहा है और आगे बढ़ने का सही उपाय क्या है।','pill-marriage':'💍 विवाह','pill-career':'🚀 करियर','pill-love':'❤️ प्रेम जीवन','years':'20+ वर्ष','experience':'का अनुभव','consultations':'परामर्श','reserve':'अपना समय बुक करें','call-duration':'ज्योतिषी के साथ 10 मिनट की 1:1 कॉल','secure-pay':'🔒 सुरक्षित Razorpay भुगतान · UPI, कार्ड और नेटबैंकिंग','what-get':'आपको मिलेगा','pdf-report':'आपकी जन्म कुंडली की विस्तृत PDF रिपोर्ट','pdf-includes':'आपकी जन्म कुंडली की विस्तृत PDF रिपोर्ट शामिल है','pdf-description':'आपकी कुंडली को व्यक्तिगत रिपोर्ट में समझाया जाएगा, जिसे आप सहेज और साझा कर सकते हैं','clear-direction':'अगले कदम के लिए स्पष्ट मार्गदर्शन','direction-description':'जानें कि आपके लिए कौन सा सत्र सही है: कुंडली विश्लेषण या विस्तृत कुंडली विश्लेषण','private':'100% निजी, प्रति मिनट कोई शुल्क नहीं','private-description':'आपकी जन्म जानकारी और बातचीत गोपनीय रखी जाएगी','how-works':'यह कैसे काम करता है','pay-label':'भुगतान करें','reserve-secure':'अपना समय सुरक्षित रूप से बुक करें','share-details':'जानकारी साझा करें','share-details-description':'जन्म विवरण और अपना सवाल WhatsApp पर भेजें','get-guidance':'मार्गदर्शन पाएँ','guidance-description':'आचार्य जी से बात करें और PDF रिपोर्ट पाएँ','mind-title':'\u0906\u092a \u0915\u093f\u0938 \u0938\u092e\u0938\u094d\u092f\u093e \u092a\u0930 \u091a\u0930\u094d\u091a\u093e \u0915\u0930\u0928\u093e \u091a\u093e\u0939\u0924\u0947 \u0939\u0948\u0902?','mind-hint':'लागू होने वाले सभी विकल्प चुनें','more-topics':'और विषय देखें ▾','more-topics-less':'कम विषय देखें ▴','slot-title':'अपनी 1:1 कॉल का समय चुनें','slot-hint':'तारीख चुनें, फिर उपलब्ध 3 घंटे का समय चुनें। सभी समय भारतीय समय (IST) के अनुसार हैं।','slot-select':'उपलब्ध अपॉइंटमेंट समय','choose-date':'उपलब्ध समय देखने के लिए तारीख चुनें।','calendar-empty':'एक समय बुक है। बाकी समय में से चुनें।','booked':' · बुक है','selected':'चुना गया:','amount-payable':'देय राशि:','choose-plan':'अपना विश्लेषण चुनें','pay-now':'अभी भुगतान करें','what-you-get':'आपको क्या मिलेगा','compare-plans':'तीनों प्लान की तुलना करें','customer-reviews':'ग्राहक समीक्षाएँ','reviews-rating':'⭐ 4.98 रेटिंग · 1000+ परामर्श','flat-fee':'हर प्लान का निश्चित शुल्क। कोई छिपा शुल्क या अतिरिक्त बिक्री नहीं।','reviews-privacy':'🔒 गोपनीयता के लिए ग्राहकों के नाम, फोटो और फोन नंबर छिपाए गए हैं।','reviews-disclaimer':'हर अनुभव अलग होता है; किसी परिणाम की गारंटी नहीं है।','book-whatsapp':'WhatsApp पर बुक करें','intro':'आचार्य नरेंद्र जी के साथ परामर्श में हमारे ज्योतिषी के साथ 1:1 ऑडियो कॉल और आपकी कुंडली का व्यक्तिगत विश्लेषण शामिल है। अपनी आवश्यकता के अनुसार विश्लेषण चुनें, एक बार भुगतान करें और वैदिक मार्गदर्शन व सही उपाय पाएँ।','ready-title':'अपनी स्थिति को समझने के लिए तैयार हैं?','ready-description':'अपना व्यक्तिगत परामर्श समय बुक करें और आचार्य नरेंद्र जी से गोपनीय मार्गदर्शन पाएँ।','reserve-description':'जन्म विवरण साझा करने के बाद आचार्य जी आपके लिए सही सत्र चुनने में मदद करेंगे।','no-pressure':'कोई जल्दबाज़ी नहीं। आराम से बात करें।','no-per-minute':'प्रति मिनट कोई शुल्क नहीं','common-questions':'आम सवाल','other-placeholder':'अपना सवाल यहाँ लिखें','topics-count':'{n} चुने गए','slot-error':'कृपया भुगतान से पहले अपॉइंटमेंट की तारीख और उपलब्ध समय चुनें।','slot-past-error':'आज या भविष्य की तारीख चुनें।','calendar-label':'कैलेंडर','prev-month':'पिछला महीना','next-month':'अगला महीना','today':'आज','table-feature':'आपको क्या मिलेगा','table-kundali':'कुंडली','table-detailed':'विस्तृत कुंडली','table-matchmaking':'विवाह मिलान','table-price':'शुल्क','table-audio':'ज्योतिषी के साथ 1:1 ऑडियो कॉल','table-chart':'जन्म कुंडली का विश्लेषण','table-dasha':'दशा और समय का मार्गदर्शन','table-remedies':'व्यक्तिगत उपाय','table-match':'दो कुंडलियों का मिलान (गुण मिलान, मांगलिक)','table-best':'किसके लिए सही','table-overview':'कुंडली का संक्षिप्त विश्लेषण','table-review':'पूरे जीवन का विश्लेषण','table-marriage':'विवाह का निर्णय'
+ }
+};
+Object.assign(LANG.en,{
+ 'faq-plan-kundali':'Kundali Analysis','faq-plan-kundali-desc':'gives a clear reading of your birth chart.','faq-plan-detailed':'Detailed Kundali Analysis','faq-plan-detailed-desc':'adds deeper Dasha, timing and upay.','faq-plan-match':'Marriage Matchmaking Analysis','faq-plan-match-desc':'compares two Kundlis for marriage compatibility.','after-payment':' · after payment, add your birth details on the next page','footer-home':'Home','footer-plans':'Plans','footer-refund':'Refund Policy','footer-privacy':'Privacy Policy','sticky-reserve':'Reserve your slot','sticky-pdf':'incl. detailed PDF report'
+});
+Object.assign(LANG.hing,{
+ 'intro':'Acharya Narender Ji ke saath consultation hamare astrologer ke saath 1:1 audio call aur aapki Kundli ki personal reading hai. Apni zaroorat ka analysis chunein, ek baar payment karein aur sahi Vedic guidance aur upay paayein.','after-payment':' · payment ke baad agle page par birth details dein','footer-home':'Home','footer-plans':'Plans','footer-refund':'Refund Policy','footer-privacy':'Privacy Policy','sticky-reserve':'Apna slot reserve karein','sticky-pdf':'detailed PDF report shaamil',
+ 'ready-title':'Apni situation ke baare mein clarity paane ke liye taiyaar hain?','ready-description':'Apna personal consultation slot book karein aur Acharya Narender Ji se private guidance paayein.','pdf-includes':'Horoscope ki detailed PDF report shaamil hai','no-pressure':'Koi jaldi nahi. Aaram se baat karein.','no-per-minute':'Per-minute charges nahi','reviews-rating':'⭐ 4.98 rating · 1000+ consultations','table-feature':'Aapko kya milega','table-kundali':'Kundali','table-detailed':'Detailed Kundali','table-matchmaking':'Marriage Matchmaking','table-price':'Price','table-audio':'Astrologer ke saath 1:1 audio call','table-chart':'Janam Kundli reading','table-dasha':'Dasha aur timing guidance','table-remedies':'Personal upay','table-match':'Do Kundli ka milan (Guna Milan, Manglik)','table-best':'Kis ke liye','table-overview':'Kundli ka overview','table-review':'Poore jeevan ka review','table-marriage':'Shaadi ka faisla',
+ 'faq-how':'Consultation kaise hota hai?','faq-how-answer':'Apna plan aur appointment slot chunein, phir securely payment karein. Agle page par birth details share karein. Acharya Narender Ji call par guidance denge aur WhatsApp par written summary milegi.','faq-plan':'Kaunsa plan mere liye sahi hai?','faq-plan-answer':'Kundali Analysis aapki birth chart ki clear reading deta hai. Detailed Kundali Analysis mein Dasha, timing aur upay bhi milte hain. Marriage Matchmaking Analysis do Kundli ki compatibility batata hai.','faq-plan-kundali':'Kundali Analysis','faq-plan-kundali-desc':'aapki birth chart ki clear reading deta hai.','faq-plan-detailed':'Detailed Kundali Analysis','faq-plan-detailed-desc':'mein Dasha, timing aur upay bhi milte hain.','faq-plan-match':'Marriage Matchmaking Analysis','faq-plan-match-desc':'do Kundli ki compatibility batata hai.','faq-payment':'Kya payment safe hai?','faq-payment-answer':'Haan. Payment Razorpay ke secure page par hota hai. Hum aapke card ya UPI details save nahi karte.','faq-time':'Birth time nahi pata ho toh?','faq-time-answer':'Jo bhi jaankari ho, approximate time bhi share karein. Acharya batayenge ki usse kya guidance mil sakti hai.','faq-form':'Kya pay karne se pehle details deni hongi?','faq-form-answer':'Nahi, pehle appointment chunein aur payment karein; birth details agle page par share kar sakte hain.','faq-private':'Kya meri jaankari private rahegi?','faq-private-answer':'Haan. Aapki birth details aur baatcheet confidential rakhi jaati hai.','faq-result':'Kya result ki guarantee hai?','faq-result-answer':'Jyotish Vedic parampara par aadharit guidance hai, kisi khaas result ki guarantee nahi. Refund terms ke liye Refund Policy dekhein.'
+});
+Object.assign(LANG.hi,{
+ 'intro':'आचार्य नरेंद्र जी के साथ परामर्श में ज्योतिषी के साथ 1:1 ऑडियो कॉल और आपकी कुंडली का व्यक्तिगत विश्लेषण शामिल है। अपनी आवश्यकता के अनुसार विश्लेषण चुनें, एक बार भुगतान करें और वैदिक मार्गदर्शन व सही उपाय पाएँ।','after-payment':' · भुगतान के बाद अगले पेज पर जन्म विवरण दें','footer-home':'होम','footer-plans':'प्लान','footer-refund':'रिफंड नीति','footer-privacy':'गोपनीयता नीति','sticky-reserve':'अपना समय बुक करें','sticky-pdf':'विस्तृत PDF रिपोर्ट शामिल',
+ 'ready-title':'अपनी स्थिति को समझने के लिए तैयार हैं?','ready-description':'अपना व्यक्तिगत परामर्श समय बुक करें और आचार्य नरेंद्र जी से गोपनीय मार्गदर्शन पाएँ।','pdf-includes':'आपकी जन्म कुंडली की विस्तृत PDF रिपोर्ट शामिल है','no-pressure':'कोई जल्दबाज़ी नहीं। आराम से बात करें।','no-per-minute':'प्रति मिनट कोई शुल्क नहीं','reviews-rating':'⭐ 4.98 रेटिंग · 1000+ परामर्श','table-feature':'आपको क्या मिलेगा','table-kundali':'कुंडली','table-detailed':'विस्तृत कुंडली','table-matchmaking':'विवाह मिलान','table-price':'शुल्क','table-audio':'ज्योतिषी के साथ 1:1 ऑडियो कॉल','table-chart':'जन्म कुंडली का विश्लेषण','table-dasha':'दशा और समय का मार्गदर्शन','table-remedies':'व्यक्तिगत उपाय','table-match':'दो कुंडलियों का मिलान (गुण मिलान, मांगलिक)','table-best':'किसके लिए सही','table-overview':'कुंडली का संक्षिप्त विश्लेषण','table-review':'पूरे जीवन का विश्लेषण','table-marriage':'विवाह का निर्णय',
+ 'faq-how':'परामर्श कैसे होता है?','faq-how-answer':'अपना प्लान और अपॉइंटमेंट समय चुनें, फिर सुरक्षित भुगतान करें। अगले पेज पर जन्म विवरण दें। आचार्य नरेंद्र जी कॉल पर मार्गदर्शन देंगे और WhatsApp पर लिखित सारांश मिलेगा।','faq-plan':'मेरे लिए कौन सा प्लान सही है?','faq-plan-answer':'कुंडली विश्लेषण आपकी जन्म कुंडली का स्पष्ट विश्लेषण देता है। विस्तृत कुंडली विश्लेषण में दशा, समय और उपाय शामिल हैं। विवाह मिलान विश्लेषण दो कुंडलियों की अनुकूलता बताता है।','faq-plan-kundali':'कुंडली विश्लेषण','faq-plan-kundali-desc':'आपकी जन्म कुंडली का स्पष्ट विश्लेषण देता है।','faq-plan-detailed':'विस्तृत कुंडली विश्लेषण','faq-plan-detailed-desc':'में दशा, समय और उपाय शामिल हैं।','faq-plan-match':'विवाह मिलान विश्लेषण','faq-plan-match-desc':'दो कुंडलियों की अनुकूलता बताता है।','faq-payment':'क्या भुगतान सुरक्षित है?','faq-payment-answer':'हाँ। भुगतान Razorpay के सुरक्षित पेज पर होता है। हम आपके कार्ड या UPI की जानकारी सहेजते नहीं हैं।','faq-time':'जन्म का समय पता न हो तो?','faq-time-answer':'जो भी जानकारी हो, अनुमानित समय भी साझा करें। आचार्य बताएँगे कि उससे क्या मार्गदर्शन संभव है।','faq-form':'क्या भुगतान से पहले विवरण भरना होगा?','faq-form-answer':'नहीं, पहले अपॉइंटमेंट चुनकर भुगतान करें; जन्म विवरण अगले पेज पर साझा करें।','faq-private':'क्या मेरी जानकारी निजी रहेगी?','faq-private-answer':'हाँ। आपकी जन्म जानकारी और बातचीत गोपनीय रखी जाती है।','faq-result':'क्या परिणाम की गारंटी है?','faq-result-answer':'ज्योतिष वैदिक परंपरा पर आधारित मार्गदर्शन है, किसी परिणाम की गारंटी नहीं। रिफंड की शर्तों के लिए Refund Policy देखें।'
+});
+var PLAN_TEXT={
+ en:{kundali:['Kundali Analysis','Clear reading of your birth chart'],'detailed-kundali':['Detailed Kundali Analysis','Dasha, timing & upay'],'matchmaking':['Marriage Matchmaking Analysis','Kundli Milan for two people']},
+ hing:{kundali:['Kundali Analysis','Aapki janam kundli ka clear analysis'],'detailed-kundali':['Detailed Kundali Analysis','Dasha, timing aur upay'],'matchmaking':['Marriage Matchmaking Analysis','Do logon ki Kundli matching']},
+ hi:{kundali:['कुंडली विश्लेषण','आपकी जन्म कुंडली का स्पष्ट विश्लेषण'],'detailed-kundali':['विस्तृत कुंडली विश्लेषण','दशा, समय और उपाय'],'matchmaking':['विवाह मिलान विश्लेषण','दो लोगों की कुंडली का मिलान']}
+};
+var TOPIC_TEXT={
+ en:{Business:'Business',Career:'Career',Finance:'Finance',Marriage:'Marriage',Relationships:'Relationships',Health:'Health',Education:'Education',Children:'Children',Family:'Family',Property:'Property','Legal Matters':'Legal Matters','Foreign Opportunities':'Foreign Opportunities',Relocation:'Relocation','Personal Growth':'Personal Growth','Life Purpose':'Life Purpose','Spiritual Growth':'Spiritual Growth','Major Decisions':'Major Decisions',Timing:'Timing','Obstacles & Delays':'Obstacles & Delays','Reputation & Status':'Reputation & Status',Partnership:'Partnership',Investments:'Investments','Success & Recognition':'Success & Recognition','Life Transitions':'Life Transitions',Other:'Other'},
+ hing:{Business:'Business',Career:'Career',Finance:'Finance',Marriage:'Marriage',Relationships:'Relationships',Health:'Health',Education:'Education',Children:'Children',Family:'Family',Property:'Property','Legal Matters':'Legal Matters','Foreign Opportunities':'Foreign Opportunities',Relocation:'Relocation','Personal Growth':'Personal Growth','Life Purpose':'Life Purpose','Spiritual Growth':'Spiritual Growth','Major Decisions':'Major Decisions',Timing:'Timing','Obstacles & Delays':'Rukawatein','Reputation & Status':'Pehchaan aur status',Partnership:'Partnership',Investments:'Investments','Success & Recognition':'Success aur pehchaan','Life Transitions':'Badlaav',Other:'Other'},
+ hi:{Business:'व्यापार',Career:'करियर',Finance:'वित्त',Marriage:'विवाह',Relationships:'रिश्ते',Health:'स्वास्थ्य',Education:'शिक्षा',Children:'संतान',Family:'परिवार',Property:'संपत्ति','Legal Matters':'कानूनी मामले','Foreign Opportunities':'विदेश के अवसर',Relocation:'स्थान परिवर्तन','Personal Growth':'व्यक्तिगत विकास','Life Purpose':'जीवन का उद्देश्य','Spiritual Growth':'आध्यात्मिक विकास','Major Decisions':'महत्वपूर्ण निर्णय',Timing:'समय','Obstacles & Delays':'बाधाएँ और देरी','Reputation & Status':'प्रतिष्ठा और मान-सम्मान',Partnership:'साझेदारी',Investments:'निवेश','Success & Recognition':'सफलता और पहचान','Life Transitions':'जीवन में बदलाव',Other:'अन्य'}
+};
+Object.assign(LANG.en,{ 'calendar-empty':'Select one of the available time slots.','spots-left':'{n} spots left','day-full':'All time slots on this date are marked booked.','discount-label':'% OFF','scarcity-tag':'Only {n} slots left · per time slot'});
+Object.assign(LANG.hing,{ 'calendar-empty':'Available time slot mein se chunein.','spots-left':'{n} slots baaki','day-full':'Is date ke sabhi time slots booked dikhaye gaye hain.','discount-label':'% OFF','scarcity-tag':'Sirf {n} slots baaki · har time slot'});
+Object.assign(LANG.hi,{ 'calendar-empty':'उपलब्ध समय में से एक चुनें।','spots-left':'{n} स्थान बाकी','day-full':'इस तारीख के सभी समय बुक दिखाए गए हैं।','discount-label':'% की छूट','scarcity-tag':'केवल {n} स्लॉट बाकी · हर समय स्लॉट'});
+var language='en';
+function tr(key){return LANG[language][key]||LANG.en[key]||key}
+function setLanguage(lang){
+ language=LANG[lang]?lang:'en';window.ASTROJAK_LANGUAGE=language;document.documentElement.lang=language==='hi'?'hi':'en';
+ [].forEach.call(document.querySelectorAll('[data-i18n]'),function(el){el.textContent=tr(el.getAttribute('data-i18n'))});
+ [].forEach.call(document.querySelectorAll('[data-lang]'),function(b){var on=b.getAttribute('data-lang')===language;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
+ document.querySelectorAll('.lang-switch').forEach(function(el){el.setAttribute('aria-label',language==='hi'?'भाषा':'Language')});
+ $('calPrev').setAttribute('aria-label',tr('prev-month'));$('calNext').setAttribute('aria-label',tr('next-month'));
+ $('pcards').setAttribute('aria-label',tr('choose-plan'));
+ $('appointmentSlots').setAttribute('aria-label',tr('slot-select'));
+ [].forEach.call(document.querySelectorAll('.chip'),function(label){var input=label.querySelector('input'),span=label.querySelector('span'),icon=span.querySelector('i');span.textContent='';span.appendChild(icon);span.appendChild(document.createTextNode(TOPIC_TEXT[language][input.value]||input.value))});
+ $('otherTxt').placeholder=tr('other-placeholder');
+ var monthName=$('calMonth').getAttribute('data-month');
+ if(monthName)$('calMonth').textContent=monthName;
+ var planNames=PLAN_TEXT[language];
+ Object.keys(planNames).forEach(function(id){if(P[id])P[id].displayName=planNames[id][0];if(P[id])P[id].displayNote=planNames[id][1]});
+ [].forEach.call(document.querySelectorAll('.pc'),function(c){var d=P[c.getAttribute('data-k')];if(d){c.querySelector('.tx b').textContent=d.displayName;c.querySelector('.tx small').textContent=d.displayNote;var pop=c.querySelector('.pop'),off=c.querySelector('.price-stack small');if(pop)pop.textContent=language==='hi'?'सबसे लोकप्रिय':language==='hing'?'Popular':'Most Popular';if(off)off.textContent=Math.round((d.listPrice-d.price)/d.listPrice*100)+tr('discount-label')}});
+ [].forEach.call(document.querySelectorAll('[data-discount]'),function(el){var d=PRICING.plans[el.getAttribute('data-discount')];if(d&&d.listPrice> d.price)el.textContent=Math.round((d.listPrice-d.price)/d.listPrice*100)+tr('discount-label')});
+ show();
+ renderCalendar();
+ renderSlots();
+ msg();
+ if(window.gtag)gtag('event','language_change',{language:language});
+ try{localStorage.setItem('lang',language)}catch(e){}
+ try{document.cookie='lang='+encodeURIComponent(language)+'; max-age=31536000; path=/; SameSite=Lax'+(location.protocol==='https:'?'; Secure':'')}catch(e){}
+}
+function initialLanguage(){
+ var cookie=document.cookie.match(/(?:^|; )lang=([^;]*)/),saved='';
+ try{if(cookie)saved=decodeURIComponent(cookie[1]);else saved=localStorage.getItem('lang')||''}catch(e){}
+ if(LANG[saved])return saved;
+ return /^hi(?:-|$)/i.test(navigator.language||'')?'hi':'en';
+}
+document.querySelectorAll('[data-lang]').forEach(function(button){button.addEventListener('click',function(){setLanguage(button.getAttribute('data-lang'))})});
+function opt(id,v,t){var o=document.createElement('option');o.value=v;o.textContent=t;$(id).appendChild(o)}
 function show(){
- var k=$('plan').value,d=P[k];
- $('sel').textContent=d.n;$('amt').textContent=d.p;$('payAmt').textContent=d.p;$('fine').textContent=d.p+' for '+d.n;
+ var k=$('plan').value,d=P[k],name=d.displayName||d.n;
+ $('payAmt').textContent=d.p; $('fine').textContent=d.p+' · '+name;
  [].forEach.call(document.querySelectorAll('.pc'),function(c){var on=c.getAttribute('data-k')===k;c.classList.toggle('on',on);c.setAttribute('aria-checked',on)});
 }
 var NOTE={'kundali':['⭐','Clear reading of your birth chart'],'detailed-kundali':['💫','Dasha, timing & upay'],'matchmaking':['💍','Kundli Milan for two people']};
 Object.keys(P).forEach(function(k){
  opt('plan',k,P[k].n+' — '+P[k].p);
  var c=document.createElement('button');c.type='button';c.className='pc';c.setAttribute('role','radio');c.setAttribute('data-k',k);
- c.innerHTML=(k==='detailed-kundali'?'<em class="pop">Most Popular</em>':'')+'<i>'+NOTE[k][0]+'</i><div class="tx"><b>'+P[k].n+'</b><small>'+NOTE[k][1]+'</small></div><span class="pp">'+P[k].p+'</span>';
+ var off=Math.round((P[k].listPrice-P[k].price)/P[k].listPrice*100);
+ c.innerHTML=(k==='detailed-kundali'?'<em class="pop">Most Popular</em>':'')+'<i>'+NOTE[k][0]+'</i><div class="tx"><b>'+P[k].n+'</b><small>'+NOTE[k][1]+'</small></div><span class="pp price-stack"><span><del>'+PRICING.symbol+P[k].listPrice+'</del>'+P[k].p+'</span><small>'+off+tr('discount-label')+'</small></span>';
  c.addEventListener('click',function(){$('plan').value=k;$('plan').dispatchEvent(new Event('change',{bubbles:true}))});
  $('pcards').appendChild(c);
 });
@@ -354,79 +520,140 @@ $('plan').value='detailed-kundali';
 $('plan').addEventListener('change',show);
 try{var q=new URLSearchParams(location.search).get('plan');if(P[q])$('plan').value=q}catch(e){}
 show();
-// Send the details to Formspree when the customer clicks the Razorpay button (or the WhatsApp button). No extra submit button.
-var FORMSPREE='https://formspree.io/f/moejvjbn',lastSig='',lastAt=0;
-function send(src){try{
- var v=function(i){return ($(i).value||'').trim()},k=$('plan').value,d=P[k];
- var t=[].map.call(document.querySelectorAll('.chip input:checked'),function(x){return x.value});
- var o={_subject:'ASTROJAK booking: '+d.n+' ('+d.p+')',source:src,plan:d.n,amount:d.p,topics:t.join(', '),other_topic:$('otherChk').checked?v('otherTxt'):'',name:v('name'),phone:v('phone'),email:v('email'),
-  date_of_birth:(v('yy')&&v('mm')&&v('dd'))?(v('dd')+'/'+v('mm')+'/'+v('yy')):'',birth_time:(v('hh')&&v('mi')&&v('ap'))?(v('hh')+':'+v('mi')+' '+v('ap')):'',birth_place:v('place'),page:location.href};
- var sig=JSON.stringify(o),now=Date.now();
- if(sig===lastSig&&now-lastAt<10000)return;
- lastSig=sig;lastAt=now;
- // FormData = a "simple" request (no CORS preflight), the format Formspree handles best
- var fd=new FormData();Object.keys(o).forEach(function(n){if(o[n]!=='')fd.append(n,o[n])});
- fetch(FORMSPREE,{method:'POST',headers:{'Accept':'application/json'},body:fd,keepalive:true})
-  .then(function(r){if(!r.ok){r.text().then(function(x){console.warn('Formspree rejected the submission',r.status,x)})}})
-  .catch(function(e){console.warn('Formspree fetch failed, trying beacon',e);try{navigator.sendBeacon(FORMSPREE,fd)}catch(_){}});
-}catch(e){console.warn('send() error',e)}}
-// pay.js handles the Pay Now button: before it opens Razorpay we save the details (Formspree) and pre-fill the payment page
-window.PAY_HOOK={before:function(id){if(id!=='reserve')send('Razorpay button')},customer:function(){var v=function(i){return ($(i).value||'').trim()};return{name:v('name'),email:v('email'),contact:v('phone')}}};
-$('wa').addEventListener('click',function(){send('WhatsApp button')});
-function opt(id,v,t){var o=document.createElement('option');o.value=v;o.textContent=t;$(id).appendChild(o)}
-try{
-for(var y=new Date().getFullYear();y>=1920;y--)opt('yy',y,y);
-['January','February','March','April','May','June','July','August','September','October','November','December'].forEach(function(m,i){opt('mm',i+1,m)});
-for(var d=1;d<=31;d++)opt('dd',d,d);
-for(var h=1;h<=12;h++)opt('hh',h,h);
-for(var m=0;m<60;m++)opt('mi',m,(m<10?'0':'')+m);
-}catch(e){}
-
-// "What is on your mind" counter + WhatsApp message built from the form
+var SLOT_LABELS=['09:00 AM – 12:00 PM','12:00 PM – 03:00 PM','03:00 PM – 06:00 PM','06:00 PM – 09:00 PM'];
+var selectedSlot=null,selectedDate='',SLOT_KEY='astrojak_slot_checkout_count_v1_',CAPACITY=5;
+var viewMonth=new Date(Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),1));
+function istDate(){
+ var d=new Date(Date.now()+330*60000);
+ return d.getUTCFullYear()+'-'+('0'+(d.getUTCMonth()+1)).slice(-2)+'-'+('0'+d.getUTCDate()).slice(-2);
+}
+function slotCount(date,index){
+ try{
+  var count=Number(localStorage.getItem(SLOT_KEY+date+'_'+index));
+  return Number.isInteger(count)?Math.max(0,Math.min(CAPACITY,count)):0;
+ }catch(e){return 0}
+}
+function remainingSlots(date,index){return CAPACITY-slotCount(date,index)}
+function countLocalCheckout(date,index){
+ var count=slotCount(date,index);
+ if(count>=CAPACITY)return false;
+ try{localStorage.setItem(SLOT_KEY+date+'_'+index,String(count+1));return true}
+ catch(e){console.error('Could not save local slot estimate',e);return false}
+}
+function dateLabel(date){
+ var p=date.split('-'),d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));
+ return new Intl.DateTimeFormat(language==='hi'?'hi-IN':'en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(d);
+}
+function renderCalendar(){
+ var grid=$('calendarGrid'),yr=viewMonth.getUTCFullYear(),mo=viewMonth.getUTCMonth(),first=new Date(Date.UTC(yr,mo,1)).getUTCDay(),days=new Date(Date.UTC(yr,mo+1,0)).getUTCDate(),min=istDate();
+ var locale=language==='hi'?'hi-IN':'en-IN';
+ $('calMonth').textContent=new Intl.DateTimeFormat(locale,{month:'long',year:'numeric',timeZone:'UTC'}).format(viewMonth);
+ $('calPrev').disabled=yr===+min.slice(0,4)&&mo===+min.slice(5,7)-1;
+ grid.innerHTML='';
+ var weekdays=language==='hi'?['रवि','सोम','मंगल','बुध','गुरु','शुक्र','शनि']:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+ weekdays.forEach(function(day){var el=document.createElement('span');el.className='cal-weekday';el.setAttribute('role','columnheader');el.textContent=day;grid.appendChild(el)});
+ for(var i=0;i<first;i++){var blank=document.createElement('span');blank.setAttribute('aria-hidden','true');grid.appendChild(blank)}
+ for(var day=1;day<=days;day++){
+  var date=yr+'-'+('0'+(mo+1)).slice(-2)+'-'+('0'+day).slice(-2);
+  var button=document.createElement('button');button.type='button';button.className='cal-day';button.setAttribute('role','gridcell');button.textContent=language==='hi'?new Intl.NumberFormat('hi-IN').format(day):String(day);
+  if(date<min)button.disabled=true;
+  if(date===min)button.classList.add('today');
+  if(date===selectedDate){button.classList.add('selected');button.setAttribute('aria-pressed','true')}else button.setAttribute('aria-pressed','false');
+  button.setAttribute('aria-label',dateLabel(date));
+  button.addEventListener('click',function(selected){return function(){
+   selectedDate=selected;selectedSlot=null;$('calendarSlots').hidden=false;
+   $('calendarSelection').textContent=dateLabel(selected);
+   renderCalendar();renderSlots();msg();
+  }}(date));
+  grid.appendChild(button);
+ }
+}
+function renderSlots(){
+ var date=selectedDate,box=$('appointmentSlots');
+ box.innerHTML='';
+ if(!date){$('calendarSlots').hidden=true;$('calendarSelection').textContent=tr('choose-date');$('slotScarcity').textContent=tr('scarcity-tag').replace('{n}',CAPACITY);$('slotScarcity').hidden=false;return}
+ var available=0;
+ var mostRemaining=0;
+ SLOT_LABELS.forEach(function(label,index){
+  var b=document.createElement('button'),remaining=remainingSlots(date,index);b.type='button';b.className='slot-option'+(index===selectedSlot?' selected':'');
+  mostRemaining=Math.max(mostRemaining,remaining);
+  b.textContent=displaySlot(label)+(remaining?' · '+tr('spots-left').replace('{n}',remaining):tr('booked'));
+  if(remaining===0){b.disabled=true;b.textContent=displaySlot(label)+tr('booked');b.setAttribute('aria-label',b.textContent)}
+  else {available++;b.addEventListener('click',function(){
+   selectedSlot=index;
+   [].forEach.call(box.querySelectorAll('.slot-option'),function(option){option.classList.remove('selected')});
+   b.classList.add('selected');
+   $('calendarSelection').textContent=dateLabel(date)+' · '+displaySlot(label)+' IST · '+tr('spots-left').replace('{n}',remainingSlots(date,index));
+   $('appointmentError').hidden=true;msg();
+  })}
+  box.appendChild(b);
+ });
+ $('slotScarcity').hidden=mostRemaining===0;
+ $('slotScarcity').textContent=tr('scarcity-tag').replace('{n}',mostRemaining);
+ if(selectedSlot!==null&&remainingSlots(date,selectedSlot)===0)selectedSlot=null;
+ if(selectedSlot===null)$('calendarSelection').textContent=dateLabel(date)+' · '+(available?tr('calendar-empty'):tr('day-full'));
+ else $('calendarSelection').textContent=dateLabel(date)+' · '+displaySlot(SLOT_LABELS[selectedSlot])+' IST';
+ $('appointmentError').hidden=true;
+}
+function displaySlot(label){
+ if(language==='en')return label;
+ var hindi={'09:00 AM – 12:00 PM':'सुबह 09:00 – दोपहर 12:00','12:00 PM – 03:00 PM':'दोपहर 12:00 – 03:00','03:00 PM – 06:00 PM':'दोपहर 03:00 – शाम 06:00','06:00 PM – 09:00 PM':'शाम 06:00 – 09:00'};
+ var hing={'09:00 AM – 12:00 PM':'09:00 AM – 12:00 PM (Subah)','12:00 PM – 03:00 PM':'12:00 PM – 03:00 PM (Dopahar)','03:00 PM – 06:00 PM':'03:00 PM – 06:00 PM (Dopahar)','06:00 PM – 09:00 PM':'06:00 PM – 09:00 PM (Shaam)'};
+ return(language==='hi'?hindi:hing)[label]||label;
+}
+viewMonth=new Date(Date.UTC(+istDate().slice(0,4),+istDate().slice(5,7)-1,1));
+$('calPrev').addEventListener('click',function(){viewMonth=new Date(Date.UTC(viewMonth.getUTCFullYear(),viewMonth.getUTCMonth()-1,1));renderCalendar()});
+$('calNext').addEventListener('click',function(){viewMonth=new Date(Date.UTC(viewMonth.getUTCFullYear(),viewMonth.getUTCMonth()+1,1));renderCalendar()});
+renderCalendar();
+renderSlots();
+function appointment(){
+ return selectedSlot===null||remainingSlots(selectedDate,selectedSlot)===0?null:{date:selectedDate,time:SLOT_LABELS[selectedSlot]};
+}
+function selectedTopics(){
+ return [].map.call(document.querySelectorAll('.chip input:checked'),function(x){
+  return x.value==='Other'&&$('otherTxt').value.trim()?('Other: '+$('otherTxt').value.trim()):x.value;
+ });
+}
+// Keep the selected topics and appointment attached to every payment link request.
+window.PAY_HOOK={
+ validate:function(){
+  var a=appointment(),err=$('appointmentError');
+  if(!a){err.textContent=tr('slot-error');err.hidden=false;$('slotPicker').scrollIntoView({behavior:'smooth',block:'center'});return false}
+  if(a.date<istDate()){err.textContent=tr('slot-past-error');err.hidden=false;$('slotPicker').scrollIntoView({behavior:'smooth',block:'center'});return false}
+  return true;
+ },
+ customer:function(){return{}},
+ appointment:appointment,
+ topics:selectedTopics,
+ paymentLinkCreated:function(){
+  if(!appointment()||!countLocalCheckout(selectedDate,selectedSlot))return;
+  if(remainingSlots(selectedDate,selectedSlot)===0)selectedSlot=null;
+  renderSlots();
+ }
+};
+// Update the topic count and WhatsApp message as the customer changes selections.
 function msg(){
- var v=function(i){return ($(i).value||'').trim()},L=[],k=$('plan').value,d=P[k];
+ var L=[],k=$('plan').value,d=P[k];
  L.push('Hi! I want to book '+d.n+' ('+d.p+').');
- var t=[].map.call(document.querySelectorAll('.chip input:checked'),function(x){return x.value==='Other'?('Other'+(v('otherTxt')?': '+v('otherTxt'):'')):x.value});
+ var t=selectedTopics(),a=appointment();
  if(t.length)L.push('On my mind: '+t.join(', '));
- if(v('name'))L.push('Name: '+v('name'));
- if(v('yy')&&v('mm')&&v('dd'))L.push('Date of birth: '+v('dd')+'/'+v('mm')+'/'+v('yy'));
- if(v('hh')&&v('mi')&&v('ap'))L.push('Birth time: '+v('hh')+':'+v('mi')+' '+v('ap'));
- if(v('place'))L.push('Birth place: '+v('place'));
+ if(a)L.push('Preferred appointment: '+a.date+' · '+a.time+' IST');
  $('wa').href='https://wa.me/917827673637?text='+encodeURIComponent(L.join('\n'));
  var n=t.length;$('cnt').textContent=n?n+' selected':'';
  $('otherTxt').hidden=!$('otherChk').checked;
 }
 // expand / collapse topics
-$('moreBtn').addEventListener('click',function(){var c=$('chips').classList.toggle('collapsed');this.setAttribute('aria-expanded',String(!c));this.textContent=c?'Show more topics ▾':'Show fewer topics ▴'});
-// keep form data in a browser cookie (1 year)
-var CK='astrojak_form',IDS=['plan','name','phone','email','yy','mm','dd','hh','mi','ap','place','otherTxt'];
-function ckGet(){try{var m=document.cookie.match(new RegExp('(?:^|; )'+CK+'=([^;]*)'));return m?JSON.parse(decodeURIComponent(m[1])):null}catch(e){return null}}
-function save(){try{
- var o={f:{},t:[].map.call(document.querySelectorAll('.chip input:checked'),function(x){return x.value})};
- IDS.forEach(function(i){o.f[i]=$(i).value});
- document.cookie=CK+'='+encodeURIComponent(JSON.stringify(o))+'; max-age=31536000; path=/; SameSite=Lax'+(location.protocol==='https:'?'; Secure':'');
- $('savedNote').hidden=false}catch(e){}}
-var sv=ckGet();
-if(sv){try{
- IDS.forEach(function(i){if(sv.f&&sv.f[i]!=null&&!(i==='plan'&&new URLSearchParams(location.search).get('plan')))$(i).value=sv.f[i]});
- [].forEach.call(document.querySelectorAll('.chip input'),function(x){x.checked=(sv.t||[]).indexOf(x.value)>-1});
- if(!P[$('plan').value])$('plan').value='detailed-kundali';
- $('savedNote').hidden=false;show();
-}catch(e){}}
-$('clr').addEventListener('click',function(e){e.preventDefault();
- document.cookie=CK+'=; max-age=0; path=/';
- IDS.forEach(function(i){if(i!=='plan')$(i).value=''});
- [].forEach.call(document.querySelectorAll('.chip input'),function(x){x.checked=false});
- $('savedNote').hidden=true;msg()});
+$('moreBtn').addEventListener('click',function(){var c=$('chips').classList.toggle('collapsed');this.setAttribute('aria-expanded',String(!c));this.textContent=c?tr('more-topics'):tr('more-topics-less')});
 var card=document.querySelector('.card');
-card.addEventListener('input',function(){msg();save()});
-card.addEventListener('change',function(){msg();save()});
+card.addEventListener('input',msg);
+card.addEventListener('change',msg);
+setLanguage(initialLanguage());
 msg();
 })();
 </script>
 <div class="sticky101" id="sticky101">
-  <div class="st"><b>Reserve your slot</b><small>incl. detailed PDF report</small></div>
-  <a class="rsv" data-pay="reserve" data-pos="sticky" href="#">Reserve · <span data-price="reserve">₹101</span></a>
+  <div class="st"><b data-i18n="sticky-reserve">Reserve your slot</b><small data-i18n="sticky-pdf">incl. detailed PDF report</small></div>
+  <a class="rsv" data-pay="reserve" data-pos="sticky" href="#"><span data-i18n="reserve">Reserve</span> · <span data-price="reserve">₹101</span></a>
 </div>
 <script src="/pay.js"></script>
 <script>

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://astrojak.netlify.app/sitemap.xml
+Sitemap: https://www.astrojak.in/sitemap.xml

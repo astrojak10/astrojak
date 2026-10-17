@@ -51,6 +51,7 @@
 
   var SPLITFORMS = 'https://splitforms.com/api/submit';
   var SPLITFORMS_ACCESS_KEY = '9d208e837cab446dbcaf6f562900f3e6';
+  var CHECKOUT_CONTEXT = 'astrojak_pending_checkout';
   var ov = null;
   function digits10(v) {
     var d = String(v || '').replace(/\D/g, '');
@@ -116,7 +117,22 @@
       var customer = { contact: digits10(ph) };
       var booking = window.PAY_HOOK || {};
       var appointment = booking.appointment ? booking.appointment() : null;
-      lead(id, p, customer, button.getAttribute('data-pos'), appointment);
+      var selectedPlan = booking.selectedPlan ? booking.selectedPlan() : p.name;
+      var topics = booking.topics ? booking.topics() : [];
+      var context = {
+        mobile: customer.contact,
+        plan: p.name,
+        amount: money(id),
+        selectedPlan: selectedPlan,
+        topics: topics,
+        appointment: appointment
+      };
+      try {
+        sessionStorage.setItem(CHECKOUT_CONTEXT, JSON.stringify(context));
+      } catch (err) {
+        console.error('Could not save checkout details for the thank-you page:', err);
+      }
+      lead(id, p, customer, button.getAttribute('data-pos'), appointment, selectedPlan, topics);
       closeModal(); done(customer, true);
     };
     setTimeout(function () {
@@ -125,12 +141,14 @@
       g('pmP').scrollIntoView({ block: 'nearest' });
     }, 50);
   }
-  function lead(id, p, c, pos, appointment) {
+  function lead(id, p, c, pos, appointment, selectedPlan, topics) {
     var fd = new FormData();
     fd.append('access_key', SPLITFORMS_ACCESS_KEY);
     fd.append('_subject', 'ASTROJAK booking details: ' + p.name + ' (' + money(id) + ')');
     fd.append('status', 'Mobile number captured'); fd.append('plan', p.name); fd.append('amount', money(id));
     fd.append('mobile', c.contact || '');
+    fd.append('selected_plan', selectedPlan || p.name);
+    fd.append('topics', (topics || []).join(', '));
     fd.append('appointment_date', appointment ? appointment.date : '');
     fd.append('appointment_time', appointment ? appointment.time : '');
     fd.append('button', pos || ''); fd.append('page', location.href);

@@ -81,9 +81,13 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       <input type="hidden" name="_subject" id="subject">
       <input type="hidden" name="status" value="Paid consultation details">
       <input type="hidden" name="plan" id="planField">
+      <input type="hidden" name="selected_plan" id="selectedPlanField">
       <input type="hidden" name="amount" id="amountField">
       <input type="hidden" name="payment_id" id="paymentField">
       <input type="hidden" name="appointment" id="appointmentField">
+      <input type="hidden" name="appointment_date" id="appointmentDateField">
+      <input type="hidden" name="appointment_time" id="appointmentTimeField">
+      <input type="hidden" name="topics" id="topicsField">
       <input type="hidden" name="date_of_birth" id="birthDateField">
       <input type="hidden" name="birth_time" id="birthTimeField">
       <input type="hidden" name="page" id="pageField">
@@ -95,6 +99,10 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
         <div class="field">
           <label class="lbl" for="email">Email address <span>(optional)</span></label>
           <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" maxlength="120">
+        </div>
+        <div class="field full">
+          <label class="lbl" for="mobile">Mobile / WhatsApp number</label>
+          <input id="mobile" name="mobile" type="tel" autocomplete="tel" inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" placeholder="10-digit mobile number" required>
         </div>
         <div class="field full">
           <label class="lbl">Date of birth</label>
@@ -154,6 +162,25 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   var time=q.get('appointment_time')||'';
   var appointment='';
   var wa='917827673637';
+  var checkoutContext=null;
+  try{
+    checkoutContext=JSON.parse(sessionStorage.getItem('astrojak_pending_checkout')||'null');
+  }catch(err){
+    console.error('Could not read saved checkout details:',err);
+  }
+  checkoutContext=checkoutContext&&typeof checkoutContext==='object'?checkoutContext:{};
+  var selectedPlan=String(checkoutContext.selectedPlan||'');
+  var topics=Array.isArray(checkoutContext.topics)?checkoutContext.topics:[];
+  var mobile=String(checkoutContext.mobile||'');
+  if(!mobile){
+    try{
+      var savedCustomer=JSON.parse(localStorage.getItem('astrojak_cust')||'{}');
+      mobile=String(savedCustomer.phone||'');
+    }catch(err){
+      console.error('Could not read the saved mobile number:',err);
+    }
+  }
+  $('mobile').value=mobile;
 
   function addOption(select,value,label){var option=document.createElement('option');option.value=value;option.textContent=label;select.appendChild(option)}
   var now=new Date();
@@ -172,10 +199,13 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   function detailMessage(data){
     return 'I have booked the consultation from your website'+
       '\nPlan: '+planName+(amount?' ('+amount+')':'')+
+      (selectedPlan?'\nSelected analysis: '+selectedPlan:'')+
+      (topics.length?'\nWhat I want to discuss: '+topics.join(', '):'')+
       (appointment?'\nAppointment: '+appointment+' IST':'')+
       (paymentId?'\nPayment ID: '+paymentId:'')+
       '\nName: '+data.name+
       (data.email?'\nEmail: '+data.email:'')+
+      '\nMobile: '+data.mobile+
       '\nDate of birth: '+data.birthDate+
       (data.birthTime?'\nBirth time: '+data.birthTime:'')+
       '\nBirth place: '+data.birthPlace+
@@ -208,18 +238,23 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     var form=event.currentTarget;
     var error=$('error');error.hidden=true;
     var name=$('name').value.trim(),email=$('email').value.trim(),y=$('year').value,m=$('month').value,d=$('day').value;
-    var hr=$('hour').value,mi=$('minute').value,ap=$('ampm').value,place=$('place').value.trim(),question=$('question').value.trim();
-    if(!name||!y||!m||!d||!place){error.textContent='Please complete your name, date of birth and birth place.';error.hidden=false;return}
+    var hr=$('hour').value,mi=$('minute').value,ap=$('ampm').value,place=$('place').value.trim(),question=$('question').value.trim(),customerMobile=$('mobile').value.trim();
+    if(!name||!y||!m||!d||!place||!customerMobile){error.textContent='Please complete your name, mobile number, date of birth and birth place.';error.hidden=false;return}
+    if(!/^[6-9]\d{9}$/.test(customerMobile)){error.textContent='Please enter a valid 10-digit mobile number.';error.hidden=false;return}
     if((hr||mi||ap)&&!(hr&&mi&&ap)){error.textContent='Enter the complete birth time, or leave all time fields blank.';error.hidden=false;return}
     var birthDate=('0'+d).slice(-2)+'/'+('0'+m).slice(-2)+'/'+y;
     var birthTime=hr?hr+':'+mi+' '+ap:'';
-    var data={name:name,email:email,birthDate:birthDate,birthTime:birthTime,birthPlace:place,question:question};
+    var data={name:name,email:email,mobile:customerMobile,birthDate:birthDate,birthTime:birthTime,birthPlace:place,question:question};
     var button=$('submitDetails');
     $('subject').value='ASTROJAK customer details: '+planName;
     $('planField').value=planName;
+    $('selectedPlanField').value=selectedPlan;
     $('amountField').value=amount;
     $('paymentField').value=paymentId;
     $('appointmentField').value=appointment?appointment+' IST':'Not provided';
+    $('appointmentDateField').value=date;
+    $('appointmentTimeField').value=time;
+    $('topicsField').value=topics.join(', ');
     $('birthDateField').value=birthDate;
     $('birthTimeField').value=birthTime||'Not known';
     $('pageField').value=location.href;
@@ -234,6 +269,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       if(result.success){
         form.reset();
         showWhatsApp(data);
+        try{sessionStorage.removeItem('astrojak_pending_checkout')}catch(err){console.error('Could not clear saved checkout details:',err)}
         $('detailsCard').hidden=true;$('doneCard').hidden=false;
         try{if(window.gtag)gtag('event','consultation_details_submitted',{plan:ref})}catch(e){}
       }else{

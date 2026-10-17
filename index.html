@@ -236,7 +236,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
 .sticky101.show{transform:none}
 .sticky101 .st{flex:1;min-width:0}.sticky101 .st b{display:block;font-size:14px;line-height:1.25}.sticky101 .st small{font-size:12px;color:var(--muted)}
 .sticky101 .rsv{width:auto;margin:0;flex:0 0 auto;padding:12px 18px;font-size:15px}
-@media(max-width:700px){.sticky101{display:flex}body{padding-bottom:84px}}
+@media(max-width:700px){.sticky101{display:flex}body{padding-bottom:84px}.sticky101 .rsv{white-space:nowrap;padding:10px 8px;font-size:12px}.sticky101 .rsv .deal-inline del,.sticky101 .rsv .deal-inline small{display:inline-block}.sticky101 .deal-inline{gap:3px}.sticky101 .deal-inline del{font-size:.68em}.sticky101 .deal-inline small{font-size:8px;padding:2px 4px}}
 /* ---- scroll reveal ---- */
 .js .rv{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
 .js .rv.in{opacity:1;transform:none}
@@ -649,6 +649,7 @@ window.PAY_HOOK={
  },
  customer:function(){return{}},
  appointment:appointment,
+ selectedPlan:function(){var id=$('plan').value;return P[id]?P[id].n:id},
  topics:selectedTopics,
  paymentOrderCreated:function(){
   if(!appointment()||!countLocalCheckout(selectedDate,selectedSlot))return;
@@ -678,9 +679,9 @@ msg();
 </script>
 <div class="sticky101" id="sticky101">
   <div class="st"><b data-i18n="sticky-reserve">Reserve your slot</b><small data-i18n="sticky-pdf">incl. detailed PDF report</small></div>
-  <a class="rsv" data-pay="reserve" data-pos="sticky" href="#"><span data-i18n="reserve">Reserve</span> · <span data-price="reserve">₹101</span></a>
+  <a class="rsv" data-pay="reserve" data-pos="sticky" href="#">Reserve — <span class="deal-inline"><del data-list-price="reserve">₹499</del><b data-price="reserve">₹101</b><small data-discount="reserve">80% OFF</small></span> →</a>
 </div>
-<script src="/pay.js?v=20261017-3"></script>
+<script src="/pay.js?v=20261017-6"></script>
 <script>
 (function(){
   var bar=document.getElementById('sticky101');

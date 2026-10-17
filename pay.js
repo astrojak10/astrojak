@@ -41,8 +41,8 @@
     + '.pm label{display:block;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#7A5A12;margin:12px 0 6px}.pm label span{text-transform:none;font-weight:500;letter-spacing:0}'
     + '.pm-phone{display:flex;align-items:center;gap:8px;border:1.5px solid #F2E4C4;border-radius:12px;background:#FFFDF7;color:#1A1A1A}.pm-phone:focus-within{outline:2px solid #F8B700;outline-offset:1px}.pm-prefix{padding:13px 0 13px 12px;font:inherit;font-size:16px;font-weight:700;color:#5C5C5C}.pm-phone input{flex:1;min-width:0;width:100%;font:inherit;font-size:16px;padding:13px 12px;border:0;border-radius:12px;background:transparent;color:#1A1A1A}.pm-phone input:focus{outline:0}'
     + '.pm-err{color:#C62828!important;font-weight:600;margin-top:8px!important}'
-    + '.pm .paybtn{margin-top:16px;padding-left:22px;padding-right:22px}.pm-x{display:block;width:100%;margin-top:8px;padding:12px;border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:#6b6b6b;cursor:pointer}'
-    + '@media(max-width:380px){.pm .paybtn{white-space:normal;flex-wrap:wrap;font-size:15px;padding:14px 18px}}'
+    + '.pm .paybtn{margin-top:16px;padding-left:28px;padding-right:28px}.pm-x{display:block;width:100%;margin-top:8px;padding:12px;border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:#6b6b6b;cursor:pointer}'
+    + '@media(max-width:380px){.pm .paybtn{white-space:normal;flex-wrap:wrap;font-size:15px;padding:14px 24px}}'
     + '@media (prefers-reduced-motion:reduce){.paybtn::after{animation:none;display:none}}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -61,9 +61,9 @@
   function words() {
     var lang = window.ASTROJAK_LANGUAGE || 'en';
     var copy = {
-      en: ['Enter your mobile number', 'We will use this number for your booking and WhatsApp updates.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Please enter a valid 10-digit mobile number.', 'Pay now', 'Cancel'],
-      hing: ['Apna mobile number darj karein', 'Booking aur WhatsApp updates ke liye is number ka use hoga.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Sahi 10-digit mobile number darj karein.', 'Abhi pay karein', 'Cancel'],
-      hi: ['अपना मोबाइल नंबर दर्ज करें', 'बुकिंग और WhatsApp अपडेट के लिए इस नंबर का उपयोग होगा।', 'मोबाइल / WhatsApp नंबर', '10 अंकों का मोबाइल नंबर', 'कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें।', 'भुगतान करें', 'रद्द करें']
+      en: ['Enter your mobile number', 'We will use this number for your booking and WhatsApp updates.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Please enter a valid 10-digit mobile number.', 'Pay', 'Cancel'],
+      hing: ['Apna mobile number darj karein', 'Booking aur WhatsApp updates ke liye is number ka use hoga.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Sahi 10-digit mobile number darj karein.', 'Pay karein', 'Cancel'],
+      hi: ['अपना मोबाइल नंबर दर्ज करें', 'बुकिंग और WhatsApp अपडेट के लिए इस नंबर का उपयोग होगा।', 'मोबाइल / WhatsApp नंबर', '10 अंकों का मोबाइल नंबर', 'कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें।', 'भुगतान', 'रद्द करें']
     };
     return copy[lang] || copy.en;
   }

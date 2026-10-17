@@ -110,7 +110,7 @@
     });
     g('pmC').onclick = closeModal;
     ov.addEventListener('click', function (e) { if (e.target === ov) closeModal(); });
-    g('pmGo').onclick = function () {
+    g('pmGo').onclick = async function () {
       var ph = g('pmP').value, x = g('pmX'); x.hidden = true;
       if (!validPhone(ph)) { x.textContent = w[4]; x.hidden = false; return; }
       try { localStorage.setItem('astrojak_cust', JSON.stringify({ phone: digits10(ph) })); } catch (_) {}
@@ -132,7 +132,19 @@
       } catch (err) {
         console.error('Could not save checkout details for the thank-you page:', err);
       }
-      lead(id, p, customer, button.getAttribute('data-pos'), appointment, selectedPlan, topics);
+      var submit = document.getElementById('pmGo');
+      submit.disabled = true;
+      submit.textContent = 'Saving booking details…';
+      try {
+        await lead(id, p, customer, button.getAttribute('data-pos'), appointment, selectedPlan, topics);
+      } catch (err) {
+        console.error('Could not send checkout lead to Splitforms:', err);
+        x.textContent = "Couldn't save your booking details. Please try again.";
+        x.hidden = false;
+        submit.disabled = false;
+        submit.textContent = w[5] + ' ' + money(id) + ' →';
+        return;
+      }
       closeModal(); done(customer, true);
     };
     setTimeout(function () {
@@ -144,21 +156,24 @@
   function lead(id, p, c, pos, appointment, selectedPlan, topics) {
     var fd = new FormData();
     fd.append('access_key', SPLITFORMS_ACCESS_KEY);
-    fd.append('_subject', 'ASTROJAK booking details: ' + p.name + ' (' + money(id) + ')');
-    fd.append('status', 'Mobile number captured'); fd.append('plan', p.name); fd.append('amount', money(id));
+    fd.append('_subject', 'ASTROJAK booking details: ' + (selectedPlan || p.name) + ' (' + money(id) + ')');
+    fd.append('status', 'Mobile number captured');
+    fd.append('plan', selectedPlan || p.name);
+    fd.append('payment_plan', p.name);
+    fd.append('amount', money(id));
     fd.append('mobile', c.contact || '');
     fd.append('selected_plan', selectedPlan || p.name);
     fd.append('topics', (topics || []).join(', '));
+    fd.append('discussion_topics', (topics || []).join(', '));
     fd.append('appointment_date', appointment ? appointment.date : '');
     fd.append('appointment_time', appointment ? appointment.time : '');
     fd.append('button', pos || ''); fd.append('page', location.href);
-    fetch(SPLITFORMS, { method: 'POST', headers: { Accept: 'application/json' }, body: fd, keepalive: true })
+    return fetch(SPLITFORMS, { method: 'POST', headers: { Accept: 'application/json' }, body: fd })
       .then(function (res) {
         return res.json().then(function (data) {
           if (!res.ok || !data.success) throw new Error(data.message || 'Splitforms rejected the checkout lead');
         });
-      })
-      .catch(function (err) { console.error('Could not send checkout lead to Splitforms:', err); });
+      });
   }
 
   var checkoutScript;

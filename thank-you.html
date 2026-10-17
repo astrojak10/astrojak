@@ -80,7 +80,9 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" style="display:none">
       <input type="hidden" name="_subject" id="subject">
       <input type="hidden" name="status" value="Paid consultation details">
+      <input type="hidden" name="payment_status" id="paymentStatusField">
       <input type="hidden" name="plan" id="planField">
+      <input type="hidden" name="payment_plan" id="paymentPlanField">
       <input type="hidden" name="selected_plan" id="selectedPlanField">
       <input type="hidden" name="amount" id="amountField">
       <input type="hidden" name="payment_id" id="paymentField">
@@ -88,6 +90,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       <input type="hidden" name="appointment_date" id="appointmentDateField">
       <input type="hidden" name="appointment_time" id="appointmentTimeField">
       <input type="hidden" name="topics" id="topicsField">
+      <input type="hidden" name="discussion_topics" id="discussionTopicsField">
       <input type="hidden" name="date_of_birth" id="birthDateField">
       <input type="hidden" name="birth_time" id="birthTimeField">
       <input type="hidden" name="page" id="pageField">
@@ -247,7 +250,9 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     var data={name:name,email:email,mobile:customerMobile,birthDate:birthDate,birthTime:birthTime,birthPlace:place,question:question};
     var button=$('submitDetails');
     $('subject').value='ASTROJAK customer details: '+planName;
+    $('paymentStatusField').value='Paid';
     $('planField').value=planName;
+    $('paymentPlanField').value=planName;
     $('selectedPlanField').value=selectedPlan;
     $('amountField').value=amount;
     $('paymentField').value=paymentId;
@@ -255,6 +260,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     $('appointmentDateField').value=date;
     $('appointmentTimeField').value=time;
     $('topicsField').value=topics.join(', ');
+    $('discussionTopicsField').value=topics.join(', ');
     $('birthDateField').value=birthDate;
     $('birthTimeField').value=birthTime||'Not known';
     $('pageField').value=location.href;

@@ -87,7 +87,7 @@
     ov.style.setProperty('--pm-vheight', height + 'px');
     ov.style.setProperty('--pm-max-height', Math.max(160, height - 12) + 'px');
   }
-  function openModal(id, p, pre, done) {
+  function openModal(id, p, pre, done, button) {
     var s = saved(), w = words();
     ov = document.createElement('div'); ov.className = 'pm-ov';
     ov.innerHTML = '<div class="pm" role="dialog" aria-modal="true" aria-label="' + w[0] + '"><h3>' + w[0] + '</h3><p>' + w[1] + '</p>'
@@ -113,7 +113,9 @@
       var ph = g('pmP').value, x = g('pmX'); x.hidden = true;
       if (!validPhone(ph)) { x.textContent = w[4]; x.hidden = false; return; }
       try { localStorage.setItem('astrojak_cust', JSON.stringify({ phone: digits10(ph) })); } catch (_) {}
-      closeModal(); done({ contact: digits10(ph) }, true);
+      var customer = { contact: digits10(ph) };
+      lead(id, p, customer, button.getAttribute('data-pos'));
+      closeModal(); done(customer, true);
     };
     setTimeout(function () {
       syncModalViewport();
@@ -121,13 +123,13 @@
       g('pmP').scrollIntoView({ block: 'nearest' });
     }, 50);
   }
-  function lead(id, p, c, ref, pos) {
+  function lead(id, p, c, pos) {
     var fd = new FormData();
     fd.append('access_key', SPLITFORMS_ACCESS_KEY);
-    fd.append('_subject', 'ASTROJAK payment started: ' + p.name + ' (' + money(id) + ')');
-    fd.append('status', 'Razorpay Checkout opened'); fd.append('plan', p.name); fd.append('amount', money(id));
+    fd.append('_subject', 'ASTROJAK mobile captured: ' + p.name + ' (' + money(id) + ')');
+    fd.append('status', 'Mobile number captured'); fd.append('plan', p.name); fd.append('amount', money(id));
     fd.append('phone', c.contact || '');
-    fd.append('reference_id', ref || ''); fd.append('button', pos || ''); fd.append('page', location.href);
+    fd.append('button', pos || ''); fd.append('page', location.href);
     fetch(SPLITFORMS, { method: 'POST', headers: { Accept: 'application/json' }, body: fd, keepalive: true })
       .then(function (res) {
         return res.json().then(function (data) {
@@ -216,7 +218,6 @@
       loadCheckout()
         .then(function () { return post('/create-order', body); })
         .then(function (order) {
-          if (fromModal) lead(id, p, c, order.ref, b.getAttribute('data-pos'));
           try { if (hook.paymentOrderCreated) hook.paymentOrderCreated(id, order); } catch (err) { console.error('Could not update local slot estimate', err); }
           var checkout = new window.Razorpay({
             key: order.key_id,
@@ -258,6 +259,6 @@
             (err && err.message && err.message !== 'Failed to fetch' ? '\n\n' + err.message : ''));
         });
     }
-    openModal(id, p, cust, go);
+    openModal(id, p, cust, go, b);
   });
 })();

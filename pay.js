@@ -33,15 +33,16 @@
     + '.paybtn.busy,.rsv.busy{opacity:.75;pointer-events:none}.paybtn.busy::before{content:""}'
     + '.paynote{margin-top:8px;text-align:center;font-size:12.5px;color:#6b6b6b}'
     + '.plan-pay .paybtn{position:relative!important}'
-    + '.pm-ov{position:fixed;inset:0;z-index:9999;background:rgba(20,14,0,.55);display:flex;align-items:flex-end;justify-content:center;padding:0}'
-    + '.pm{width:100%;max-width:480px;background:#fff;color:#1A1A1A;border-radius:22px 22px 0 0;padding:22px 18px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -12px 40px rgba(0,0,0,.25);animation:pmup .25s ease;max-height:92vh;overflow:auto}'
+    + '.pm-ov{position:fixed;top:var(--pm-vtop,0px);left:0;right:0;height:var(--pm-vheight,100dvh);z-index:9999;background:rgba(20,14,0,.55);display:flex;align-items:flex-end;justify-content:center;padding:0;overflow:hidden}'
+    + '.pm{width:100%;max-width:480px;background:#fff;color:#1A1A1A;border-radius:22px 22px 0 0;padding:22px 18px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -12px 40px rgba(0,0,0,.25);animation:pmup .25s ease;max-height:var(--pm-max-height,92vh);overflow:auto;overscroll-behavior:contain}'
     + '@keyframes pmup{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}'
     + '@media(min-width:600px){.pm-ov{align-items:center}.pm{border-radius:22px}}'
     + '.pm h3{font-size:21px;margin-bottom:4px}.pm p{font-size:14px;color:#5C5C5C;margin-bottom:6px}'
     + '.pm label{display:block;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#7A5A12;margin:12px 0 6px}.pm label span{text-transform:none;font-weight:500;letter-spacing:0}'
-    + '.pm-phone{display:flex;align-items:center;border:1.5px solid #F2E4C4;border-radius:12px;background:#FFFDF7;color:#1A1A1A}.pm-phone:focus-within{outline:2px solid #F8B700;outline-offset:1px}.pm-prefix{padding:13px 0 13px 12px;font:inherit;font-size:16px;font-weight:700;color:#5C5C5C}.pm-phone input{flex:1;min-width:0;width:100%;font:inherit;font-size:16px;padding:13px 12px;border:0;border-radius:12px;background:transparent;color:#1A1A1A}.pm-phone input:focus{outline:0}'
+    + '.pm-phone{display:flex;align-items:center;gap:8px;border:1.5px solid #F2E4C4;border-radius:12px;background:#FFFDF7;color:#1A1A1A}.pm-phone:focus-within{outline:2px solid #F8B700;outline-offset:1px}.pm-prefix{padding:13px 0 13px 12px;font:inherit;font-size:16px;font-weight:700;color:#5C5C5C}.pm-phone input{flex:1;min-width:0;width:100%;font:inherit;font-size:16px;padding:13px 12px;border:0;border-radius:12px;background:transparent;color:#1A1A1A}.pm-phone input:focus{outline:0}'
     + '.pm-err{color:#C62828!important;font-weight:600;margin-top:8px!important}'
-    + '.pm .paybtn{margin-top:16px}.pm-x{display:block;width:100%;margin-top:8px;padding:12px;border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:#6b6b6b;cursor:pointer}'
+    + '.pm .paybtn{margin-top:16px;padding-left:22px;padding-right:22px}.pm-x{display:block;width:100%;margin-top:8px;padding:12px;border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:#6b6b6b;cursor:pointer}'
+    + '@media(max-width:380px){.pm .paybtn{white-space:normal;flex-wrap:wrap;font-size:15px;padding:14px 18px}}'
     + '@media (prefers-reduced-motion:reduce){.paybtn::after{animation:none;display:none}}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -60,13 +61,31 @@
   function words() {
     var lang = window.ASTROJAK_LANGUAGE || 'en';
     var copy = {
-      en: ['Enter your mobile number', 'We will use this number for your booking and WhatsApp updates.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Please enter a valid 10-digit mobile number.', 'Continue to Pay', 'Cancel'],
-      hing: ['Apna mobile number darj karein', 'Booking aur WhatsApp updates ke liye is number ka use hoga.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Sahi 10-digit mobile number darj karein.', 'Payment ke liye aage badhein', 'Cancel'],
-      hi: ['अपना मोबाइल नंबर दर्ज करें', 'बुकिंग और WhatsApp अपडेट के लिए इस नंबर का उपयोग होगा।', 'मोबाइल / WhatsApp नंबर', '10 अंकों का मोबाइल नंबर', 'कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें।', 'भुगतान के लिए आगे बढ़ें', 'रद्द करें']
+      en: ['Enter your mobile number', 'We will use this number for your booking and WhatsApp updates.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Please enter a valid 10-digit mobile number.', 'Pay now', 'Cancel'],
+      hing: ['Apna mobile number darj karein', 'Booking aur WhatsApp updates ke liye is number ka use hoga.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Sahi 10-digit mobile number darj karein.', 'Abhi pay karein', 'Cancel'],
+      hi: ['अपना मोबाइल नंबर दर्ज करें', 'बुकिंग और WhatsApp अपडेट के लिए इस नंबर का उपयोग होगा।', 'मोबाइल / WhatsApp नंबर', '10 अंकों का मोबाइल नंबर', 'कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें।', 'भुगतान करें', 'रद्द करें']
     };
     return copy[lang] || copy.en;
   }
-  function closeModal() { if (ov) { ov.remove(); ov = null; } }
+  function closeModal() {
+    if (!ov) return;
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', syncModalViewport);
+      window.visualViewport.removeEventListener('scroll', syncModalViewport);
+    }
+    window.removeEventListener('resize', syncModalViewport);
+    ov.remove();
+    ov = null;
+  }
+  function syncModalViewport() {
+    if (!ov) return;
+    var viewport = window.visualViewport;
+    var top = viewport ? viewport.offsetTop : 0;
+    var height = viewport ? viewport.height : window.innerHeight;
+    ov.style.setProperty('--pm-vtop', top + 'px');
+    ov.style.setProperty('--pm-vheight', height + 'px');
+    ov.style.setProperty('--pm-max-height', Math.max(160, height - 12) + 'px');
+  }
   function openModal(id, p, pre, done) {
     var s = saved(), w = words();
     ov = document.createElement('div'); ov.className = 'pm-ov';
@@ -76,6 +95,12 @@
       + '<button type="button" class="paybtn" id="pmGo">' + w[5] + ' ' + money(id) + ' →</button>'
       + '<button type="button" class="pm-x" id="pmC">' + w[6] + '</button></div>';
     document.body.appendChild(ov);
+    syncModalViewport();
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', syncModalViewport);
+      window.visualViewport.addEventListener('scroll', syncModalViewport);
+    }
+    window.addEventListener('resize', syncModalViewport);
     var g = function (i) { return document.getElementById(i); };
     g('pmP').value = digits10(pre.contact || s.phone || '');
     g('pmP').addEventListener('input', function () {
@@ -89,7 +114,11 @@
       try { localStorage.setItem('astrojak_cust', JSON.stringify({ phone: digits10(ph) })); } catch (_) {}
       closeModal(); done({ contact: digits10(ph) }, true);
     };
-    setTimeout(function () { g('pmP').focus(); }, 50);
+    setTimeout(function () {
+      syncModalViewport();
+      g('pmP').focus();
+      g('pmP').scrollIntoView({ block: 'nearest' });
+    }, 50);
   }
   function lead(id, p, c, ref, pos) {
     try {

@@ -39,7 +39,7 @@
     + '@media(min-width:600px){.pm-ov{align-items:center}.pm{border-radius:22px}}'
     + '.pm h3{font-size:21px;margin-bottom:4px}.pm p{font-size:14px;color:#5C5C5C;margin-bottom:6px}'
     + '.pm label{display:block;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#7A5A12;margin:12px 0 6px}.pm label span{text-transform:none;font-weight:500;letter-spacing:0}'
-    + '.pm-phone{display:flex;align-items:center;gap:8px;border:1.5px solid #F2E4C4;border-radius:12px;background:#FFFDF7;color:#1A1A1A}.pm-phone:focus-within{outline:2px solid #F8B700;outline-offset:1px}.pm-prefix{padding:13px 0 13px 12px;font:inherit;font-size:16px;font-weight:700;color:#5C5C5C}.pm-phone input{flex:1;min-width:0;width:100%;font:inherit;font-size:16px;padding:13px 12px;border:0;border-radius:12px;background:transparent;color:#1A1A1A}.pm-phone input:focus{outline:0}'
+    + '.pm-phone{display:flex;align-items:stretch;border:1.5px solid #F2E4C4;border-radius:12px;background:#FFFDF7;color:#1A1A1A;overflow:hidden}.pm-phone:focus-within{border-color:#F8B700;box-shadow:0 0 0 3px rgba(248,183,0,.18)}.pm-prefix{display:flex;flex:0 0 66px;align-items:center;justify-content:center;min-height:50px;padding:0 8px;border-right:1px solid #E4D8BE;font:inherit;font-size:16px;font-weight:700;color:#5C5C5C;white-space:nowrap}.pm-phone input{flex:1;min-width:0;width:100%;height:50px;margin:0;padding:0 14px;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#1A1A1A;font:inherit;font-size:16px;outline:0!important;appearance:none;-webkit-appearance:none}.pm-phone input::placeholder{color:#8A8170;opacity:1}'
     + '.pm-err{color:#C62828!important;font-weight:600;margin-top:8px!important}'
     + '.pm .paybtn{margin-top:16px;padding-left:28px;padding-right:28px}.pm-x{display:block;width:100%;margin-top:8px;padding:12px;border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:#6b6b6b;cursor:pointer}'
     + '@media(max-width:380px){.pm .paybtn{white-space:normal;flex-wrap:wrap;font-size:15px;padding:14px 24px}}'
@@ -90,7 +90,7 @@
     var s = saved(), w = words();
     ov = document.createElement('div'); ov.className = 'pm-ov';
     ov.innerHTML = '<div class="pm" role="dialog" aria-modal="true" aria-label="' + w[0] + '"><h3>' + w[0] + '</h3><p>' + w[1] + '</p>'
-      + '<label for="pmP">' + w[2] + '</label><div class="pm-phone"><span class="pm-prefix" aria-hidden="true">+91</span><input id="pmP" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" pattern="[6-9][0-9]{9}" aria-label="' + w[3] + '" placeholder="' + w[3] + '"></div>'
+      + '<label for="pmP">' + w[2] + '</label><div class="pm-phone"><span class="pm-prefix" aria-hidden="true">+91</span><input id="pmP" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" pattern="[6-9][0-9]{9}" aria-label="' + w[3] + '" placeholder="XXXXXXXXXX"></div>'
       + '<p class="pm-err" id="pmX" hidden></p>'
       + '<button type="button" class="paybtn" id="pmGo">' + w[5] + ' ' + money(id) + ' →</button>'
       + '<button type="button" class="pm-x" id="pmC">' + w[6] + '</button></div>';

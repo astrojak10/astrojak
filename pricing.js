@@ -6,7 +6,7 @@
    GitHub Actions redeploys the Worker when this file changes:
      1. every price on the website updates (home page, booking page,
         comparison table, buttons, thank-you page)
-     2. the Razorpay payment link is created with the new amount
+     2. the Razorpay order is created with the new amount
    Only edit the numbers (and names if you want). Keep the plan ids
    (reserve, kundali, detailed-kundali, matchmaking) exactly as they are.
    ===================================================================== */

@@ -1,8 +1,8 @@
 # Razorpay payment API on Cloudflare Workers
 
-The website is static on GitHub Pages. This Worker creates Razorpay payment
-links without exposing Razorpay credentials to visitors or the GitHub Pages
-build.
+The website is static on GitHub Pages. This Worker creates Razorpay orders and
+verifies captured payments without exposing Razorpay credentials to visitors or
+the GitHub Pages build. Checkout opens in Razorpay's on-page modal.
 
 ## One-time setup
 
@@ -25,24 +25,33 @@ build.
    encrypted secrets. Use Razorpay Test Mode credentials until checkout is
    tested. Saving secrets publishes a new Worker version; never add these
    Razorpay values to GitHub, a workflow, or website files.
-6. Confirm `https://api.astrojak.in/create-payment-link` is live. The API URL
-   is configured in `pay.js`; if your API hostname differs, update that URL.
-7. Test a payment in Razorpay Test Mode and confirm the successful callback
+6. Confirm `https://api.astrojak.in/create-order` and
+   `https://api.astrojak.in/verify-payment` are live. The API hostname is
+   configured in `pay.js`; if it differs, update that URL.
+7. Test a payment in Razorpay Test Mode and confirm Checkout opens over the
+   booking page, the server verifies and captures the payment, and success
    returns to `https://www.astrojak.in/thank-you.html`.
 
 ## Security notes
 
 - The browser submits a plan identifier; the Worker uses the server-side
-  `pricing.js` plan data. It does not accept a client-supplied amount. A change
-  to `pricing.js` triggers both the static-site and Worker deployments.
+  `pricing.js` plan data when creating each order and verifies the returned
+  amount and currency against that plan. It does not accept a client-supplied
+  amount. A change to `pricing.js` triggers both the static-site and Worker
+  deployments.
+- Checkout signatures are checked with the Razorpay secret. The Worker then
+  confirms the payment belongs to the order and captures authorized payments
+  before reporting success.
 - Only the listed website origins and the local development origin are allowed
   by CORS. CORS is not authentication; the server-side plan/amount validation
   is still required.
-- The Worker returns only the payment URL/reference and does not return or log
-  credentials. Razorpay failure details are deliberately not exposed.
+- The Worker returns the public key ID, order ID, amount, and reference; it
+  never returns or logs credentials. Razorpay failure details are deliberately
+  not exposed.
 - Rotate/revoke any Razorpay key that has ever been committed or shared.
 - Configure a Cloudflare rate-limiting rule for
-  `api.astrojak.in/create-payment-link` before enabling live payments.
+  `api.astrojak.in/create-order` and `api.astrojak.in/verify-payment` before
+  enabling live payments.
 
 ## Local checks
 

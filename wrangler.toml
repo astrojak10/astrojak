@@ -6,6 +6,3 @@ workers_dev = false
 routes = [
   { pattern = "api.astrojak.in", custom_domain = true }
 ]
-
-[vars]
-SITE_URL = "https://www.astrojak.in"

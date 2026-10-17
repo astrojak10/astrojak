@@ -1,10 +1,10 @@
 /* ASTROJAK shared payment + price code. Needs pricing.js loaded first.
    - fills every [data-price="plan-id"] with the price from pricing.js
    - any element with data-pay="plan-id" becomes a Pay button: it asks the server
-     (Netlify function) for a fresh Razorpay link and opens it. */
+     for a Razorpay order and opens Checkout.js. */
 (function () {
   var PR = window.PRICING; if (!PR) return;
-  var API = 'https://api.astrojak.in/create-payment-link';
+  var API = 'https://api.astrojak.in';
   function money(id) { var p = PR.plans[id]; return p ? PR.symbol + p.price : ''; }
   function discount(id) {
     var p = PR.plans[id];
@@ -39,7 +39,7 @@
     + '@media(min-width:600px){.pm-ov{align-items:center}.pm{border-radius:22px}}'
     + '.pm h3{font-size:21px;margin-bottom:4px}.pm p{font-size:14px;color:#5C5C5C;margin-bottom:6px}'
     + '.pm label{display:block;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#7A5A12;margin:12px 0 6px}.pm label span{text-transform:none;font-weight:500;letter-spacing:0}'
-    + '.pm input{width:100%;font:inherit;font-size:16px;padding:13px 12px;border:1.5px solid #F2E4C4;border-radius:12px;background:#FFFDF7;color:#1A1A1A}.pm input:focus{outline:2px solid #F8B700;outline-offset:1px}'
+    + '.pm-phone{display:flex;align-items:center;border:1.5px solid #F2E4C4;border-radius:12px;background:#FFFDF7;color:#1A1A1A}.pm-phone:focus-within{outline:2px solid #F8B700;outline-offset:1px}.pm-prefix{padding:13px 0 13px 12px;font:inherit;font-size:16px;font-weight:700;color:#5C5C5C}.pm-phone input{flex:1;min-width:0;width:100%;font:inherit;font-size:16px;padding:13px 12px;border:0;border-radius:12px;background:transparent;color:#1A1A1A}.pm-phone input:focus{outline:0}'
     + '.pm-err{color:#C62828!important;font-weight:600;margin-top:8px!important}'
     + '.pm .paybtn{margin-top:16px}.pm-x{display:block;width:100%;margin-top:8px;padding:12px;border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:#6b6b6b;cursor:pointer}'
     + '@media (prefers-reduced-motion:reduce){.paybtn::after{animation:none;display:none}}';
@@ -50,8 +50,12 @@
 
   var LEAD = 'https://formspree.io/f/moejvjbn';
   var ov = null;
-  function digits10(v) { var d = String(v || '').replace(/\D/g, ''); return d.length >= 10 ? d.slice(-10) : ''; }
-  function validPhone(v) { return /^[6-9]\d{9}$/.test(digits10(v)); }
+  function digits10(v) {
+    var d = String(v || '').replace(/\D/g, '');
+    if (d.length === 12 && d.slice(0, 2) === '91') d = d.slice(2);
+    return d.length === 10 ? d : '';
+  }
+  function validPhone(v) { return /^[6-9]\d{9}$/.test(String(v || '')); }
   function saved() { try { return JSON.parse(localStorage.getItem('astrojak_cust') || '{}') || {}; } catch (_) { return {}; } }
   function words() {
     var lang = window.ASTROJAK_LANGUAGE || 'en';
@@ -67,13 +71,16 @@
     var s = saved(), w = words();
     ov = document.createElement('div'); ov.className = 'pm-ov';
     ov.innerHTML = '<div class="pm" role="dialog" aria-modal="true" aria-label="' + w[0] + '"><h3>' + w[0] + '</h3><p>' + w[1] + '</p>'
-      + '<label>' + w[2] + '</label><input id="pmP" type="tel" inputmode="tel" autocomplete="tel" placeholder="' + w[3] + '">'
+      + '<label for="pmP">' + w[2] + '</label><div class="pm-phone"><span class="pm-prefix" aria-hidden="true">+91</span><input id="pmP" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" pattern="[6-9][0-9]{9}" aria-label="' + w[3] + '" placeholder="' + w[3] + '"></div>'
       + '<p class="pm-err" id="pmX" hidden></p>'
       + '<button type="button" class="paybtn" id="pmGo">' + w[5] + ' ' + money(id) + ' →</button>'
       + '<button type="button" class="pm-x" id="pmC">' + w[6] + '</button></div>';
     document.body.appendChild(ov);
     var g = function (i) { return document.getElementById(i); };
-    g('pmP').value = pre.contact || s.phone || '';
+    g('pmP').value = digits10(pre.contact || s.phone || '');
+    g('pmP').addEventListener('input', function () {
+      this.value = this.value.replace(/\D/g, '').slice(0, 10);
+    });
     g('pmC').onclick = closeModal;
     ov.addEventListener('click', function (e) { if (e.target === ov) closeModal(); });
     g('pmGo').onclick = function () {
@@ -88,11 +95,64 @@
     try {
       var fd = new FormData();
       fd.append('_subject', 'ASTROJAK payment started: ' + p.name + ' (' + money(id) + ')');
-      fd.append('status', 'Payment link opened (check Razorpay for paid status)'); fd.append('plan', p.name); fd.append('amount', money(id));
+      fd.append('status', 'Razorpay Checkout opened'); fd.append('plan', p.name); fd.append('amount', money(id));
       fd.append('phone', c.contact || '');
       fd.append('reference_id', ref || ''); fd.append('button', pos || ''); fd.append('page', location.href);
       fetch(LEAD, { method: 'POST', headers: { Accept: 'application/json' }, body: fd, keepalive: true }).catch(function () {});
     } catch (_) {}
+  }
+
+  var checkoutScript;
+  function loadCheckout() {
+    if (window.Razorpay) return Promise.resolve();
+    if (checkoutScript) return checkoutScript;
+    checkoutScript = new Promise(function (resolve, reject) {
+      var script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = function () {
+        if (window.Razorpay) resolve();
+        else {
+          checkoutScript = null;
+          reject(new Error('Razorpay Checkout could not be initialized'));
+        }
+      };
+      script.onerror = function () {
+        checkoutScript = null;
+        reject(new Error('Razorpay Checkout could not be loaded'));
+      };
+      document.head.appendChild(script);
+    });
+    return checkoutScript;
+  }
+
+  function post(path, body) {
+    return fetch(API + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) throw new Error(j.error || 'Payment request failed');
+        return j;
+      });
+    });
+  }
+
+  function verifyPayment(response) {
+    var attempt = 0;
+    function verify() {
+      attempt++;
+      return post('/verify-payment', response).then(function (result) {
+        if (!result.verified) throw new Error('Payment could not be verified');
+        return result;
+      }).catch(function (error) {
+        if (attempt < 3) {
+          return new Promise(function (resolve) { setTimeout(resolve, attempt * 1000); }).then(verify);
+        }
+        throw error;
+      });
+    }
+    return verify();
   }
 
   document.addEventListener('click', function (e) {
@@ -118,17 +178,43 @@
         if (hook.topics) body.topics = hook.topics();
       } catch (_) {}
       b.__busy = 1; b.__label = b.innerHTML; b.classList.add('busy'); b.textContent = 'Opening secure payment…';
-      fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        .then(function (r) {
-          return r.json().catch(function () { return {}; }).then(function (j) {
-            if (!r.ok || !j.url) throw new Error(j.error || 'Could not create payment link');
-            return j;
+      loadCheckout()
+        .then(function () { return post('/create-order', body); })
+        .then(function (order) {
+          if (fromModal) lead(id, p, c, order.ref, b.getAttribute('data-pos'));
+          try { if (hook.paymentOrderCreated) hook.paymentOrderCreated(id, order); } catch (err) { console.error('Could not update local slot estimate', err); }
+          var checkout = new window.Razorpay({
+            key: order.key_id,
+            amount: order.amount,
+            currency: order.currency,
+            name: 'ASTROJAK',
+            description: p.name,
+            order_id: order.order_id,
+            prefill: { contact: c.contact },
+            notes: { plan: id, reference_id: order.ref },
+            theme: { color: '#F8B700' },
+            modal: { ondismiss: function () { reset(b); } },
+            handler: function (payment) {
+              b.textContent = 'Verifying payment…';
+              verifyPayment(payment)
+                .then(function (verified) {
+                  var query = new URLSearchParams({
+                    razorpay_payment_link_status: 'paid',
+                    razorpay_payment_link_reference_id: verified.reference_id,
+                    razorpay_payment_id: verified.payment_id
+                  });
+                  if (verified.appointment_date) query.set('appointment_date', verified.appointment_date);
+                  if (verified.appointment_time) query.set('appointment_time', verified.appointment_time);
+                  location.href = '/thank-you.html?' + query.toString();
+                })
+                .catch(function (err) {
+                  reset(b);
+                  console.error('Razorpay payment could not be verified:', err);
+                  alert('Your payment was submitted, but we could not confirm it yet. Please do not pay again. Contact us and share payment ID ' + payment.razorpay_payment_id + '.');
+                });
+            }
           });
-        })
-        .then(function (j) {
-          if (fromModal) lead(id, p, c, j.ref, b.getAttribute('data-pos'));
-          try { if (hook.paymentLinkCreated) hook.paymentLinkCreated(id, j); } catch (err) { console.error('Could not update local slot estimate', err); }
-          setTimeout(function () { location.href = j.url; }, fromModal ? 250 : 0);
+          checkout.open();
         })
         .catch(function (err) {
           reset(b);

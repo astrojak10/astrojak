@@ -28,6 +28,7 @@
   <meta name="twitter:title" content="ASTROJAK - Vedic Astrology Consultation on WhatsApp">
   <meta name="twitter:description" content="Kundli, Vivah Yog, Love and Career guidance by Acharya Narender Ji. Kundali Analysis online.">
   <meta name="twitter:image" content="https://www.astrojak.in/og-image.jpg">
+  <script src="https://splitforms.com/embed.js" async></script>
   <!-- Meta Pixel Code -->
   <script>
   !function(f,b,e,v,n,t,s)
@@ -1174,7 +1175,9 @@
     .dlg-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 16px; margin-top: 10px; border: none; border-radius: 14px; font: inherit; font-size: 14.5px; font-weight: 800; text-decoration: none; cursor: pointer; background: var(--whatsapp-green); color: #fff; }
     .dlg-btn.alt { background: #fff; color: var(--saffron-dark); border: 2px solid var(--primary-yellow); }
     .dlg label.fl { display: block; font-size: 13px; font-weight: 700; margin: 12px 0 4px; }
-    .dlg input[type=text], .dlg textarea { width: 100%; font: inherit; font-size: 14px; padding: 10px 12px; border: 1.5px solid var(--border-accent); border-radius: 12px; background: var(--bg-cream); }
+    .form-error { margin-top: 8px; color: #C62828; font-size: 13px; font-weight: 700; }
+    .dlg button.dlg-btn:disabled { opacity: .65; cursor: wait; }
+    .dlg input[type=text], .dlg input[type=email], .dlg textarea { width: 100%; font: inherit; font-size: 14px; padding: 10px 12px; border: 1.5px solid var(--border-accent); border-radius: 12px; background: var(--bg-cream); }
     .dlg textarea { min-height: 90px; resize: vertical; }
     .stars { position: relative; display: flex; flex-direction: row-reverse; justify-content: center; gap: 6px; margin: 8px 0 4px; }
     .stars input { position: absolute; opacity: 0; }
@@ -1238,7 +1241,7 @@
 
     /* FEEDBACK INPUTS (text, phone, textarea) */
     .dlg input[type=tel] { width: 100%; font: inherit; font-size: 14px; padding: 10px 12px; border: 1.5px solid var(--border-accent); border-radius: 12px; background: var(--bg-cream); }
-    .dlg input[type=text]:focus, .dlg input[type=tel]:focus, .dlg textarea:focus { outline: none; border-color: var(--saffron-accent); background: #fff; box-shadow: 0 0 0 3px rgba(255, 111, 0, 0.18); }
+      .dlg input[type=text]:focus, .dlg input[type=email]:focus, .dlg input[type=tel]:focus, .dlg textarea:focus { outline: none; border-color: var(--saffron-accent); background: #fff; box-shadow: 0 0 0 3px rgba(255, 111, 0, 0.18); }
     .dlg input::placeholder, .dlg textarea::placeholder { color: var(--text-light); }
     .dlg input[type=tel]:invalid:not(:placeholder-shown) { border-color: #C62828; box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.12); }
 
@@ -1831,6 +1834,20 @@
     <a class="dlg-btn" href="https://wa.me/917827673637?text=Hi!%20I%20need%20help." target="_blank" rel="noopener noreferrer">WhatsApp: +91 78276 73637</a>
     <a class="dlg-btn alt" href="mailto:astrojak10@gmail.com">Email: astrojak10@gmail.com</a>
     <a class="dlg-btn alt" href="https://www.instagram.com/astrojakk" target="_blank" rel="noopener noreferrer">Instagram: @astrojakk</a>
+    <form id="contactForm">
+      <input type="hidden" name="access_key" value="9d208e837cab446dbcaf6f562900f3e6">
+      <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" style="display:none">
+      <label class="fl" for="contactName">Name</label>
+      <input type="text" id="contactName" name="name" autocomplete="name" required maxlength="100">
+      <label class="fl" for="contactEmail">Email</label>
+      <input type="email" id="contactEmail" name="email" autocomplete="email" required maxlength="120">
+      <label class="fl" for="contactMessage">Message</label>
+      <textarea id="contactMessage" name="message" required maxlength="2000"></textarea>
+      <input type="hidden" name="page" value="">
+      <button type="submit" class="dlg-btn">Send Message</button>
+      <p id="contactError" class="form-error" role="alert" aria-live="polite" hidden></p>
+    </form>
+    <p id="contactThanks" hidden class="sub" role="status" style="font-size:15px;font-weight:700;margin:12px 0 0">Thank you! Your message has been sent.</p>
   </dialog>
 
   <dialog class="dlg" id="dlg-feedback">
@@ -1838,6 +1855,8 @@
     <h2>Rate Your Experience</h2>
     <p class="sub">Your feedback goes to our team.</p>
     <form id="fbForm">
+      <input type="hidden" name="access_key" value="9d208e837cab446dbcaf6f562900f3e6">
+      <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" style="display:none">
       <div class="stars" role="radiogroup" aria-label="Rating">
         <input type="radio" name="rating" id="st5" value="5" required><label for="st5" title="5">★</label>
         <input type="radio" name="rating" id="st4" value="4"><label for="st4" title="4">★</label>
@@ -1846,24 +1865,50 @@
         <input type="radio" name="rating" id="st1" value="1"><label for="st1" title="1">★</label>
       </div>
       <label class="fl" for="fbWho">Name</label>
-      <input type="text" id="fbWho" name="who" autocomplete="name">
+      <input type="text" id="fbWho" name="name" autocomplete="name">
+      <label class="fl" for="fbEmail">Email (Optional)</label>
+      <input type="email" id="fbEmail" name="email" autocomplete="email">
       <label class="fl" for="fbPhone">Phone Number (Optional)</label>
       <input type="tel" id="fbPhone" name="phone" autocomplete="tel" inputmode="tel" maxlength="15" placeholder="98XXXXXXXX" pattern="(\+?91[ \-]?)?[6-9][0-9]{9}" title="10-digit Indian mobile number">
       <label class="fl" for="fbMsg">Feedback</label>
       <textarea id="fbMsg" name="message" required></textarea>
+      <input type="hidden" name="page" value="">
       <button type="submit" class="dlg-btn">Send Feedback</button>
+      <p id="fbError" class="form-error" role="alert" aria-live="polite" hidden></p>
     </form>
     <p id="fbThanks" hidden class="sub" style="font-size:15px;font-weight:700;margin:12px 0 0">Thank you! We've received your feedback.</p>
   </dialog>
 
   <script>
     (function () {
-      // Feedback goes to you privately. Paste a Formspree URL (https://formspree.io/f/xxxx) to receive it in a dashboard;
-      // while empty, it opens an email to FEEDBACK_EMAIL instead.
-      var FEEDBACK_ENDPOINT = 'https://formspree.io/f/xkjgalev', FEEDBACK_EMAIL = 'astrojak10@gmail.com';
       var ids = ['help', 'contact', 'feedback'];
+      var splitformsEndpoint = 'https://splitforms.com/api/submit';
       function $(id) { return document.getElementById(id); }
       function track(n, p) { if (window.gtag) gtag('event', n, p || {}); }
+      async function submitForm(form, button, error, onSuccess) {
+        error.hidden = true;
+        button.disabled = true;
+        try {
+          var res = await fetch(splitformsEndpoint, {
+            method: 'POST',
+            headers: { Accept: 'application/json' },
+            body: new FormData(form)
+          });
+          var data = await res.json();
+          if (data.success) {
+            form.reset();
+            onSuccess(data);
+          } else {
+            error.textContent = data.message || "Couldn't send. Please try again.";
+            error.hidden = false;
+          }
+        } catch (err) {
+          error.textContent = "Couldn't send. Please try again.";
+          error.hidden = false;
+        } finally {
+          button.disabled = false;
+        }
+      }
       function open(id) {
         ids.forEach(function (i) { var d = $('dlg-' + i); if (d.open) d.close(); });
         $('dlg-' + id).showModal();
@@ -1886,20 +1931,28 @@
       });
       if (ids.indexOf(location.hash.slice(1)) > -1) open(location.hash.slice(1));
 
+      $('contactForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var form = e.currentTarget;
+        form.elements.page.value = location.href;
+        var button = form.querySelector('button[type="submit"]');
+        submitForm(form, button, $('contactError'), function () {
+          form.hidden = true;
+          $('contactThanks').hidden = false;
+        });
+      });
+
       $('fbForm').addEventListener('submit', function (e) {
         e.preventDefault();
-        var f = e.target.elements;
-        var d = { rating: f.rating.value, name: f.who.value, phone: f.phone.value, message: f.message.value, page: location.href };
-        function done() { e.target.hidden = true; $('fbThanks').hidden = false; track('feedback_submit', { rating: d.rating }); }
-        if (FEEDBACK_ENDPOINT) {
-          fetch(FEEDBACK_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(d) })
-            .then(function (r) { if (r.ok) done(); else alert('Could not send feedback. Please try again.'); })
-            .catch(function () { alert('Could not send feedback. Please try again.'); });
-        } else {
-          location.href = 'mailto:' + FEEDBACK_EMAIL + '?subject=' + encodeURIComponent('ASTROJAK feedback: ' + d.rating + '/5') +
-            '&body=' + encodeURIComponent('Rating: ' + d.rating + '/5\nName: ' + d.name + '\nPhone: ' + d.phone + '\n\n' + d.message);
-          done();
-        }
+        var form = e.currentTarget;
+        var rating = form.elements.rating.value;
+        form.elements.page.value = location.href;
+        var button = form.querySelector('button[type="submit"]');
+        submitForm(form, button, $('fbError'), function () {
+          form.hidden = true;
+          $('fbThanks').hidden = false;
+          track('feedback_submit', { rating: rating });
+        });
       });
     })();
   </script>

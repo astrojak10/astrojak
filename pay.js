@@ -49,7 +49,8 @@
   function reset(b) { if (b.__label != null) { b.innerHTML = b.__label; b.__label = null; } b.__busy = 0; b.classList.remove('busy'); }
   window.addEventListener('pageshow', function () { [].forEach.call(document.querySelectorAll('[data-pay]'), reset); });
 
-  var LEAD = 'https://formspree.io/f/moejvjbn';
+  var SPLITFORMS = 'https://splitforms.com/api/submit';
+  var SPLITFORMS_ACCESS_KEY = '9d208e837cab446dbcaf6f562900f3e6';
   var ov = null;
   function digits10(v) {
     var d = String(v || '').replace(/\D/g, '');
@@ -121,14 +122,19 @@
     }, 50);
   }
   function lead(id, p, c, ref, pos) {
-    try {
-      var fd = new FormData();
-      fd.append('_subject', 'ASTROJAK payment started: ' + p.name + ' (' + money(id) + ')');
-      fd.append('status', 'Razorpay Checkout opened'); fd.append('plan', p.name); fd.append('amount', money(id));
-      fd.append('phone', c.contact || '');
-      fd.append('reference_id', ref || ''); fd.append('button', pos || ''); fd.append('page', location.href);
-      fetch(LEAD, { method: 'POST', headers: { Accept: 'application/json' }, body: fd, keepalive: true }).catch(function () {});
-    } catch (_) {}
+    var fd = new FormData();
+    fd.append('access_key', SPLITFORMS_ACCESS_KEY);
+    fd.append('_subject', 'ASTROJAK payment started: ' + p.name + ' (' + money(id) + ')');
+    fd.append('status', 'Razorpay Checkout opened'); fd.append('plan', p.name); fd.append('amount', money(id));
+    fd.append('phone', c.contact || '');
+    fd.append('reference_id', ref || ''); fd.append('button', pos || ''); fd.append('page', location.href);
+    fetch(SPLITFORMS, { method: 'POST', headers: { Accept: 'application/json' }, body: fd, keepalive: true })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok || !data.success) throw new Error(data.message || 'Splitforms rejected the checkout lead');
+        });
+      })
+      .catch(function (err) { console.error('Could not send checkout lead to Splitforms:', err); });
   }
 
   var checkoutScript;

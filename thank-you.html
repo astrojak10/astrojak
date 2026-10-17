@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Payment Received | ASTROJAK</title>
+<script src="https://splitforms.com/embed.js" async></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-DB1MQGC3LS"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -75,6 +76,17 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     <p class="hint">Your appointment date and time were selected before payment. Share your birth details for the consultation.</p>
     <div class="appointment"><b id="appointmentWhen"></b><span>Appointment time · India Standard Time (IST)</span></div>
     <form id="detailsForm">
+      <input type="hidden" name="access_key" value="9d208e837cab446dbcaf6f562900f3e6">
+      <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" style="display:none">
+      <input type="hidden" name="_subject" id="subject">
+      <input type="hidden" name="status" value="Paid consultation details">
+      <input type="hidden" name="plan" id="planField">
+      <input type="hidden" name="amount" id="amountField">
+      <input type="hidden" name="payment_id" id="paymentField">
+      <input type="hidden" name="appointment" id="appointmentField">
+      <input type="hidden" name="date_of_birth" id="birthDateField">
+      <input type="hidden" name="birth_time" id="birthTimeField">
+      <input type="hidden" name="page" id="pageField">
       <div class="fields">
         <div class="field">
           <label class="lbl" for="name">Your name</label>
@@ -141,7 +153,6 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   var date=q.get('appointment_date')||'';
   var time=q.get('appointment_time')||'';
   var appointment='';
-  var formspree='https://formspree.io/f/moejvjbn';
   var wa='917827673637';
 
   function addOption(select,value,label){var option=document.createElement('option');option.value=value;option.textContent=label;select.appendChild(option)}
@@ -192,8 +203,9 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     $('whatsappHelp').href='https://wa.me/'+wa+'?text='+encodeURIComponent('Hi! I need help with my astrology consultation booking.'+(paymentId?' Payment ID: '+paymentId:''));
   }
 
-  $('detailsForm').addEventListener('submit',function(event){
+  $('detailsForm').addEventListener('submit',async function(event){
     event.preventDefault();
+    var form=event.currentTarget;
     var error=$('error');error.hidden=true;
     var name=$('name').value.trim(),email=$('email').value.trim(),y=$('year').value,m=$('month').value,d=$('day').value;
     var hr=$('hour').value,mi=$('minute').value,ap=$('ampm').value,place=$('place').value.trim(),question=$('question').value.trim();
@@ -203,29 +215,37 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     var birthTime=hr?hr+':'+mi+' '+ap:'';
     var data={name:name,email:email,birthDate:birthDate,birthTime:birthTime,birthPlace:place,question:question};
     var button=$('submitDetails');
+    $('subject').value='ASTROJAK customer details: '+planName;
+    $('planField').value=planName;
+    $('amountField').value=amount;
+    $('paymentField').value=paymentId;
+    $('appointmentField').value=appointment?appointment+' IST':'Not provided';
+    $('birthDateField').value=birthDate;
+    $('birthTimeField').value=birthTime||'Not known';
+    $('pageField').value=location.href;
     button.disabled=true;button.textContent='Sending details…';
-    var payload=new FormData();
-    payload.append('_subject','ASTROJAK customer details: '+planName);
-    payload.append('status','Paid consultation details');
-    payload.append('plan',planName);
-    payload.append('amount',amount);
-    payload.append('payment_id',paymentId);
-    payload.append('appointment',appointment?appointment+' IST':'Not provided');
-    payload.append('name',name);
-    if(email)payload.append('email',email);
-    payload.append('date_of_birth',birthDate);
-    payload.append('birth_time',birthTime||'Not known');
-    payload.append('birth_place',place);
-    if(question)payload.append('question',question);
-    payload.append('page',location.href);
-    fetch(formspree,{method:'POST',headers:{Accept:'application/json'},body:payload})
-      .then(function(response){if(!response.ok)throw new Error('The details could not be sent. Please try again.');return response})
-      .then(function(){
+    try{
+      var res=await fetch('https://splitforms.com/api/submit',{
+        method:'POST',
+        headers:{Accept:'application/json'},
+        body:new FormData(form)
+      });
+      var result=await res.json();
+      if(result.success){
+        form.reset();
         showWhatsApp(data);
         $('detailsCard').hidden=true;$('doneCard').hidden=false;
         try{if(window.gtag)gtag('event','consultation_details_submitted',{plan:ref})}catch(e){}
-      })
-      .catch(function(err){error.textContent=err.message||'The details could not be sent. Please try again.';error.hidden=false;button.disabled=false;button.textContent='Send Details'});
+      }else{
+        error.textContent=result.message||"Couldn't send. Please try again.";
+        error.hidden=false;
+      }
+    }catch(err){
+      error.textContent="Couldn't send. Please try again.";
+      error.hidden=false;
+    }finally{
+      button.disabled=false;button.textContent='Send Details';
+    }
   });
 })();
 </script>

@@ -114,7 +114,9 @@
       if (!validPhone(ph)) { x.textContent = w[4]; x.hidden = false; return; }
       try { localStorage.setItem('astrojak_cust', JSON.stringify({ phone: digits10(ph) })); } catch (_) {}
       var customer = { contact: digits10(ph) };
-      lead(id, p, customer, button.getAttribute('data-pos'));
+      var booking = window.PAY_HOOK || {};
+      var appointment = booking.appointment ? booking.appointment() : null;
+      lead(id, p, customer, button.getAttribute('data-pos'), appointment);
       closeModal(); done(customer, true);
     };
     setTimeout(function () {
@@ -123,12 +125,14 @@
       g('pmP').scrollIntoView({ block: 'nearest' });
     }, 50);
   }
-  function lead(id, p, c, pos) {
+  function lead(id, p, c, pos, appointment) {
     var fd = new FormData();
     fd.append('access_key', SPLITFORMS_ACCESS_KEY);
-    fd.append('_subject', 'ASTROJAK mobile captured: ' + p.name + ' (' + money(id) + ')');
+    fd.append('_subject', 'ASTROJAK booking details: ' + p.name + ' (' + money(id) + ')');
     fd.append('status', 'Mobile number captured'); fd.append('plan', p.name); fd.append('amount', money(id));
-    fd.append('phone', c.contact || '');
+    fd.append('mobile', c.contact || '');
+    fd.append('appointment_date', appointment ? appointment.date : '');
+    fd.append('appointment_time', appointment ? appointment.time : '');
     fd.append('button', pos || ''); fd.append('page', location.href);
     fetch(SPLITFORMS, { method: 'POST', headers: { Accept: 'application/json' }, body: fd, keepalive: true })
       .then(function (res) {

@@ -484,7 +484,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
 </head>
 <body>
 <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2057261584904971&ev=PageView&noscript=1" alt=""></noscript>
-<header><div class="wrap bar"><a class="brand" href="/">ASTRO<span>JAK</span></a><div class="header-tools"><div class="lang-switch" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="true" aria-pressed="false">EN</button><button type="button" data-lang="hing" aria-pressed="false">Hinglish</button><button type="button" data-lang="hi" class="on">हिन्दी</button></div><a class="back" href="/home" data-i18n="back-home">Home</a></div></div></header>
+<header><div class="wrap bar"><a class="brand" href="/">ASTRO<span>JAK</span></a><div class="header-tools"><div class="lang-switch" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="hing" aria-pressed="false">Hinglish</button><button type="button" data-lang="hi" aria-pressed="true" class="on">हिन्दी</button></div><a class="back" href="/home" data-i18n="back-home">Home</a></div></div></header>
 
 <main class="wrap">
 <section class="hero101">
@@ -658,7 +658,7 @@ Object.assign(LANG.hi,{ 'calendar-empty':'उपलब्ध समय में
 Object.assign(LANG.en,{ 'reserve':'Reserve','sticky-reserve':'Reserve','pay-now':'Pay'});
 Object.assign(LANG.hing,{ 'reserve':'Slot book karein','sticky-reserve':'Slot book karein','pay-now':'Pay'});
 Object.assign(LANG.hi,{ 'reserve':'बुक करें','sticky-reserve':'समय बुक करें','pay-now':'भुगतान'});
-var language='en';
+var language='hi';
 function tr(key){return LANG[language][key]||LANG.en[key]||key}
 function setLanguage(lang){
  language=LANG[lang]?lang:'en';window.ASTROJAK_LANGUAGE=language;document.documentElement.lang=language==='hi'?'hi':'en';
@@ -688,7 +688,7 @@ function initialLanguage(){
  var cookie=document.cookie.match(/(?:^|; )lang=([^;]*)/),saved='';
  try{if(cookie)saved=decodeURIComponent(cookie[1]);else saved=localStorage.getItem('lang')||''}catch(e){}
  if(LANG[saved])return saved;
- return /^hi(?:-|$)/i.test(navigator.language||'')?'hi':'en';
+ return 'hi';
 }
 document.querySelectorAll('[data-lang]').forEach(function(button){button.addEventListener('click',function(){setLanguage(button.getAttribute('data-lang'))})});
 function opt(id,v,t){var o=document.createElement('option');o.value=v;o.textContent=t;$(id).appendChild(o)}

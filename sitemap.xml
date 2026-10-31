@@ -2,20 +2,20 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.astrojak.in/</loc>
-    <lastmod>2026-10-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
   </url>
   <url>
     <loc>https://www.astrojak.in/home</loc>
-    <lastmod>2026-10-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.astrojak.in/plan</loc>
-    <lastmod>2026-10-31</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.astrojak.in/about</loc>
+  </url>
+  <url>
+    <loc>https://www.astrojak.in/kundli-matching</loc>
+  </url>
+  <url>
+    <loc>https://www.astrojak.in/kundali-analysis</loc>
   </url>
 </urlset>

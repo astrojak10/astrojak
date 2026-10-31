@@ -5,4 +5,7 @@ https://astrojak.netlify.app/*     https://www.astrojak.in/:splat  301!
 /book.html    /            301!
 /home         /home.html   200
 /plan         /plan.html   200
+/about        /about.html  200
+/kundli-matching   /kundli-matching.html   200
+/kundali-analysis  /kundali-analysis.html  200
 /thank-you    /thank-you.html   200

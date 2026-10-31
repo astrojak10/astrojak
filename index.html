@@ -574,10 +574,9 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
   <select id="plan" hidden aria-hidden="true"></select>
 
   <div class="paywrap">
-    <button type="button" class="paybtn" id="payNow" data-pay="selected" data-pos="form"><span data-i18n="pay-now">Pay Now</span> · <span id="payAmt">₹1499</span> →</button>
-    <p class="paynote" data-i18n="secure-pay">🔒 Secure Razorpay checkout · UPI, cards &amp; netbanking</p>
+    <button type="button" class="paybtn" id="viewPlan"><span>View plan details</span> · <span id="payAmt">₹1499</span> →</button>
+    <p class="paynote">Choose a plan to see its details and continue to secure checkout.</p>
   </div>
-  <p class="fine"><span id="fine">₹1499 for Detailed Kundali Analysis</span><span data-i18n="after-payment"> · after payment, add your birth details on the next page</span></p>
 </div>
 
 <p class="intro" data-i18n="intro">A consultation with Acharya Narender Ji is a 1:1 audio call with our astrologer and a personal reading of your Kundli. Pick the analysis that suits your need, pay once, and get honest Vedic guidance with a clear upay.</p>
@@ -716,20 +715,32 @@ document.querySelectorAll('[data-lang]').forEach(function(button){button.addEven
 function opt(id,v,t){var o=document.createElement('option');o.value=v;o.textContent=t;$(id).appendChild(o)}
 function show(){
  var k=$('plan').value,d=P[k],name=d.displayName||d.n;
- $('payAmt').textContent=d.p; $('fine').textContent=d.p+' · '+name;
+ $('payAmt').textContent=d.p;
  [].forEach.call(document.querySelectorAll('.pc'),function(c){var on=c.getAttribute('data-k')===k;c.classList.toggle('on',on);c.setAttribute('aria-checked',on)});
 }
 var NOTE={'kundali':['⭐','Clear reading of your birth chart'],'detailed-kundali':['💫','Dasha, timing & upay'],'matchmaking':['💍','Kundli Milan for two people']};
+function goToPlan(k){
+ if(!P[k])return;
+ try{
+  sessionStorage.setItem('astrojak_plan_selection',JSON.stringify({
+   plan:k,
+   topics:selectedTopics(),
+   appointment:appointment()
+  }));
+ }catch(err){console.error('Could not save booking selections for the plan page:',err)}
+ location.href='/plan?plan='+encodeURIComponent(k);
+}
 Object.keys(P).forEach(function(k){
  opt('plan',k,P[k].n+' — '+P[k].p);
  var c=document.createElement('button');c.type='button';c.className='pc';c.setAttribute('role','radio');c.setAttribute('data-k',k);
  var off=Math.round((P[k].listPrice-P[k].price)/P[k].listPrice*100);
  c.innerHTML=(k==='detailed-kundali'?'<em class="pop">Most Popular</em>':'')+'<i>'+NOTE[k][0]+'</i><div class="tx"><b>'+P[k].n+'</b><small>'+NOTE[k][1]+'</small></div><span class="pp price-stack"><span><del>'+PRICING.symbol+P[k].listPrice+'</del>'+P[k].p+'</span><small>'+off+tr('discount-label')+'</small></span>';
- c.addEventListener('click',function(){$('plan').value=k;$('plan').dispatchEvent(new Event('change',{bubbles:true}))});
+ c.addEventListener('click',function(){goToPlan(k)});
  $('pcards').appendChild(c);
 });
 $('plan').value='detailed-kundali';
 $('plan').addEventListener('change',show);
+$('viewPlan').addEventListener('click',function(){goToPlan($('plan').value)});
 try{var q=new URLSearchParams(location.search).get('plan');if(P[q])$('plan').value=q}catch(e){}
 show();
 var SLOT_LABELS=['09:00 AM – 12:00 PM','12:00 PM – 03:00 PM','03:00 PM – 06:00 PM','06:00 PM – 09:00 PM'];
@@ -896,7 +907,7 @@ msg();
   var t=document.querySelector('.rsv[data-pos="top"]'),r=document.querySelector('.ready');
   if(t){t.setAttribute('data-obs','top');io.observe(t)}
   if(r){r.setAttribute('data-obs','ready');io.observe(r)}
-  var pn=document.getElementById('payNow');if(pn){pn.setAttribute('data-obs','pay');io.observe(pn)}
+  var pn=document.getElementById('viewPlan');if(pn){pn.setAttribute('data-obs','pay');io.observe(pn)}
   document.documentElement.classList.add('js');
   var rv=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');rv.unobserve(e.target)}})},{threshold:.08});
   [].forEach.call(document.querySelectorAll('.get,.steps,.hh,.card,.tbl,.exp,.ready,.intro,details'),function(el){el.classList.add('rv');rv.observe(el)});

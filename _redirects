@@ -4,4 +4,5 @@ https://astrojak.netlify.app/*     https://www.astrojak.in/:splat  301!
 /book         /            301!
 /book.html    /            301!
 /home         /home.html   200
+/plan         /plan.html   200
 /thank-you    /thank-you.html   200

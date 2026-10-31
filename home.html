@@ -1145,7 +1145,7 @@
     .plan-pay { margin: auto 0 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 56px; padding: 0; overflow: visible; position: relative; }
     .plan-pay > * { margin-top: 0 !important; margin-bottom: 0 !important; position: static !important; max-width: 100%; margin-left: auto; margin-right: auto; }
     .plan-card { padding-bottom: 16px; }
-    .plan-card { cursor: default; }
+    .plan-card { cursor: pointer; }
     .plans-foot { text-align: center; font-size: 12.5px; color: var(--text-light); margin-top: 24px; }
     .plans-foot a, .footer-links a { color: inherit; }
 
@@ -1371,7 +1371,7 @@
           <button type="button" data-lang="hi" aria-pressed="false">हिन्दी</button>
           <button type="button" data-lang="hing" aria-pressed="false">Hinglish</button>
         </div>
-        <a href="/" class="header-book-link">Book Consultation</a>
+        <a href="/plan?plan=detailed-kundali" class="header-book-link">Book Consultation</a>
         <div class="live-status-pill">
           <div class="ping-circle"></div>
           <span>Acharya Online</span>
@@ -1417,7 +1417,7 @@
               </svg>
               <span>Book on WhatsApp</span>
             </a>
-            <a href="/" class="btn-hero-book">Book online consultation</a>
+            <a href="/plan?plan=detailed-kundali" class="btn-hero-book">Book online consultation</a>
             <a href="#plans" class="btn-hero-secondary">View Plans</a>
           </div>
 
@@ -1561,7 +1561,7 @@
           <div class="plan-duration">Kundali Analysis</div>
           <div class="plan-price"><del data-list-price="kundali">₹4999</del><span data-price="kundali">₹999</span><small data-discount="kundali">80% OFF</small></div>
           <div class="plan-note">Clear reading of your birth chart</div>
-          <div class="plan-pay"><button type="button" class="paybtn" data-pay="kundali" data-pos="home">Pay Now · <span data-price="kundali">₹999</span></button></div>
+          <div class="plan-pay"><a class="paybtn" href="/plan?plan=kundali">Choose Plan · <span data-price="kundali">₹999</span></a></div>
         </div>
         <div class="plan-card plan-featured" data-plan="detailed-kundali">
           <span class="plan-badge">Most Popular</span>
@@ -1569,7 +1569,7 @@
           <div class="plan-duration">Detailed Kundali Analysis</div>
           <div class="plan-price"><del data-list-price="detailed-kundali">₹9999</del><span data-price="detailed-kundali">₹1499</span><small data-discount="detailed-kundali">85% OFF</small></div>
           <div class="plan-note">In-depth Dasha, timing &amp; upay</div>
-          <div class="plan-pay"><button type="button" class="paybtn" data-pay="detailed-kundali" data-pos="home">Pay Now · <span data-price="detailed-kundali">₹1499</span></button></div>
+          <div class="plan-pay"><a class="paybtn" href="/plan?plan=detailed-kundali">Choose Plan · <span data-price="detailed-kundali">₹1499</span></a></div>
         </div>
         <div class="plan-card" data-plan="matchmaking">
           
@@ -1577,11 +1577,11 @@
           <div class="plan-duration">Marriage Matchmaking Analysis</div>
           <div class="plan-price"><del data-list-price="matchmaking">₹9999</del><span data-price="matchmaking">₹1499</span><small data-discount="matchmaking">85% OFF</small></div>
           <div class="plan-note">Kundli Milan &amp; compatibility for two</div>
-          <div class="plan-pay"><button type="button" class="paybtn" data-pay="matchmaking" data-pos="home">Pay Now · <span data-price="matchmaking">₹1499</span></button></div>
+          <div class="plan-pay"><a class="paybtn" href="/plan?plan=matchmaking">Choose Plan · <span data-price="matchmaking">₹1499</span></a></div>
         </div>
       </div>
       <p class="secure-line">🔒 Secured by Razorpay</p>
-      <p class="plans-foot">Choose a plan and pay securely. After paying, send your Kundli details on WhatsApp. <a href="#refund-policy">Refund Policy</a> · <a href="/">Book with details</a></p>
+      <p class="plans-foot">Choose a plan and pay securely. After paying, add your birth details on the next page. <a href="#refund-policy">Refund Policy</a> · <a href="/plan?plan=detailed-kundali">Book with details</a></p>
     </div>
   </section>
 
@@ -1723,7 +1723,7 @@
       </a>
 
       <div class="footer-links">
-        <a href="/">Book Consultation</a>
+        <a href="/plan?plan=detailed-kundali">Book Consultation</a>
         <a href="#faq">FAQ</a>
         <a href="#help" data-dialog="help">Help Center</a>
         <a href="#contact" data-dialog="contact">Contact Us</a>
@@ -1833,7 +1833,7 @@
     </div>
   </div>
 
-  <a class="fb-fab" href="/">✨ Book Consultation</a>
+  <a class="fb-fab" href="/plan?plan=detailed-kundali">✨ Book Consultation</a>
 
   <dialog class="dlg" id="dlg-help">
     <button type="button" class="dlg-x" data-close aria-label="Close">&times;</button>
@@ -2038,7 +2038,22 @@
   </script>
 
 <script>
-(function(){try{var p=new URLSearchParams(location.search).get('plan');if(!p)return;var c=document.querySelector('.plan-card[data-plan="'+p+'"]');if(!c)return;c.classList.add('plan-hl');setTimeout(function(){c.scrollIntoView({block:'center'})},400)}catch(e){}})();
+(function(){
+  try{
+    document.querySelectorAll('.plan-card[data-plan]').forEach(function(card){
+      card.addEventListener('click',function(event){
+        if(event.target.closest('a,button'))return;
+        location.href='/plan?plan='+encodeURIComponent(card.getAttribute('data-plan'));
+      });
+    });
+    var plan=new URLSearchParams(location.search).get('plan');
+    if(!plan)return;
+    var card=document.querySelector('.plan-card[data-plan="'+plan+'"]');
+    if(!card)return;
+    card.classList.add('plan-hl');
+    setTimeout(function(){card.scrollIntoView({block:'center'})},400);
+  }catch(error){console.error('Could not initialize plan selection navigation:',error)}
+})();
 </script>
 <script>
 /* ASTROJAK visitor log -> your own Google Sheet (free).

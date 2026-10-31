@@ -178,7 +178,7 @@
   </script>
 
   <!-- Google Fonts -->
-  <script src="/pricing.js" defer></script>
+  <script src="/pricing.js"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1991,10 +1991,12 @@
 
       var btns = document.querySelectorAll('[data-lang]');
       function setLang(l) {
+        if (l !== 'en' && l !== 'hi' && l !== 'hing') l = 'en';
         nodes.forEach(function (x) {
           var t = TR[x.k], v = l === 'hi' ? t[1] : l === 'hing' ? t[2] : null;
           x.n.nodeValue = v == null ? x.o : (/^\s/.test(x.o) ? ' ' : '') + v + (/\s$/.test(x.o) ? ' ' : '');
         });
+        window.ASTROJAK_LANGUAGE = l;
         document.documentElement.lang = l === 'hi' ? 'hi' : 'en-IN';
         btns.forEach(function (b) { var on = b.getAttribute('data-lang') === l; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
         try { localStorage.setItem('lang', l); } catch (e) {}

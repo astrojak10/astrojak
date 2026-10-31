@@ -122,9 +122,8 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       <input type="hidden" name="date_of_birth" id="birthDateField">
       <input type="hidden" name="birth_time" id="birthTimeField">
       <input type="hidden" name="page" id="pageField">
-      <input type="hidden" name="question" id="question">
       <div class="fields">
-        <div class="field full appointment-picker" id="reserveAppointment" hidden>
+        <div class="field full appointment-picker" id="appointmentPicker" hidden>
           <label class="lbl" for="postPayDate" data-i18n="appointmentDate">Choose your appointment date</label>
           <input id="postPayDate" type="date" aria-describedby="appointmentHint">
           <label class="lbl" for="postPayTime" data-i18n="appointmentTime">Choose an available time (IST)</label>
@@ -152,10 +151,6 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
         <div class="field">
           <label class="lbl" for="name" data-i18n="name">Your name</label>
           <input id="name" name="name" type="text" autocomplete="name" data-i18n-placeholder="namePlaceholder" placeholder="Full name" required maxlength="100">
-        </div>
-        <div class="field">
-          <label class="lbl" for="email"><span data-i18n="email">Email address</span> <span data-i18n="optional">(optional)</span></label>
-          <input id="email" name="email" type="email" autocomplete="email" data-i18n-placeholder="emailPlaceholder" placeholder="you@example.com" maxlength="120">
         </div>
         <div class="field full">
           <label class="lbl" for="mobile" data-i18n="mobile">Mobile / WhatsApp number</label>
@@ -210,9 +205,9 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       regularHint:'Your appointment date and time were selected before payment. Share your birth details for the consultation.',reserveHint:'Choose your appointment date and time, then share your birth details for the consultation.',
       appointmentIst:'Appointment time · India Standard Time (IST)',appointmentDate:'Choose your appointment date',appointmentTime:'Choose an available time (IST)',selectTime:'Select a time',appointmentHint:'Choose a date today or later and an available 3-hour time slot.',
       topicQuestion:'Which problem would you like to discuss? (optional)',topicHint:'Select all that apply.',moreTopics:'Show more topics ▾',fewerTopics:'Show fewer topics ▴',selectedCount:'{count} selected',otherName:'Other',otherPlaceholder:'Tell us what you would like to discuss',topicsSelected:'Topics selected before payment:',noTopics:'No topics selected before payment.',
-      name:'Your name',namePlaceholder:'Full name',email:'Email address',optional:'(optional)',emailPlaceholder:'you@example.com',mobile:'Mobile / WhatsApp number',mobilePlaceholder:'10-digit mobile number',
+      name:'Your name',namePlaceholder:'Full name',mobile:'Mobile / WhatsApp number',mobilePlaceholder:'10-digit mobile number',
       birthDate:'Date of birth',year:'Year',month:'Month',day:'Day',birthTime:'Exact birth time',ifKnown:'(if known)',birthTimeHint:'If you do not know the exact time, leave these fields blank.',
-      birthPlace:'Birth place',placePlaceholder:'City, State, Country',additionalQuestion:'Additional question',questionPlaceholder:'Add any other details here',sendDetails:'Send Details',
+      birthPlace:'Birth place',placePlaceholder:'City, State, Country',sendDetails:'Send Details',
       detailsSent:'✅ Your details have been sent',teamContact:"Acharya Narender Ji's team will contact you about your selected appointment time.",
       whatsappDetails:'Message your details on WhatsApp',helpTitle:'Need help completing your booking?',helpText:'Message us on WhatsApp and include your payment reference if you have one.',whatsappHelp:'Message on WhatsApp',visitWebsite:'Visit our website',
       helpPayment:'Need help completing your booking?',helpMessage:'Hi! I need help with my astrology consultation booking.',paidStatus:'Your payment for {plan} ({amount}) is confirmed. {next}',
@@ -228,9 +223,9 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       regularHint:'आपने भुगतान से पहले अपॉइंटमेंट की तारीख और समय चुना है। परामर्श के लिए जन्म विवरण साझा करें।',reserveHint:'अपॉइंटमेंट की तारीख और समय चुनें, फिर परामर्श के लिए जन्म विवरण साझा करें।',
       appointmentIst:'अपॉइंटमेंट का समय · भारतीय मानक समय (IST)',appointmentDate:'अपॉइंटमेंट की तारीख चुनें',appointmentTime:'उपलब्ध समय चुनें (IST)',selectTime:'समय चुनें',appointmentHint:'आज या बाद की तारीख और उपलब्ध 3 घंटे का समय स्लॉट चुनें।',
       topicQuestion:'आप किस समस्या पर चर्चा करना चाहते हैं? (वैकल्पिक)',topicHint:'लागू होने वाले सभी विकल्प चुनें।',moreTopics:'और विषय देखें ▾',fewerTopics:'कम विषय देखें ▴',selectedCount:'{count} चुने गए',otherName:'अन्य',otherPlaceholder:'बताएं कि आप किस विषय पर चर्चा करना चाहते हैं',topicsSelected:'भुगतान से पहले चुने गए विषय:',noTopics:'भुगतान से पहले कोई विषय नहीं चुना गया।',
-      name:'आपका नाम',namePlaceholder:'पूरा नाम',email:'ईमेल पता',optional:'(वैकल्पिक)',emailPlaceholder:'you@example.com',mobile:'मोबाइल / WhatsApp नंबर',mobilePlaceholder:'10 अंकों का मोबाइल नंबर',
+      name:'आपका नाम',namePlaceholder:'पूरा नाम',mobile:'मोबाइल / WhatsApp नंबर',mobilePlaceholder:'10 अंकों का मोबाइल नंबर',
       birthDate:'जन्म तिथि',year:'वर्ष',month:'महीना',day:'दिन',birthTime:'जन्म का सही समय',birthHour:'जन्म का घंटा',birthMinute:'जन्म का मिनट',birthAmPm:'पूर्वाह्न या अपराह्न',ifKnown:'(यदि पता हो)',birthTimeHint:'यदि सही समय पता नहीं है, तो इन विकल्पों को खाली छोड़ें।',
-      birthPlace:'जन्म स्थान',placePlaceholder:'शहर, राज्य, देश',additionalQuestion:'अतिरिक्त सवाल',questionPlaceholder:'यहां कोई अन्य जानकारी लिखें',sendDetails:'जानकारी भेजें',
+      birthPlace:'जन्म स्थान',placePlaceholder:'शहर, राज्य, देश',sendDetails:'जानकारी भेजें',
       detailsSent:'✅ आपकी जानकारी भेज दी गई है',teamContact:'आचार्य नरेंद्र जी की टीम आपके चुने हुए अपॉइंटमेंट समय के बारे में आपसे संपर्क करेगी।',
       whatsappDetails:'WhatsApp पर अपनी जानकारी भेजें',helpTitle:'बुकिंग पूरी करने में सहायता चाहिए?',helpText:'WhatsApp पर संदेश भेजें और भुगतान संदर्भ उपलब्ध हो तो शामिल करें।',whatsappHelp:'WhatsApp पर संदेश भेजें',visitWebsite:'वेबसाइट पर जाएं',
       helpPayment:'बुकिंग पूरी करने में सहायता चाहिए?',helpMessage:'नमस्ते! मुझे ज्योतिष परामर्श की बुकिंग में सहायता चाहिए।',paidStatus:'आपका {plan} ({amount}) का भुगतान सफल है। {next}',
@@ -246,9 +241,9 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       regularHint:'Aapne payment se pehle appointment date aur time chuna tha. Consultation ke liye birth details share karein.',reserveHint:'Appointment date aur time chunein, phir consultation ke liye birth details share karein.',
       appointmentIst:'Appointment time · India Standard Time (IST)',appointmentDate:'Appointment date chunein',appointmentTime:'Available time chunein (IST)',selectTime:'Time chunein',appointmentHint:'Aaj ya aage ki date aur available 3-hour time slot chunein.',
       topicQuestion:'Aap kis problem par baat karna chahte hain? (optional)',topicHint:'Jo lagu ho, sab select karein.',moreTopics:'Aur topics dekhein ▾',fewerTopics:'Kam topics dekhein ▴',selectedCount:'{count} selected',otherName:'Other',otherPlaceholder:'Batayein aap kis baare mein baat karna chahte hain',topicsSelected:'Payment se pehle chune gaye topics:',noTopics:'Payment se pehle koi topic select nahi kiya.',
-      name:'Aapka naam',namePlaceholder:'Poora naam',email:'Email address',optional:'(optional)',emailPlaceholder:'you@example.com',mobile:'Mobile / WhatsApp number',mobilePlaceholder:'10-digit mobile number',
+      name:'Aapka naam',namePlaceholder:'Poora naam',mobile:'Mobile / WhatsApp number',mobilePlaceholder:'10-digit mobile number',
       birthDate:'Date of birth',year:'Year',month:'Month',day:'Day',birthTime:'Birth ka sahi time',birthHour:'Birth hour',birthMinute:'Birth minute',birthAmPm:'AM ya PM',ifKnown:'(agar pata ho)',birthTimeHint:'Agar sahi time nahi pata, to in options ko khaali chhod dein.',
-      birthPlace:'Birth place',placePlaceholder:'City, State, Country',additionalQuestion:'Extra sawaal',questionPlaceholder:'Yahan koi aur jaankari likhein',sendDetails:'Details bhejein',
+      birthPlace:'Birth place',placePlaceholder:'City, State, Country',sendDetails:'Details bhejein',
       detailsSent:'✅ Aapki details bhej di gayi hain',teamContact:'Acharya Narender Ji ki team aapke chune hue appointment time ke liye aapse sampark karegi.',
       whatsappDetails:'WhatsApp par apni details bhejein',helpTitle:'Booking poori karne mein madad chahiye?',helpText:'WhatsApp par message karein aur payment reference ho to share karein.',whatsappHelp:'WhatsApp par message karein',visitWebsite:'Website dekhein',
       helpPayment:'Booking poori karne mein madad chahiye?',helpMessage:'Hi! Mujhe astrology consultation booking mein madad chahiye.',paidStatus:'Aapka {plan} ({amount}) payment confirm ho gaya hai. {next}',
@@ -276,12 +271,12 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     Array.prototype.forEach.call($('postPayTime').options,function(option,index){if(index)option.textContent=TEXT[lang].timeSlots[index-1]});
     Array.prototype.forEach.call($('topicOptions').querySelectorAll('[data-topic]'),function(label){label.querySelector('[data-topic-label]').textContent=(TEXT[lang].topics[label.getAttribute('data-topic')]||label.getAttribute('data-topic'))});
     $('hour').setAttribute('aria-label',t('birthHour'));$('minute').setAttribute('aria-label',t('birthMinute'));$('ampm').setAttribute('aria-label',t('birthAmPm'));
-    $('detailsHint').textContent=t(isReserve?'reserveHint':'regularHint');
+    $('detailsHint').textContent=t(hasAppointment?'regularHint':'reserveHint');
     $('topicMore').textContent=t($('topicOptions').classList.contains('collapsed')?'moreTopics':'fewerTopics');
     updateTopicSummary();
     if(paid){
       $('title').textContent=t('paidTitle');
-      $('status').textContent=t('paidStatus').replace('{plan}',planName).replace('{amount}',amount).replace('{next}',t(isReserve?'reserveNext':'detailsNext'));
+      $('status').textContent=t('paidStatus').replace('{plan}',planName).replace('{amount}',amount).replace('{next}',t(hasAppointment?'detailsNext':'reserveNext'));
     }
     if(paymentId)$('paymentId').textContent=(lang==='hi'?'भुगतान आईडी: ':'Payment ID: ')+paymentId;
     if(appointment&&date&&time)updateAppointment();
@@ -345,8 +340,8 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   var amount=plan?PRICING.symbol+plan.price:'';
   var date=q.get('appointment_date')||'';
   var time=q.get('appointment_time')||'';
+  var hasAppointment=false;
   var appointment='';
-  var isReserve=ref==='reserve';
   var wa='917827673637';
   var checkoutContext=null;
   try{
@@ -355,6 +350,10 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     console.error('Could not read saved checkout details:',err);
   }
   checkoutContext=checkoutContext&&typeof checkoutContext==='object'?checkoutContext:{};
+  var contextAppointment=checkoutContext.appointment&&typeof checkoutContext.appointment==='object'?checkoutContext.appointment:{};
+  date=date||String(contextAppointment.date||'');
+  time=time||String(contextAppointment.time||'');
+  hasAppointment=!!(date&&time&&/^\d{4}-\d{2}-\d{2}$/.test(date));
   var selectedPlan=String(checkoutContext.selectedPlan||'');
   topics=Array.isArray(checkoutContext.topics)?checkoutContext.topics:[];
   var mobile=String(checkoutContext.mobile||'');
@@ -373,9 +372,14 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     return new Date(Date.now()+330*60000).toISOString().slice(0,10);
   }
   function updateAppointment(){
-    date=$('postPayDate').value;
-    time=$('postPayTime').value;
-    if(date&&time&&/^\d{4}-\d{2}-\d{2}$/.test(date)){
+    if(!$('appointmentPicker').hidden){
+      date=$('postPayDate').value;
+      time=$('postPayTime').value;
+    }
+    hasAppointment=!!(date&&time&&/^\d{4}-\d{2}-\d{2}$/.test(date));
+    $('detailsHint').textContent=t(hasAppointment?'regularHint':'reserveHint');
+    if(paid)$('status').textContent=t('paidStatus').replace('{plan}',planName).replace('{amount}',amount).replace('{next}',t(hasAppointment?'detailsNext':'reserveNext'));
+    if(hasAppointment){
       var parts=date.split('-');
       var dayDate=new Date(+parts[0],+parts[1]-1,+parts[2]);
       appointment=dayDate.toLocaleDateString(lang==='hi'?'hi-IN':'en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' · '+time;
@@ -402,8 +406,8 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     $('appointmentWhen').textContent=appointment;
     $('appointmentSummary').hidden=false;
   }
-  if(paid&&isReserve){
-    $('reserveAppointment').hidden=false;
+  if(paid&&!hasAppointment){
+    $('appointmentPicker').hidden=false;
     $('postPayDate').min=todayIst();
     $('postPayDate').required=true;
     $('postPayTime').required=true;
@@ -419,12 +423,10 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       (appointment?'\nAppointment: '+appointment+' IST':'')+
       (paymentId?'\nPayment ID: '+paymentId:'')+
       '\nName: '+data.name+
-      (data.email?'\nEmail: '+data.email:'')+
       '\nMobile: '+data.mobile+
       '\nDate of birth: '+data.birthDate+
       (data.birthTime?'\nBirth time: '+data.birthTime:'')+
-      '\nBirth place: '+data.birthPlace+
-      (data.question?'\nQuestion: '+data.question:'');
+      '\nBirth place: '+data.birthPlace;
   }
   function showWhatsApp(data){
     $('whatsapp').href='https://wa.me/'+wa+'?text='+encodeURIComponent(detailMessage(data));
@@ -433,7 +435,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   if(paid){
     applyLanguage();
     $('detailsCard').hidden=false;
-    if(!appointment&&!isReserve)$('appointmentSummary').hidden=true;
+    $('appointmentSummary').hidden=!hasAppointment;
     $('whatsapp').href='https://wa.me/'+wa+'?text='+encodeURIComponent('I have booked the consultation from your website'+
       '\nPlan: '+planName+(amount?' ('+amount+')':'')+
       (appointment?'\nAppointment: '+appointment+' IST':'')+
@@ -444,33 +446,36 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     $('unpaidCard').hidden=false;
     $('whatsappHelp').href='https://wa.me/'+wa+'?text='+encodeURIComponent(t('helpMessage')+(paymentId?' Payment ID: '+paymentId:''));
   }
-  if(paid&&!isReserve){
+  if(paid&&ref!=='reserve'&&topics.length){
     $('topicPicker').hidden=true;
     $('topicSummary').hidden=false;
-    updateTopicSummary();
+  }else if(paid){
+    $('topicPicker').hidden=false;
+    $('topicSummary').hidden=true;
   }
+  updateTopicSummary();
 
   $('detailsForm').addEventListener('submit',async function(event){
     event.preventDefault();
     var form=event.currentTarget;
     var error=$('error');error.hidden=true;
-    var name=$('name').value.trim(),email=$('email').value.trim(),y=$('year').value,m=$('month').value,d=$('day').value;
-    var hr=$('hour').value,mi=$('minute').value,ap=$('ampm').value,place=$('place').value.trim(),question=$('question').value.trim(),customerMobile=$('mobile').value.trim();
+    var name=$('name').value.trim(),y=$('year').value,m=$('month').value,d=$('day').value;
+    var hr=$('hour').value,mi=$('minute').value,ap=$('ampm').value,place=$('place').value.trim(),customerMobile=$('mobile').value.trim();
     if(!name||!y||!m||!d||!place||!customerMobile){error.textContent=t('completeRequired');error.hidden=false;return}
     if(!/^[6-9]\d{9}$/.test(customerMobile)){error.textContent=t('validMobile');error.hidden=false;return}
     if((hr||mi||ap)&&!(hr&&mi&&ap)){error.textContent=t('completeBirthTime');error.hidden=false;return}
-    if(isReserve){
+    if(!$('appointmentPicker').hidden){
       updateAppointment();
       if(!date||!time||date<todayIst()){
         error.textContent=t('todayOrFuture');
         error.hidden=false;
         return;
       }
-      topics=selectedTopics();
     }
+    if(!$('topicPicker').hidden)topics=selectedTopics();
     var birthDate=('0'+d).slice(-2)+'/'+('0'+m).slice(-2)+'/'+y;
     var birthTime=hr?hr+':'+mi+' '+ap:'';
-    var data={name:name,email:email,mobile:customerMobile,birthDate:birthDate,birthTime:birthTime,birthPlace:place,question:question};
+    var data={name:name,mobile:customerMobile,birthDate:birthDate,birthTime:birthTime,birthPlace:place};
     var button=$('submitDetails');
     $('subject').value='ASTROJAK customer details: '+planName;
     $('paymentStatusField').value='Paid';

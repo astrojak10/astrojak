@@ -1,0 +1,316 @@
+{
+  "summary": {
+    "health_score": 82,
+    "business_type": "Astrology & Spiritual Advisory (Direct-to-Consumer / Online Professional Service)",
+    "target_domain": "https://www.astrojak.in",
+    "top_findings": [
+      {
+        "title": "Multiple H1 Tags on /home Page",
+        "severity": "Critical",
+        "category": "On-Page SEO",
+        "description": "home.html contains 4 separate <h1> tags for Refund Policy, Privacy Policy, and Terms of Service sections alongside the main hero title, diluting topical authority."
+      },
+      {
+        "title": "Missing AggregateRating in Schema for Google Star Snippets",
+        "severity": "High",
+        "category": "Schema / Structured Data",
+        "description": "The site displays '4.98 rating · 1000+ consultations' visually, but omits AggregateRating JSON-LD markup, missing out on rich star snippets in SERPs."
+      },
+      {
+        "title": "Missing Security & Cache Headers in Cloudflare Configuration",
+        "severity": "Medium",
+        "category": "Technical SEO",
+        "description": "Missing HSTS, Content-Security-Policy, X-Content-Type-Options, and Referrer-Policy headers."
+      },
+      {
+        "title": "LCP Hero Image Not Preloaded with High Priority",
+        "severity": "Medium",
+        "category": "Performance (CWV)",
+        "description": "Hero portrait (/pandit.webp) lacks fetchpriority='high' and <link rel='preload'>, delaying Largest Contentful Paint."
+      },
+      {
+        "title": "Missing llms.txt and AI Crawler Content-Signal",
+        "severity": "Medium",
+        "category": "AI Search Readiness (GEO)",
+        "description": "No /llms.txt or /llms-full.txt published for AI aggregators (Perplexity, ChatGPT, Claude, Gemini)."
+      }
+    ],
+    "quick_wins": [
+      "Add AggregateRating JSON-LD to ProfessionalService schema to immediately qualify for Google search rich star snippets.",
+      "Fix H1 tags in home.html by downgrading policy headings from <h1> to <h2>/<h3>.",
+      "Add fetchpriority='high' to <img src='/pandit.webp'> on both index.html and home.html.",
+      "Add width and height attributes to review images to prevent Cumulative Layout Shift (CLS).",
+      "Deploy a standard /llms.txt file summarizing Acharya Narender Ji's Vedic astrology services, pricing, and consultation process."
+    ]
+  },
+  "categories": [
+    {
+      "name": "Technical SEO",
+      "score": 82,
+      "what_works": [
+        "Clean robots.txt allowing all major search engine crawlers",
+        "Valid XML sitemap declared in robots.txt and accessible at /sitemap.xml",
+        "Proper canonical tags pointing to preferred https://www.astrojak.in/ URLs",
+        "Fast server-side static rendering via Cloudflare edge CDN",
+        "Zero crawl errors or infinite redirect loops"
+      ],
+      "findings": [
+        {
+          "title": "Missing Security Headers (HSTS, CSP, X-Content-Type-Options)",
+          "severity": "Medium",
+          "description": "The site does not emit HTTP Strict-Transport-Security (HSTS), X-Content-Type-Options: nosniff, or Referrer-Policy headers.",
+          "recommendation": "Configure response headers in Cloudflare Pages via _headers or Cloudflare Transform Rules."
+        },
+        {
+          "title": "Sitemap Lacks Image and Freshness Metadata",
+          "severity": "Low",
+          "description": "sitemap.xml lists only two URLs without image sitemap tags or automated lastmod update timestamps.",
+          "recommendation": "Add image tags for pandit.webp and review testimonials to assist Google Images indexation."
+        }
+      ]
+    },
+    {
+      "name": "Content Quality & E-E-A-T",
+      "score": 88,
+      "what_works": [
+        "High information density score (0.86 - 1.0) with zero detectable AI boilerplate filler phrases",
+        "Strong first-person authority and credentials (Acharya Narender Ji, 20+ years experience, 1000+ consultations)",
+        "Clear pricing transparency (₹101 intro, ₹999 kundali, ₹1499 detailed) establishing commercial trust",
+        "Transparent refund policy and privacy safeguards published"
+      ],
+      "findings": [
+        {
+          "title": "Lack of Informational / Educational Content Architecture",
+          "severity": "Medium",
+          "description": "The site is currently a 2-page sales funnel with no blog or informational content targeting top-of-funnel queries (e.g. Manglik Dosh remedies, Sade Sati phases, Kundli matching rules).",
+          "recommendation": "Build a hub-and-spoke content cluster covering high-volume Vedic astrology informational queries."
+        },
+        {
+          "title": "Minor Typographic Spacing Errors in Section Headings",
+          "severity": "Low",
+          "description": "'Need Clear Answers?Ask Your Kundli' and 'Online VedicAstrology Consultation& Kundli Analysis' have missing spaces.",
+          "recommendation": "Add proper spacing between punctuation marks and words in heading tags."
+        }
+      ]
+    },
+    {
+      "name": "On-Page SEO",
+      "score": 78,
+      "what_works": [
+        "Optimized homepage title tag (68 characters) with target keywords: Vedic Astrology Consultation, Kundali Analysis, ASTROJAK",
+        "Compelling meta description with pricing and booking call-to-action",
+        "Open Graph and Twitter Card tags configured with high-res 1200x630 share image",
+        "Clean, semantic section landmarks and accessible link anchors"
+      ],
+      "findings": [
+        {
+          "title": "Multiple H1 Tags on /home Page",
+          "severity": "Critical",
+          "description": "home.html contains 4 <h1> elements (hero title plus Refund, Privacy, and Terms headings).",
+          "recommendation": "Keep exactly one <h1> per page. Change policy section headings to <h2>."
+        },
+        {
+          "title": "Inverted Breadcrumb Hierarchy",
+          "severity": "Medium",
+          "description": "Breadcrumb schema defines /home as position 1 and / as position 2, which contradicts canonical site structure.",
+          "recommendation": "Set / as position 1 ('Home') and secondary pages as position 2."
+        }
+      ]
+    },
+    {
+      "name": "Schema / Structured Data",
+      "score": 84,
+      "what_works": [
+        "Comprehensive JSON-LD with WebSite, ProfessionalService, OfferCatalog, and FAQPage",
+        "Detailed Offer entities with exact INR pricing and descriptions",
+        "FAQPage schema matching visible on-page accordion text for Google FAQ rich snippet eligibility"
+      ],
+      "findings": [
+        {
+          "title": "Omission of AggregateRating Schema",
+          "severity": "High",
+          "description": "Visual 4.98 rating is not translated into Schema.org AggregateRating markup.",
+          "recommendation": "Nest aggregateRating under ProfessionalService with ratingValue: 4.98 and reviewCount: 1000."
+        },
+        {
+          "title": "Missing Physical Address or OnlineService Distinction",
+          "severity": "Low",
+          "description": "ProfessionalService schema lacks postalAddress, which Google prefers for local/service entities.",
+          "recommendation": "Add PostalAddress with addressCountry: IN or specify OnlineBusiness service types."
+        }
+      ]
+    },
+    {
+      "name": "Performance (Core Web Vitals)",
+      "score": 80,
+      "what_works": [
+        "Fully inlined, critical CSS avoiding external render-blocking stylesheets",
+        "Zero client-side JavaScript rendering requirement (pure static HTML)",
+        "Modern WebP image format used for primary hero photo",
+        "Native loading='lazy' configured on below-the-fold testimonial images"
+      ],
+      "findings": [
+        {
+          "title": "Hero LCP Image Not Priority-Loaded",
+          "severity": "Medium",
+          "description": "The main hero image (/pandit.webp) is rendered without fetchpriority='high', postponing LCP paint.",
+          "recommendation": "Add fetchpriority='high' and <link rel='preload' as='image' href='/pandit.webp'> in <head>."
+        },
+        {
+          "title": "Missing Speculation Rules for Instant Navigation",
+          "severity": "Low",
+          "description": "Navigation between / and /home requires standard HTTP roundtrip instead of instant prerender.",
+          "recommendation": "Include a Speculation Rules script block to prerender /home upon link hover."
+        }
+      ]
+    },
+    {
+      "name": "AI Search Readiness (GEO)",
+      "score": 74,
+      "what_works": [
+        "Zero WAF blocking: GPTBot, ClaudeBot, PerplexityBot, and OAI-SearchBot all return 200 OK",
+        "Clean server-rendered semantic HTML accessible without JavaScript execution",
+        "Clear pricing and service definitions readily extractable by LLMs and answer engines"
+      ],
+      "findings": [
+        {
+          "title": "Missing /llms.txt and /llms-full.txt Discovery Files",
+          "severity": "Medium",
+          "description": "AI agents and search crawlers checking for /llms.txt receive HTTP 404.",
+          "recommendation": "Publish a clean /llms.txt documenting services, pricing, Acharya's credentials, and FAQs in Markdown."
+        },
+        {
+          "title": "No Content-Signal Policy Declared",
+          "severity": "Low",
+          "description": "No Content-Signal HTTP header or robots.txt line declaring AI scraping preferences.",
+          "recommendation": "Add 'Content-Signal: search=yes, ai-input=yes, ai-train=no' to robots.txt."
+        }
+      ]
+    },
+    {
+      "name": "Images & Visual Layout",
+      "score": 82,
+      "what_works": [
+        "Mobile-responsive layout verified across desktop, laptop, tablet, and mobile viewports",
+        "Touch targets meet accessibility guidelines (>44px)",
+        "Hero portrait has explicit width and height dimensions preventing CLS"
+      ],
+      "findings": [
+        {
+          "title": "Primary CTA Button Located Below Initial Mobile Fold",
+          "severity": "Medium",
+          "description": "Visual analysis indicates the primary reservation CTA requires scrolling on smaller screens.",
+          "recommendation": "Add a sticky mobile booking bar or elevate the primary CTA above the fold on mobile."
+        },
+        {
+          "title": "Review Testimonial Images Use JPG Format",
+          "severity": "Low",
+          "description": "Review screenshots are uncompressed JPG files without explicit width/height dimensions.",
+          "recommendation": "Convert to WebP and add explicit width/height to avoid cumulative layout shift."
+        }
+      ]
+    }
+  ],
+  "action_plan": {
+    "phases": [
+      {
+        "name": "Phase 1: Critical Fixes & Rich Snippets (Week 1)",
+        "timeframe": "Immediate (Days 1-3)",
+        "items": [
+          {
+            "task": "Resolve Multiple H1 Tags on home.html",
+            "impact": "High",
+            "effort": "Low (15 mins)",
+            "file": "home.html",
+            "action": "Change policy section <h1> tags to <h2>"
+          },
+          {
+            "task": "Implement AggregateRating Schema",
+            "impact": "High (SERP Star Snippets)",
+            "effort": "Low (15 mins)",
+            "file": "index.html & home.html",
+            "action": "Add aggregateRating object with ratingValue: 4.98 and reviewCount: 1000"
+          },
+          {
+            "task": "Correct Inverted Breadcrumb Schema",
+            "impact": "Medium",
+            "effort": "Low (10 mins)",
+            "file": "index.html",
+            "action": "Set Position 1 to https://www.astrojak.in/ ('Home')"
+          }
+        ]
+      },
+      {
+        "name": "Phase 2: Performance & CWV Optimization (Week 2)",
+        "timeframe": "Week 2",
+        "items": [
+          {
+            "task": "Add fetchpriority='high' and Preload for Hero Image",
+            "impact": "Medium (LCP improvement by ~200-400ms)",
+            "effort": "Low (10 mins)",
+            "file": "index.html & home.html",
+            "action": "Add fetchpriority='high' to <img> and <link rel='preload'> in <head>"
+          },
+          {
+            "task": "Add Explicit Dimensions & Convert Reviews to WebP",
+            "impact": "Medium (Prevents CLS & saves bandwidth)",
+            "effort": "Low (20 mins)",
+            "file": "index.html & reviews/",
+            "action": "Set width='360' height='480' on review images and compress to WebP"
+          },
+          {
+            "task": "Configure Security Headers in Cloudflare",
+            "impact": "Medium (Security & Trust Score)",
+            "effort": "Low (15 mins)",
+            "file": "_headers / Cloudflare Pages",
+            "action": "Add Strict-Transport-Security, X-Content-Type-Options, Referrer-Policy"
+          }
+        ]
+      },
+      {
+        "name": "Phase 3: AI Search & GEO Readiness (Weeks 3-4)",
+        "timeframe": "Weeks 3-4",
+        "items": [
+          {
+            "task": "Publish /llms.txt and /llms-full.txt",
+            "impact": "High (AI Citations in Perplexity, Claude, ChatGPT)",
+            "effort": "Low (30 mins)",
+            "file": "llms.txt",
+            "action": "Create structured Markdown index of ASTROJAK services and FAQs"
+          },
+          {
+            "task": "Add AI Bot Directives to robots.txt",
+            "impact": "Medium",
+            "effort": "Low (5 mins)",
+            "file": "robots.txt",
+            "action": "Explicitly allow GPTBot, ClaudeBot, PerplexityBot with Content-Signal"
+          }
+        ]
+      },
+      {
+        "name": "Phase 4: Content Expansion & Authority Building (Month 2)",
+        "timeframe": "Month 2+",
+        "items": [
+          {
+            "task": "Launch Informational Topic Cluster (Kundli & Remedies)",
+            "impact": "Very High (Organic Search Traffic)",
+            "effort": "Medium (Ongoing)",
+            "file": "New /blog or /guides pages",
+            "action": "Create long-form articles on Kundli Milan, Sade Sati, Manglik Dosh, Gemstones"
+          },
+          {
+            "task": "Setup Google Search Console & CrUX Performance Tracking",
+            "impact": "High (Visibility & Tracking)",
+            "effort": "Low (30 mins)",
+            "file": "GSC Verification",
+            "action": "Submit sitemap.xml and verify domain property in Google Search Console"
+          }
+        ]
+      }
+    ]
+  },
+  "artifacts": {
+    "findings_dir": "findings/",
+    "screenshots_dir": "screenshots/"
+  }
+}

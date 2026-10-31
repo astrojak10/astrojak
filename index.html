@@ -10,6 +10,7 @@
 <link rel="canonical" href="https://www.astrojak.in/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F8B700'/%3E%3Ccircle cx='32' cy='32' r='11' fill='none' stroke='white' stroke-width='5'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#F8B700">
+<link rel="preload" as="image" href="/pandit.webp" type="image/webp" fetchpriority="high">
 
 <!-- Open Graph & Social Meta -->
 <meta property="og:type" content="website">
@@ -51,6 +52,13 @@
       "email": "support@astrojak.in",
       "priceRange": "₹101 - ₹1499",
       "paymentAccepted": "UPI, Net Banking, Credit Card, Debit Card",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.98",
+        "reviewCount": "1000",
+        "bestRating": "5",
+        "worstRating": "1"
+      },
       "areaServed": [
         {"@type": "Country", "name": "India"},
         {"@type": "Country", "name": "United States"},
@@ -65,7 +73,14 @@
         "name": "Acharya Narender Ji",
         "jobTitle": "Vedic Astrologer & Kundli Expert",
         "description": "Senior Vedic astrologer with 20+ years experience, 1000+ consultations, and 4.98 rating. Specializing in Janam Kundali analysis, marriage compatibility, career timing, and Vedic remedies.",
-        "image": "https://www.astrojak.in/pandit.webp"
+        "image": "https://www.astrojak.in/pandit.webp",
+        "knowsAbout": [
+          "Vedic Astrology",
+          "Janam Kundali Analysis",
+          "Kundli Matching",
+          "Jyotish Shastra",
+          "Vedic Remedies"
+        ]
       },
       "hasOfferCatalog": {
         "@type": "OfferCatalog",
@@ -117,7 +132,7 @@
           "@type": "ListItem",
           "position": 1,
           "name": "Home",
-          "item": "https://www.astrojak.in/home"
+          "item": "https://www.astrojak.in/"
         },
         {
           "@type": "ListItem",
@@ -216,13 +231,15 @@ fbq('init', '2057261584904971');
 fbq('track', 'PageView');
 </script>
 <!-- End Meta Pixel Code -->
-<script src="/pricing.js"></script>
-<link rel="preconnect" href="https://checkout.razorpay.com">
+<script src="/pricing.js" defer></script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
 <style>
-:root{--cream:#FFFDF5;--yellow:#F8B700;--saffron:#FF6F00;--dark:#E65100;--gold:linear-gradient(135deg,#F8B700,#FF9900);--ink:#1A1A1A;--muted:#595959;--border:#F2E4C4;--accent:#ECCF8A;--wa:#25D366}
+:root{--cream:#FFFDF5;--yellow:#F8B700;--saffron:#FF6F00;--dark:#B73500;--gold:linear-gradient(135deg,#F8B700,#FF9900);--ink:#1A1A1A;--muted:#595959;--border:#F2E4C4;--accent:#ECCF8A;--wa:#128C7E}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:linear-gradient(180deg,#FFF6DC,var(--cream) 320px);color:var(--ink);line-height:1.6;overflow-x:hidden}
@@ -230,7 +247,7 @@ a{color:var(--dark)}
 .wrap{max-width:560px;margin:0 auto;padding:0 14px}
 header{background:#fff;border-bottom:1px solid var(--border)}
 .bar{display:flex;align-items:center;justify-content:space-between;height:60px}
-.brand{font-weight:800;font-size:20px;letter-spacing:1px;color:var(--ink);text-decoration:none}.brand span{color:var(--saffron)}
+.brand{font-weight:800;font-size:20px;letter-spacing:1px;color:var(--ink);text-decoration:none}.brand span{color:#C84A00}
 .back{font-size:14px;font-weight:600;text-decoration:none}
 .header-tools{display:flex;align-items:center;gap:10px}
 .tag{text-align:center;margin-top:24px;font-size:12px;font-weight:800;letter-spacing:3px;color:var(--dark)}
@@ -331,7 +348,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
 .exp .shot img{display:block;width:100%;height:auto;border-radius:20px}
 .exp .privacy{font-size:12px;margin:2px 0 4px;color:var(--muted)}
 .slot-picker{margin-top:14px;padding:14px 12px;background:#FFFBEE;border:1.5px solid var(--border);border-radius:18px}
-.slot-picker h3{text-align:left;font-size:17px;margin:0 0 4px}
+.slot-picker h2,.slot-picker h3{text-align:left;font-size:17px;margin:0 0 4px}
 .slot-heading-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .slot-scarcity{flex:0 0 auto;border-radius:999px;background:#FFF0EC;color:#9B1C1C;padding:5px 9px;font-size:10px;font-weight:800;line-height:1.2;white-space:nowrap}
 .slot-scarcity[hidden]{display:none}
@@ -408,8 +425,8 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
 .hero101{position:relative;background:radial-gradient(ellipse at 50% 0%,rgba(248,183,0,.18),transparent 62%)}
 .hero101::before{content:"☾";position:absolute;left:2px;top:30px;font-size:34px;color:#EBCB86;opacity:.75;pointer-events:none}
 .hero101::after{content:"✦";position:absolute;right:4px;top:28px;font-size:28px;color:#EBCB86;opacity:.8;pointer-events:none}
-.hphoto{animation:ring 3.4s ease-in-out infinite}
-@keyframes ring{0%,100%{box-shadow:0 0 0 3px var(--accent),0 10px 24px rgba(248,183,0,.28)}50%{box-shadow:0 0 0 7px rgba(236,207,138,.55),0 12px 32px rgba(248,183,0,.42)}}
+.hphoto{box-shadow:0 0 0 3px var(--accent),0 10px 24px rgba(248,183,0,.28);animation:ring 3.4s ease-in-out infinite}
+@keyframes ring{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
 .rsv{position:relative;overflow:hidden}
 .rsv::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:shine 3.4s infinite}
 @keyframes shine{0%{left:-60%}60%,100%{left:130%}}
@@ -491,9 +508,9 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
   <div class="hname" data-i18n="acharya-name">Acharya Narender Ji</div>
   <div class="hrole" data-i18n="hero-role">Vedic Astrologer · Kundli Expert</div>
   <div class="hrow">
-    <img class="hphoto" src="/pandit.webp" alt="Acharya Narender Ji" width="132" height="132" decoding="async">
+    <img class="hphoto" src="/pandit.webp" alt="Acharya Narender Ji" width="132" height="132" fetchpriority="high" decoding="async">
     <div>
-      <h2 class="hq"><span data-i18n="hero-question">Need Clear Answers?</span><em data-i18n="hero-ask">Ask Your Kundli</em></h2>
+      <h2 class="hq"><span data-i18n="hero-question">Need Clear Answers?</span> <em data-i18n="hero-ask">Ask Your Kundli</em></h2>
       <div class="hline"></div>
       <p class="hsub" data-i18n="hero-description">Understand what your Kundli shows, what is happening now, and the right upay to move forward.</p>
     </div>
@@ -533,11 +550,11 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
   </div>
 
   <section class="slot-picker" id="slotPicker" aria-labelledby="slotHeading">
-    <div class="slot-heading-row"><h3 id="slotHeading" data-i18n="slot-title">Choose your 1:1 call appointment</h3><span class="slot-scarcity" id="slotScarcity" data-i18n="scarcity-tag">Only 5 slots left · per time slot</span></div>
+    <div class="slot-heading-row"><h2 id="slotHeading" data-i18n="slot-title">Choose your 1:1 call appointment</h2><span class="slot-scarcity" id="slotScarcity" data-i18n="scarcity-tag">Only 5 slots left · per time slot</span></div>
     <p class="hint" data-i18n="slot-hint">Select a date, then choose an available 3-hour time slot. All times are India time (IST).</p>
     <div class="calendar">
       <div class="calendar-head"><button type="button" class="cal-nav" id="calPrev" aria-label="Previous month">‹</button><strong id="calMonth"></strong><button type="button" class="cal-nav" id="calNext" aria-label="Next month">›</button></div>
-      <div class="cal-grid" id="calendarGrid" role="grid"></div>
+      <div class="cal-grid" id="calendarGrid"></div>
       <p class="calendar-selection" id="calendarSelection" aria-live="polite">Choose a date to see available times.</p>
       <div class="calendar-slots" id="calendarSlots" hidden>
         <p class="hint" data-i18n="slot-select">Available appointment times</p>
@@ -580,9 +597,9 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
 <h2 data-i18n="customer-reviews">Customer Reviews</h2>
 <p class="sub" data-i18n="reviews-rating">⭐ 4.98 rating · 1000+ consultations</p>
 <div class="shots" id="shots">
-  <a class="shot" href="/reviews/review-01.jpg" target="_blank" rel="noopener"><img src="/reviews/review-01.jpg" alt="Client review for Kundali Analysis consultation with Acharya Narender Ji" loading="lazy" decoding="async" onerror="this.parentNode.remove();window.rvChk&&rvChk()"></a>
-  <a class="shot" href="/reviews/review-02.jpg" target="_blank" rel="noopener"><img src="/reviews/review-02.jpg" alt="Client feedback on career astrology and marriage matching consultation" loading="lazy" decoding="async" onerror="this.parentNode.remove();window.rvChk&&rvChk()"></a>
-  <a class="shot" href="/reviews/review-03.jpg" target="_blank" rel="noopener"><img src="/reviews/review-03.jpg" alt="ASTROJAK verified client testimonial for Vedic astrology guidance" loading="lazy" decoding="async" onerror="this.parentNode.remove();window.rvChk&&rvChk()"></a>
+  <a class="shot" href="/reviews/review-01.jpg" target="_blank" rel="noopener"><img src="/reviews/review-01.jpg" alt="Client review for Kundali Analysis consultation with Acharya Narender Ji" width="760" height="1314" loading="lazy" decoding="async" onerror="this.parentNode.remove();window.rvChk&&rvChk()"></a>
+  <a class="shot" href="/reviews/review-02.jpg" target="_blank" rel="noopener"><img src="/reviews/review-02.jpg" alt="Client feedback on career astrology and marriage matching consultation" width="760" height="1246" loading="lazy" decoding="async" onerror="this.parentNode.remove();window.rvChk&&rvChk()"></a>
+  <a class="shot" href="/reviews/review-03.jpg" target="_blank" rel="noopener"><img src="/reviews/review-03.jpg" alt="ASTROJAK verified client testimonial for Vedic astrology guidance" width="761" height="1360" loading="lazy" decoding="async" onerror="this.parentNode.remove();window.rvChk&&rvChk()"></a>
 </div>
 <p class="fine privacy" data-i18n="reviews-privacy">🔒 Customer names, photos and phone numbers are hidden to protect their privacy.</p>
 <p class="fine" data-i18n="reviews-disclaimer">Experiences vary and no outcome is guaranteed.</p>
@@ -753,11 +770,11 @@ function renderCalendar(){
  $('calPrev').disabled=yr===+min.slice(0,4)&&mo===+min.slice(5,7)-1;
  grid.innerHTML='';
  var weekdays=language==='hi'?['रवि','सोम','मंगल','बुध','गुरु','शुक्र','शनि']:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
- weekdays.forEach(function(day){var el=document.createElement('span');el.className='cal-weekday';el.setAttribute('role','columnheader');el.textContent=day;grid.appendChild(el)});
+ weekdays.forEach(function(day){var el=document.createElement('span');el.className='cal-weekday';el.textContent=day;grid.appendChild(el)});
  for(var i=0;i<first;i++){var blank=document.createElement('span');blank.setAttribute('aria-hidden','true');grid.appendChild(blank)}
  for(var day=1;day<=days;day++){
   var date=yr+'-'+('0'+(mo+1)).slice(-2)+'-'+('0'+day).slice(-2);
-  var button=document.createElement('button');button.type='button';button.className='cal-day';button.setAttribute('role','gridcell');button.textContent=language==='hi'?new Intl.NumberFormat('hi-IN').format(day):String(day);
+  var button=document.createElement('button');button.type='button';button.className='cal-day';button.textContent=language==='hi'?new Intl.NumberFormat('hi-IN').format(day):String(day);
   if(date<min)button.disabled=true;
   if(date===min)button.classList.add('today');
   if(date===selectedDate){button.classList.add('selected');button.setAttribute('aria-pressed','true')}else button.setAttribute('aria-pressed','false');

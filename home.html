@@ -22,7 +22,7 @@
   <meta property="og:image" content="https://www.astrojak.in/og-image.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <link rel="preload" as="image" href="/pandit.webp" type="image/webp">
+  <link rel="preload" as="image" href="/pandit.webp" type="image/webp" fetchpriority="high">
   <meta property="og:image:alt" content="Acharya Narender Ji - ASTROJAK">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="ASTROJAK - Vedic Astrology Consultation on WhatsApp">
@@ -64,6 +64,13 @@
    "description": "Online Vedic astrology consultation by Acharya Narender Ji over call and WhatsApp.",
    "telephone": "+917827673637",
    "areaServed": "IN",
+   "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.98",
+    "reviewCount": "1000",
+    "bestRating": "5",
+    "worstRating": "1"
+   },
    "founder": {
     "@type": "Person",
     "name": "Acharya Narender Ji"
@@ -1153,7 +1160,7 @@
     .policy-page:target { display: block; }
     .policy-box { max-width: 780px; margin: 0 auto; background: #fff; border: 1.5px solid var(--border-warm); border-radius: 20px; padding: 32px 26px; box-shadow: var(--shadow-sm); }
     .policy-back { display: inline-block; margin-bottom: 18px; font-size: 13.5px; font-weight: 800; color: var(--saffron-dark); text-decoration: none; }
-    .policy-box h1 { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+    .policy-box h1, .policy-box .policy-title { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
     .policy-updated { font-size: 12.5px; color: var(--text-light); margin-bottom: 20px; }
     .policy-box h2 { font-size: 17px; font-weight: 800; margin: 22px 0 6px; color: var(--saffron-dark); }
     .policy-box p, .policy-box li { font-size: 14.5px; color: var(--text-muted); line-height: 1.65; }
@@ -1383,7 +1390,7 @@
           </div>
 
           <h1 class="hero-heading">
-            Online Vedic <span class="text-saffron">Astrology Consultation</span> &amp; Kundli Analysis
+            Online Vedic&nbsp;<span class="text-saffron">Astrology Consultation</span>&nbsp;&amp; Kundli Analysis
           </h1>
 
           <p class="hero-description">
@@ -1727,7 +1734,7 @@
     <div class="container">
       <div class="policy-box">
         <a href="#" class="policy-back">&larr; Back to Home</a>
-        <h1>Refund Policy</h1>
+        <h2 class="policy-title">Refund Policy</h2>
         <p class="policy-updated">Last updated: 1 October 2026</p>
         <h2>1. Consultation Services</h2>
         <p>ASTROJAK provides astrology consultation services (Kundali Analysis, Detailed Kundali Analysis and Marriage Matchmaking Analysis) delivered via WhatsApp call, chat or as arranged with you.</p>
@@ -1750,7 +1757,7 @@
     <div class="container">
       <div class="policy-box">
         <a href="#" class="policy-back">&larr; Back to Home</a>
-        <h1>Privacy Policy</h1>
+        <h2 class="policy-title">Privacy Policy</h2>
         <p class="policy-updated">Last updated: 1 October 2026</p>
         <h2>1. Information We Collect</h2>
         <p>When you contact or book with us, we may collect your name, phone number (WhatsApp), date, time and place of birth, the questions you ask, and payment confirmation details. If you submit feedback, we also receive your rating, message and, optionally, your name and phone number. We do not collect sensitive payment data such as card numbers; payments are handled by third-party payment providers.</p>
@@ -1783,7 +1790,7 @@
     <div class="container">
       <div class="policy-box">
         <a href="#" class="policy-back">&larr; Back to Home</a>
-        <h1>Terms of Service</h1>
+        <h2 class="policy-title">Terms of Service</h2>
         <p class="policy-updated">Last updated: 2 October 2026</p>
         <h2>1. Acceptance</h2>
         <p>By using this website or booking a consultation with ASTROJAK, you agree to these Terms. If you do not agree, please do not use the service.</p>

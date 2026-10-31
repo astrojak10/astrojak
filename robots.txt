@@ -3,4 +3,23 @@ Allow: /
 Disallow: /thank-you
 Disallow: /thank-you.html
 
+# AI Search crawlers
+User-agent: GPTBot
+Allow: /
+Disallow: /thank-you
+Disallow: /thank-you.html
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /thank-you
+Disallow: /thank-you.html
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /thank-you
+Disallow: /thank-you.html
+
+# Content-Signal preference (Cloudflare Content Signals Policy / IETF)
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+
 Sitemap: https://www.astrojak.in/sitemap.xml

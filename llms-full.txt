@@ -1,0 +1,55 @@
+# ASTROJAK — Complete Context for Language Models & AI Agents
+
+> Comprehensive documentation for ASTROJAK (https://www.astrojak.in/), an online Vedic astrology consultation platform led by Acharya Narender Ji.
+
+## Platform Identity
+- **Name**: ASTROJAK
+- **Canonical URL**: https://www.astrojak.in/
+- **Founded / Astrologer**: Acharya Narender Ji (Senior Vedic Astrologer & Kundli Expert with 20+ years of active practice and over 1,000 verified consultations).
+- **Service Language**: English, Hindi
+- **Regions Served**: India, United States, United Kingdom, Canada, United Arab Emirates, Australia.
+
+## Detailed Consultation Services
+
+### 1. Reserve Your Slot (Introductory Session)
+- **Fee**: ₹101 (Promotional offer, normally ₹499)
+- **Format**: 10-minute 1:1 consultation audio call with Acharya Narender Ji.
+- **Includes**: Comprehensive personalized horoscope PDF report delivered to the customer.
+- **Purpose**: Low-friction introductory consultation to understand chart basics and formulate specific queries before full readings.
+
+### 2. Kundali Analysis
+- **Fee**: ₹999
+- **Format**: Dedicated 1:1 audio phone call.
+- **Scope**: In-depth analysis of the 12 Bhavas (houses), planetary placements (Grahas), Lagna chart, Navamsha chart (D9), and current Mahadasha. Includes a written summary delivered on WhatsApp.
+
+### 3. Detailed Kundali Analysis
+- **Fee**: ₹1,499
+- **Format**: Extended 1:1 audio call.
+- **Scope**: Comprehensive life review including Mahadasha, Antardasha, Pratyantardasha timings, major transits (Gochar, including Shani Sade Sati, Jupiter transit, Rahu-Ketu axis), career timing, financial prospects, health indicators, and customized Vedic remedies (upay, mantras, daan, gemstone advice).
+
+### 4. Marriage Matchmaking Analysis (Kundli Milan)
+- **Fee**: ₹1,499
+- **Format**: Dedicated 1:1 audio call with both charts evaluated.
+- **Scope**: 36 Guna Milan (Ashtakoot calculation: Varna, Vashya, Tara, Yoni, Graha Maitri, Gana, Bhakoot, Nadi), Manglik Dosh detection and cancellation rules, emotional compatibility, mutual longevity, and marital harmony remedies.
+
+## Frequently Asked Questions (FAQ)
+
+### How does the consultation process work?
+1. Choose an analysis tier on https://www.astrojak.in/
+2. Select an appointment date and 3-hour time slot.
+3. Complete secure payment via Razorpay (UPI, Credit/Debit card, Net Banking).
+4. Share birth details (date of birth, exact time of birth, place of birth) and specific questions on WhatsApp (+91 78276 73637).
+5. Acharya Narender Ji conducts the private 1:1 call and delivers a written summary / horoscope PDF report afterwards.
+
+### What if the exact birth time is not known?
+Customers can share their approximate time of birth. Acharya Narender Ji will assess the chart using Prashna Kundali (horary astrology) and visible life events to provide accurate Vedic guidance.
+
+### Are results guaranteed?
+Vedic astrology provides traditional planetary guidance, timing analysis, and spiritual remedies. No ethical astrologer guarantees deterministic outcomes. ASTROJAK provides transparent guidance and clear refund policies before sessions commence.
+
+## Contact & Social Channels
+- **Website**: https://www.astrojak.in/
+- **Support WhatsApp / Phone**: +91 78276 73637
+- **Official Support Email**: support@astrojak.in
+- **Customer Care**: astrojak10@gmail.com
+- **Instagram**: @astrojakk

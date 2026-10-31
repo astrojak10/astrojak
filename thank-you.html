@@ -465,13 +465,13 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
         body:JSON.stringify(calendarPayload)
       });
       var result=await res.json().catch(function(){return {}});
-      if(!res.ok||!result.created)throw new Error(result.error||'Calendar sync request failed');
+      if(!res.ok||!result.created)throw new Error(result.diagnostic||result.error||'Calendar sync request failed');
       try{sessionStorage.removeItem(calendarSyncKey)}catch(err){console.error('Could not clear pending Calendar sync details:',err)}
       calendarPayload=null;
       status.textContent=t('calendarDone');
     }catch(err){
       console.error('Could not add the appointment to Google Calendar:',err);
-      status.textContent=t('calendarFailed');
+      status.textContent=t('calendarFailed')+' '+(err.message||'');
       button.hidden=false;
     }finally{
       button.disabled=false;

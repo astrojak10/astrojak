@@ -55,7 +55,9 @@ reference; birth date, birth time, and birth place are not added to Calendar.
 
 If Calendar is unavailable after the customer details are accepted, the
 thank-you page shows a separate retry action. The customer should not need to
-submit their details again.
+submit their details again. The retry message includes a safe diagnostic such
+as an OAuth rejection reason or Calendar API permission/status code; it never
+includes service-account key material.
 
 ## Security notes
 

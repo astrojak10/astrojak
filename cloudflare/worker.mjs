@@ -144,7 +144,12 @@ async function googleAccessToken(credentials) {
     }),
   });
   const data = await result.json().catch(() => ({}));
-  if (!result.ok || !data.access_token) throw new Error('Google access token request failed');
+  if (!result.ok || !data.access_token) {
+    const reason = typeof data.error === 'string' && /^[a-z0-9_-]+$/i.test(data.error)
+      ? data.error
+      : `HTTP_${result.status}`;
+    throw new Error(`Google OAuth rejected the service account (${reason})`);
+  }
   return data.access_token;
 }
 
@@ -212,6 +217,7 @@ export default {
         return response(400, { error: 'Valid payment, customer, and appointment details are required' }, origin);
       }
 
+      let stage = 'Google service-account credentials';
       try {
         const paymentResult = await razorpayRequest(
           env,
@@ -250,10 +256,16 @@ export default {
           return response(400, { error: 'Payment does not match this booking' }, origin);
         }
 
-        const credentials = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_JSON);
-        if (!credentials.client_email || !credentials.private_key) {
-          throw new Error('Google service account credentials are incomplete');
+        let credentials;
+        try {
+          credentials = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_JSON);
+        } catch {
+          throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON must contain only valid service-account JSON');
         }
+        if (!credentials.client_email || !credentials.private_key) {
+          throw new Error('service-account JSON must contain client_email and private_key');
+        }
+        stage = 'Google OAuth';
         const accessToken = await googleAccessToken(credentials);
         const [startTime, endTime] = appointmentTimes(appointment.time);
         const topics = Array.isArray(input.topics)
@@ -274,6 +286,7 @@ export default {
           end: { dateTime: `${appointment.date}T${endTime}:00`, timeZone: 'Asia/Kolkata' },
         };
         const calendarUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(env.GOOGLE_CALENDAR_ID)}/events`;
+        stage = 'Google Calendar API';
         const calendarResult = await fetch(calendarUrl, {
           method: 'POST',
           headers: {
@@ -286,13 +299,25 @@ export default {
           return response(200, { created: true, already_exists: true }, origin);
         }
         if (!calendarResult.ok) {
-          console.error('Google Calendar event creation failed', calendarResult.status);
-          return response(502, { error: 'Could not create Calendar event' }, origin);
+          const failure = await calendarResult.json().catch(() => ({}));
+          const googleError = failure.error && typeof failure.error === 'object' ? failure.error : {};
+          const reason = typeof googleError.status === 'string' && /^[a-z0-9_-]+$/i.test(googleError.status)
+            ? googleError.status
+            : `HTTP_${calendarResult.status}`;
+          console.error('Google Calendar event creation failed', calendarResult.status, reason);
+          return response(502, {
+            error: 'Could not create Calendar event',
+            diagnostic: `Google Calendar API: ${reason} (HTTP ${calendarResult.status})`,
+          }, origin);
         }
         return response(200, { created: true, already_exists: false }, origin);
       } catch (error) {
-        console.error('Google Calendar event creation failed', error);
-        return response(502, { error: 'Could not create Calendar event' }, origin);
+        const message = error instanceof Error ? error.message : 'Unexpected error';
+        console.error('Google Calendar event creation failed', stage, message);
+        return response(502, {
+          error: 'Could not create Calendar event',
+          diagnostic: `${stage}: ${message}`,
+        }, origin);
       }
     }
 

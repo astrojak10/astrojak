@@ -8,4 +8,7 @@ https://astrojak.netlify.app/*     https://www.astrojak.in/:splat  301!
 /about        /about.html  200
 /kundli-matching   /kundli-matching.html   200
 /kundali-analysis  /kundali-analysis.html  200
+/dasha-mahadasha  /dasha-mahadasha.html  200
+/sade-sati-guide  /sade-sati-guide.html  200
+/consultation-faq  /consultation-faq.html  200
 /thank-you    /thank-you.html   200

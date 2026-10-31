@@ -29,20 +29,16 @@
   <meta name="twitter:description" content="Kundli, Vivah Yog, Love and Career guidance by Acharya Narender Ji. Kundali Analysis online.">
   <meta name="twitter:image" content="https://www.astrojak.in/og-image.jpg">
   <script src="https://splitforms.com/embed.js" async></script>
-  <!-- Meta Pixel Code -->
+  <!-- Meta Pixel Queue Stub -->
   <script>
   !function(f,b,e,v,n,t,s)
   {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
   n.callMethod.apply(n,arguments):n.queue.push(arguments)};
   if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-  n.queue=[];t=b.createElement(e);t.async=!0;
-  t.src=v;s=b.getElementsByTagName(e)[0];
-  s.parentNode.insertBefore(t,s)}(window, document,'script',
-  'https://connect.facebook.net/en_US/fbevents.js');
+  n.queue=[];}(window, document);
   fbq('init', '2057261584904971');
   fbq('track', 'PageView');
   </script>
-  <!-- End Meta Pixel Code -->
 
   <script type="application/ld+json">
 {
@@ -159,23 +155,36 @@
 }
   </script>
 
-  <!-- Google Tag Manager -->
-  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-P95LFD42');</script>
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-DB1MQGC3LS"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-DB1MQGC3LS');
-</script>
+  <!-- Analytics (GTM, GA4, Meta Pixel) with non-blocking deferred load -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-DB1MQGC3LS');
+
+    function initAnalytics(){
+      if(window._analyticsInit) return;
+      window._analyticsInit = true;
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-P95LFD42');
+      var g=document.createElement('script');g.async=true;g.src='https://www.googletagmanager.com/gtag/js?id=G-DB1MQGC3LS';document.head.appendChild(g);
+      var fb=document.createElement('script');fb.async=true;fb.src='https://connect.facebook.net/en_US/fbevents.js';document.head.appendChild(fb);
+    }
+    if('requestIdleCallback' in window){
+      window.addEventListener('load', function(){ requestIdleCallback(initAnalytics, {timeout: 2500}); });
+    } else {
+      window.addEventListener('load', function(){ setTimeout(initAnalytics, 1500); });
+    }
+    ['scroll','touchstart','click'].forEach(function(ev){ window.addEventListener(ev, initAnalytics, {once:true, passive:true}); });
+  </script>
 
   <!-- Google Fonts -->
-  <script src="/pricing.js"></script>
-  <link rel="preconnect" href="https://checkout.razorpay.com">
+  <script src="/pricing.js" defer></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@700;800&family=Noto+Sans+Devanagari:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@700;800&family=Noto+Sans+Devanagari:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@700;800&family=Noto+Sans+Devanagari:wght@400;600;700;800&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@700;800&family=Noto+Sans+Devanagari:wght@400;600;700;800&display=swap"></noscript>
   
   <style>
     :root {

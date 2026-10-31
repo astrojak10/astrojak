@@ -100,6 +100,69 @@ function parseInput(request) {
   return request.json().catch(() => null);
 }
 
+function base64Url(value) {
+  const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : value;
+  let binary = '';
+  bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+  return btoa(binary).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+async function googleAccessToken(credentials) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const claim = base64Url(JSON.stringify({
+    iss: credentials.client_email,
+    scope: 'https://www.googleapis.com/auth/calendar.events',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600,
+  }));
+  const unsignedToken = `${header}.${claim}`;
+  const privateKeyBytes = Uint8Array.from(
+    atob(credentials.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, '')),
+    character => character.charCodeAt(0),
+  );
+  const privateKey = await crypto.subtle.importKey(
+    'pkcs8',
+    privateKeyBytes,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    privateKey,
+    new TextEncoder().encode(unsignedToken),
+  );
+  const assertion = `${unsignedToken}.${base64Url(new Uint8Array(signature))}`;
+  const result = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion,
+    }),
+  });
+  const data = await result.json().catch(() => ({}));
+  if (!result.ok || !data.access_token) throw new Error('Google access token request failed');
+  return data.access_token;
+}
+
+function appointmentTimes(label) {
+  const times = {
+    '09:00 AM – 12:00 PM': ['09:00', '12:00'],
+    '12:00 PM – 03:00 PM': ['12:00', '15:00'],
+    '03:00 PM – 06:00 PM': ['15:00', '18:00'],
+    '06:00 PM – 09:00 PM': ['18:00', '21:00'],
+  };
+  return times[label];
+}
+
+async function eventIdForPayment(paymentId) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(paymentId));
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
@@ -119,7 +182,7 @@ export default {
       });
     }
 
-    if (!['/create-order', '/verify-payment'].includes(url.pathname)) {
+    if (!['/create-order', '/verify-payment', '/create-calendar-event'].includes(url.pathname)) {
       return response(404, { error: 'Not found' }, origin);
     }
     if (request.method !== 'POST') return response(405, { error: 'Use POST' }, origin);
@@ -130,6 +193,108 @@ export default {
 
     const input = await parseInput(request);
     if (!input || typeof input !== 'object') return response(400, { error: 'Invalid request' }, origin);
+
+    if (url.pathname === '/create-calendar-event') {
+      if (!env.GOOGLE_SERVICE_ACCOUNT_JSON || !env.GOOGLE_CALENDAR_ID) {
+        return response(503, { error: 'Google Calendar is not configured' }, origin);
+      }
+
+      const paymentId = String(input.payment_id || '');
+      const referenceId = String(input.reference_id || '');
+      const appointment = {
+        date: String(input.appointment_date || ''),
+        time: String(input.appointment_time || ''),
+      };
+      const name = String(input.name || '').trim().slice(0, 100);
+      const contact = normalizedContact({ contact: input.mobile });
+      if (!/^pay_[A-Za-z0-9]+$/.test(paymentId) || !name || !contact
+        || !referenceId || !isValidAppointment(appointment)) {
+        return response(400, { error: 'Valid payment, customer, and appointment details are required' }, origin);
+      }
+
+      try {
+        const paymentResult = await razorpayRequest(
+          env,
+          `/payments/${encodeURIComponent(paymentId)}`,
+          'GET',
+        );
+        if (!paymentResult.ok) {
+          console.error('Razorpay calendar payment lookup failed', paymentResult.status);
+          return response(502, { error: 'Could not verify payment' }, origin);
+        }
+        const payment = paymentResult.data;
+        const orderId = String(payment.order_id || '');
+        if (!/^order_[A-Za-z0-9]+$/.test(orderId) || payment.status !== 'captured') {
+          return response(400, { error: 'A captured payment is required' }, origin);
+        }
+
+        const orderResult = await razorpayRequest(
+          env,
+          `/orders/${encodeURIComponent(orderId)}`,
+          'GET',
+        );
+        if (!orderResult.ok) {
+          console.error('Razorpay calendar order lookup failed', orderResult.status);
+          return response(502, { error: 'Could not verify payment' }, origin);
+        }
+        const order = orderResult.data;
+        const planId = String(order.notes?.plan || '');
+        const plan = Object.prototype.hasOwnProperty.call(PLANS, planId) ? PLANS[planId] : null;
+        const orderDate = String(order.notes?.appointment_date || '');
+        const orderTime = String(order.notes?.appointment_time || '');
+        if (!plan || order.id !== orderId || order.receipt !== referenceId
+          || !referenceId.startsWith(`${planId}_`)
+          || payment.currency !== 'INR' || payment.amount !== plan.price * 100
+          || order.currency !== 'INR' || order.amount !== payment.amount
+          || ((orderDate || orderTime) && (appointment.date !== orderDate || appointment.time !== orderTime))) {
+          return response(400, { error: 'Payment does not match this booking' }, origin);
+        }
+
+        const credentials = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_JSON);
+        if (!credentials.client_email || !credentials.private_key) {
+          throw new Error('Google service account credentials are incomplete');
+        }
+        const accessToken = await googleAccessToken(credentials);
+        const [startTime, endTime] = appointmentTimes(appointment.time);
+        const topics = Array.isArray(input.topics)
+          ? input.topics.map(topic => String(topic).slice(0, 120)).slice(0, 12)
+          : [];
+        const description = [
+          `Plan: ${plan.name}`,
+          input.selected_plan ? `Selected analysis: ${String(input.selected_plan).slice(0, 150)}` : '',
+          topics.length ? `Topics: ${topics.join(', ')}` : '',
+          `Mobile: ${contact}`,
+          `Payment reference: ${referenceId}`,
+        ].filter(Boolean).join('\n');
+        const event = {
+          id: await eventIdForPayment(paymentId),
+          summary: `ASTROJAK Consultation – ${name}`,
+          description,
+          start: { dateTime: `${appointment.date}T${startTime}:00`, timeZone: 'Asia/Kolkata' },
+          end: { dateTime: `${appointment.date}T${endTime}:00`, timeZone: 'Asia/Kolkata' },
+        };
+        const calendarUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(env.GOOGLE_CALENDAR_ID)}/events`;
+        const calendarResult = await fetch(calendarUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(event),
+        });
+        if (calendarResult.status === 409) {
+          return response(200, { created: true, already_exists: true }, origin);
+        }
+        if (!calendarResult.ok) {
+          console.error('Google Calendar event creation failed', calendarResult.status);
+          return response(502, { error: 'Could not create Calendar event' }, origin);
+        }
+        return response(200, { created: true, already_exists: false }, origin);
+      } catch (error) {
+        console.error('Google Calendar event creation failed', error);
+        return response(502, { error: 'Could not create Calendar event' }, origin);
+      }
+    }
 
     if (url.pathname === '/create-order') {
       const planId = String(input.plan || '');

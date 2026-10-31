@@ -32,6 +32,31 @@ the GitHub Pages build. Checkout opens in Razorpay's on-page modal.
    booking page, the server verifies and captures the payment, and success
    returns to `https://www.astrojak.in/thank-you.html`.
 
+## Google Calendar appointments
+
+The thank-you form sends completed customer details to Splitforms. After that
+submission succeeds, the Worker verifies the captured Razorpay payment and
+creates one event in the configured calendar. The event includes the customer
+name, mobile number, plan, selected analysis, discussion topics, and payment
+reference; birth date, birth time, and birth place are not added to Calendar.
+
+1. Enable the Google Calendar API in the Google Cloud project used by the
+   service account.
+2. Share the target calendar with the service account email and grant it
+   **Make changes to events** access.
+3. In the Cloudflare Worker settings, add these as encrypted secrets:
+   - `GOOGLE_SERVICE_ACCOUNT_JSON` — the complete service-account JSON key.
+   - `GOOGLE_CALENDAR_ID` — the target calendar's ID.
+4. Deploy the Worker and website changes. The Worker uses a short-lived Google
+   access token and a payment-derived event ID, so retrying the Calendar sync
+   does not create duplicate events.
+5. Test using a captured Razorpay payment and a dedicated test calendar. Check
+   that the event has the correct date, 3-hour slot, and India Standard Time.
+
+If Calendar is unavailable after the customer details are accepted, the
+thank-you page shows a separate retry action. The customer should not need to
+submit their details again.
+
 ## Security notes
 
 - The browser submits a plan identifier; the Worker uses the server-side
@@ -48,10 +73,13 @@ the GitHub Pages build. Checkout opens in Razorpay's on-page modal.
 - The Worker returns the public key ID, order ID, amount, and reference; it
   never returns or logs credentials. Razorpay failure details are deliberately
   not exposed.
+- Google service-account credentials are stored only as Cloudflare encrypted
+  secrets. Calendar event creation rechecks the payment and uses the
+  `calendar.events` scope.
 - Rotate/revoke any Razorpay key that has ever been committed or shared.
 - Configure a Cloudflare rate-limiting rule for
-  `api.astrojak.in/create-order` and `api.astrojak.in/verify-payment` before
-  enabling live payments.
+  `api.astrojak.in/create-order`, `api.astrojak.in/verify-payment`, and
+  `api.astrojak.in/create-calendar-event` before enabling live payments.
 
 ## Local checks
 

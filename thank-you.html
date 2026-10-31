@@ -186,6 +186,8 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   <section class="done" id="doneCard" hidden>
     <h2 data-i18n="detailsSent">✅ Your details have been sent</h2>
     <p data-i18n="teamContact">Acharya Narender Ji's team will contact you about your selected appointment time.</p>
+    <p id="calendarStatus" role="status" aria-live="polite"></p>
+    <button class="btn go" id="retryCalendar" type="button" data-i18n="retryCalendar" hidden>Retry Calendar sync</button>
     <a class="btn wa" id="whatsapp" href="https://wa.me/917827673637" data-i18n="whatsappDetails">Message your details on WhatsApp</a>
   </section>
 
@@ -209,6 +211,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       birthDate:'Date of birth',year:'Year',month:'Month',day:'Day',birthTime:'Exact birth time',ifKnown:'(if known)',birthTimeHint:'If you do not know the exact time, leave these fields blank.',
       birthPlace:'Birth place',placePlaceholder:'City, State, Country',sendDetails:'Send Details',
       detailsSent:'✅ Your details have been sent',teamContact:"Acharya Narender Ji's team will contact you about your selected appointment time.",
+      calendarPending:'Adding your appointment to Google Calendar…',calendarDone:'Your appointment has been added to Google Calendar.',calendarFailed:'Your details were sent, but Calendar sync failed. You can retry below.',retryCalendar:'Retry Calendar sync',
       whatsappDetails:'Message your details on WhatsApp',helpTitle:'Need help completing your booking?',helpText:'Message us on WhatsApp and include your payment reference if you have one.',whatsappHelp:'Message on WhatsApp',visitWebsite:'Visit our website',
       helpPayment:'Need help completing your booking?',helpMessage:'Hi! I need help with my astrology consultation booking.',paidStatus:'Your payment for {plan} ({amount}) is confirmed. {next}',
       reserveNext:'Choose your appointment and add your birth details below.',detailsNext:'Add your birth details below.',todayOrFuture:'Please choose today or a future appointment date and an available time slot.',
@@ -227,6 +230,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       birthDate:'जन्म तिथि',year:'वर्ष',month:'महीना',day:'दिन',birthTime:'जन्म का सही समय',birthHour:'जन्म का घंटा',birthMinute:'जन्म का मिनट',birthAmPm:'पूर्वाह्न या अपराह्न',ifKnown:'(यदि पता हो)',birthTimeHint:'यदि सही समय पता नहीं है, तो इन विकल्पों को खाली छोड़ें।',
       birthPlace:'जन्म स्थान',placePlaceholder:'शहर, राज्य, देश',sendDetails:'जानकारी भेजें',
       detailsSent:'✅ आपकी जानकारी भेज दी गई है',teamContact:'आचार्य नरेंद्र जी की टीम आपके चुने हुए अपॉइंटमेंट समय के बारे में आपसे संपर्क करेगी।',
+      calendarPending:'आपका अपॉइंटमेंट Google Calendar में जोड़ा जा रहा है…',calendarDone:'आपका अपॉइंटमेंट Google Calendar में जोड़ दिया गया है।',calendarFailed:'आपकी जानकारी भेज दी गई है, लेकिन Calendar sync नहीं हो पाया। नीचे फिर से कोशिश करें।',retryCalendar:'Calendar sync फिर से करें',
       whatsappDetails:'WhatsApp पर अपनी जानकारी भेजें',helpTitle:'बुकिंग पूरी करने में सहायता चाहिए?',helpText:'WhatsApp पर संदेश भेजें और भुगतान संदर्भ उपलब्ध हो तो शामिल करें।',whatsappHelp:'WhatsApp पर संदेश भेजें',visitWebsite:'वेबसाइट पर जाएं',
       helpPayment:'बुकिंग पूरी करने में सहायता चाहिए?',helpMessage:'नमस्ते! मुझे ज्योतिष परामर्श की बुकिंग में सहायता चाहिए।',paidStatus:'आपका {plan} ({amount}) का भुगतान सफल है। {next}',
       reserveNext:'अपॉइंटमेंट चुनें और नीचे जन्म विवरण भरें।',detailsNext:'नीचे जन्म विवरण भरें।',todayOrFuture:'कृपया आज या आगे की तारीख और उपलब्ध समय चुनें।',
@@ -245,6 +249,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       birthDate:'Date of birth',year:'Year',month:'Month',day:'Day',birthTime:'Birth ka sahi time',birthHour:'Birth hour',birthMinute:'Birth minute',birthAmPm:'AM ya PM',ifKnown:'(agar pata ho)',birthTimeHint:'Agar sahi time nahi pata, to in options ko khaali chhod dein.',
       birthPlace:'Birth place',placePlaceholder:'City, State, Country',sendDetails:'Details bhejein',
       detailsSent:'✅ Aapki details bhej di gayi hain',teamContact:'Acharya Narender Ji ki team aapke chune hue appointment time ke liye aapse sampark karegi.',
+      calendarPending:'Appointment Google Calendar mein add ho raha hai…',calendarDone:'Aapka appointment Google Calendar mein add ho gaya hai.',calendarFailed:'Aapki details bhej di gayi hain, lekin Calendar sync fail hua. Neeche dobara koshish karein.',retryCalendar:'Calendar sync dobara karein',
       whatsappDetails:'WhatsApp par apni details bhejein',helpTitle:'Booking poori karne mein madad chahiye?',helpText:'WhatsApp par message karein aur payment reference ho to share karein.',whatsappHelp:'WhatsApp par message karein',visitWebsite:'Website dekhein',
       helpPayment:'Booking poori karne mein madad chahiye?',helpMessage:'Hi! Mujhe astrology consultation booking mein madad chahiye.',paidStatus:'Aapka {plan} ({amount}) payment confirm ho gaya hai. {next}',
       reserveNext:'Appointment chunein aur neeche birth details bharein.',detailsNext:'Neeche birth details bharein.',todayOrFuture:'Aaj ya aage ki appointment date aur available time chunein.',
@@ -356,6 +361,22 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   hasAppointment=!!(date&&time&&/^\d{4}-\d{2}-\d{2}$/.test(date));
   var selectedPlan=String(checkoutContext.selectedPlan||'');
   topics=Array.isArray(checkoutContext.topics)?checkoutContext.topics:[];
+  var calendarSyncKey='astrojak_calendar_sync';
+  var calendarPayload=null;
+  try{
+    var pendingCalendar=JSON.parse(sessionStorage.getItem(calendarSyncKey)||'null');
+    if(pendingCalendar&&pendingCalendar.payment_id===paymentId&&pendingCalendar.reference_id===q.get('razorpay_payment_link_reference_id')
+      &&pendingCalendar.appointment_date&&pendingCalendar.appointment_time){
+      calendarPayload=pendingCalendar;
+      date=String(pendingCalendar.appointment_date);
+      time=String(pendingCalendar.appointment_time);
+      hasAppointment=/^\d{4}-\d{2}-\d{2}$/.test(date);
+      selectedPlan=String(pendingCalendar.selected_plan||selectedPlan);
+      topics=Array.isArray(pendingCalendar.topics)?pendingCalendar.topics:topics;
+    }
+  }catch(err){
+    console.error('Could not read pending Calendar sync details:',err);
+  }
   var mobile=String(checkoutContext.mobile||'');
   if(!mobile){
     try{
@@ -431,6 +452,32 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   function showWhatsApp(data){
     $('whatsapp').href='https://wa.me/'+wa+'?text='+encodeURIComponent(detailMessage(data));
   }
+  async function syncCalendar(){
+    if(!calendarPayload)return;
+    var button=$('retryCalendar'),status=$('calendarStatus');
+    button.disabled=true;
+    button.hidden=true;
+    status.textContent=t('calendarPending');
+    try{
+      var res=await fetch('https://api.astrojak.in/create-calendar-event',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(calendarPayload)
+      });
+      var result=await res.json().catch(function(){return {}});
+      if(!res.ok||!result.created)throw new Error(result.error||'Calendar sync request failed');
+      try{sessionStorage.removeItem(calendarSyncKey)}catch(err){console.error('Could not clear pending Calendar sync details:',err)}
+      calendarPayload=null;
+      status.textContent=t('calendarDone');
+    }catch(err){
+      console.error('Could not add the appointment to Google Calendar:',err);
+      status.textContent=t('calendarFailed');
+      button.hidden=false;
+    }finally{
+      button.disabled=false;
+    }
+  }
+  $('retryCalendar').addEventListener('click',syncCalendar);
 
   if(paid){
     applyLanguage();
@@ -440,6 +487,11 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       '\nPlan: '+planName+(amount?' ('+amount+')':'')+
       (appointment?'\nAppointment: '+appointment+' IST':'')+
       (paymentId?'\nPayment ID: '+paymentId:''));
+    if(calendarPayload){
+      $('detailsCard').hidden=true;
+      $('doneCard').hidden=false;
+      syncCalendar();
+    }
     try{if(window.gtag)gtag('event','purchase',{transaction_id:paymentId,value:plan?plan.price:0,currency:'INR',items:plan?[{item_id:ref,item_name:plan.name,price:plan.price}]:[]})}catch(e){}
     try{if(window.fbq)fbq('track','Purchase',{value:plan?plan.price:0,currency:'INR'})}catch(e){}
   }else{
@@ -501,10 +553,22 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       });
       var result=await res.json();
       if(result.success){
+        calendarPayload={
+          payment_id:paymentId,
+          reference_id:q.get('razorpay_payment_link_reference_id')||'',
+          appointment_date:date,
+          appointment_time:time,
+          name:name,
+          mobile:customerMobile,
+          selected_plan:selectedPlan,
+          topics:topics
+        };
+        try{sessionStorage.setItem(calendarSyncKey,JSON.stringify(calendarPayload))}catch(err){console.error('Could not save pending Calendar sync details:',err)}
         form.reset();
         showWhatsApp(data);
         try{sessionStorage.removeItem('astrojak_pending_checkout')}catch(err){console.error('Could not clear saved checkout details:',err)}
         $('detailsCard').hidden=true;$('doneCard').hidden=false;
+        await syncCalendar();
         try{if(window.gtag)gtag('event','consultation_details_submitted',{plan:ref})}catch(e){}
       }else{
         error.textContent=result.message||t('sendFailed');

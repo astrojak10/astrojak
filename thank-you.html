@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Payment Received | ASTROJAK</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F8B700'/%3E%3Ccircle cx='32' cy='32' r='11' fill='none' stroke='white' stroke-width='5'/%3E%3C/svg%3E">
 <script src="https://splitforms.com/embed.js" async></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-DB1MQGC3LS"></script>
 <script>
@@ -43,6 +44,7 @@ p{color:var(--muted);font-size:15px}
 .appointment{margin-top:12px;background:var(--soft);border:1.5px solid #F8B700;border-radius:16px;padding:14px;text-align:center}
 .appointment b{display:block;font-size:17px;color:var(--dark)}
 .appointment span{font-size:13px;color:var(--muted)}
+.appointment-picker{margin-top:14px}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
 .field.full{grid-column:1/-1}
 .lbl{display:block;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:14px 0 7px}
@@ -59,6 +61,27 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
 .done{margin-top:20px;text-align:left;border:1.5px solid #BAECC9;border-radius:20px;padding:20px 18px;background:var(--card);box-shadow:0 10px 30px rgba(37,211,102,.1)}
 .done h2{font-size:19px;margin-bottom:8px}
 .back{display:inline-block;margin-top:18px;color:var(--dark);font-weight:700;font-size:14px}
+.language{display:flex;justify-content:center;gap:4px;margin:0 auto 16px}
+.language button{border:1px solid var(--border);border-radius:999px;background:#fff;padding:6px 12px;font:inherit;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer}
+.language button[aria-pressed=true]{background:var(--gold);border-color:transparent;color:#3D2600}
+.topics{margin-top:14px;border:1.5px dashed var(--border);border-radius:16px;padding:10px;background:#FFFBEE}
+.topics legend{width:100%;font-size:15px;font-weight:800;color:var(--ink);text-align:center;padding:0 4px}
+.topic-hint{text-align:center;font-size:12px;margin:2px 0 8px}
+.topic-options{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.topic{position:relative;display:block;margin:0;padding:0;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer}
+.topic input{position:absolute;width:1px;height:1px;margin:0;padding:0;border:0;opacity:0}
+.topic>span{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--border);border-radius:999px;background:#fff;padding:6px 10px;line-height:1.15;transition:all .18s;user-select:none}
+.topic:hover>span{border-color:#F8B700;transform:translateY(-1px)}
+.topic input:checked+span{background:var(--gold);border-color:#FF6F00;color:#3D2600;font-weight:700;box-shadow:0 4px 12px rgba(255,111,0,.25)}
+.topic input:focus-visible+span{outline:3px solid rgba(255,111,0,.35);outline-offset:2px}
+.topic-options.collapsed .topic.more:not(:has(input:checked)){display:none}
+.topic.other{order:99}
+.topic-text{margin-top:10px}
+.topic-text[hidden]{display:none}
+.topic-count{text-align:center;font-size:12px;font-weight:700;color:var(--dark);min-height:0;margin-top:5px}
+.topic-more{display:block;margin:10px auto 0;border:1.5px solid var(--border);border-radius:999px;background:none;padding:7px 16px;font:inherit;font-size:13px;font-weight:700;color:var(--dark);cursor:pointer;transition:background .2s}
+.topic-more:hover{background:#FFF1C9}
+.topic-summary{margin-top:14px;padding:12px;border-radius:12px;background:var(--soft);font-size:14px}
 [hidden]{display:none!important}
 @media(max-width:480px){.fields{grid-template-columns:1fr}.field.full{grid-column:auto}}
 </style>
@@ -66,15 +89,20 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
 <body>
 <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2057261584904971&ev=PageView&noscript=1" alt=""></noscript>
 <main class="box">
+  <nav class="language" role="group" aria-label="Language">
+    <button type="button" data-lang="en" aria-pressed="true">English</button>
+    <button type="button" data-lang="hi" aria-pressed="false">हिन्दी</button>
+    <button type="button" data-lang="hing" aria-pressed="false">Hinglish</button>
+  </nav>
   <div class="ok">✓</div>
-  <h1 id="title">Thank you!</h1>
-  <p id="status">If your payment went through, add your birth details below.</p>
+  <h1 id="title" data-i18n="thankYou">Thank you!</h1>
+  <p id="status" data-i18n="paymentPending">If your payment went through, add your birth details below.</p>
   <p class="id" id="paymentId"></p>
 
   <section class="card" id="detailsCard" hidden>
-    <h2>Complete your consultation details</h2>
-    <p class="hint">Your appointment date and time were selected before payment. Share your birth details for the consultation.</p>
-    <div class="appointment"><b id="appointmentWhen"></b><span>Appointment time · India Standard Time (IST)</span></div>
+    <h2 data-i18n="completeDetails">Complete your consultation details</h2>
+    <p class="hint" id="detailsHint">Your appointment date and time were selected before payment. Share your birth details for the consultation.</p>
+    <div class="appointment" id="appointmentSummary" hidden><b id="appointmentWhen"></b><span data-i18n="appointmentIst">Appointment time · India Standard Time (IST)</span></div>
     <form id="detailsForm">
       <input type="hidden" name="access_key" value="9d208e837cab446dbcaf6f562900f3e6">
       <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" style="display:none">
@@ -94,66 +122,220 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       <input type="hidden" name="date_of_birth" id="birthDateField">
       <input type="hidden" name="birth_time" id="birthTimeField">
       <input type="hidden" name="page" id="pageField">
+      <input type="hidden" name="question" id="question">
       <div class="fields">
-        <div class="field">
-          <label class="lbl" for="name">Your name</label>
-          <input id="name" name="name" type="text" autocomplete="name" placeholder="Full name" required maxlength="100">
+        <div class="field full appointment-picker" id="reserveAppointment" hidden>
+          <label class="lbl" for="postPayDate" data-i18n="appointmentDate">Choose your appointment date</label>
+          <input id="postPayDate" type="date" aria-describedby="appointmentHint">
+          <label class="lbl" for="postPayTime" data-i18n="appointmentTime">Choose an available time (IST)</label>
+          <select id="postPayTime">
+            <option value="" data-i18n="selectTime">Select a time</option>
+            <option value="09:00 AM – 12:00 PM">09:00 AM – 12:00 PM</option>
+            <option value="12:00 PM – 03:00 PM">12:00 PM – 03:00 PM</option>
+            <option value="03:00 PM – 06:00 PM">03:00 PM – 06:00 PM</option>
+            <option value="06:00 PM – 09:00 PM">06:00 PM – 09:00 PM</option>
+          </select>
+          <p class="note" id="appointmentHint" data-i18n="appointmentHint">Choose a date today or later and an available 3-hour time slot.</p>
+        </div>
+        <fieldset class="field full topics" id="topicPicker">
+          <legend data-i18n="topicQuestion">Which problem would you like to discuss? (optional)</legend>
+          <p class="topic-hint" data-i18n="topicHint">Select all that apply.</p>
+          <div class="topic-options collapsed" id="topicOptions" role="group" aria-labelledby="topicQuestion"></div>
+          <input id="otherTopic" class="topic-text" type="text" maxlength="120" data-i18n-placeholder="otherPlaceholder" placeholder="Tell us what you would like to discuss" hidden>
+          <p class="topic-count" id="topicCount" aria-live="polite"></p>
+          <button type="button" class="topic-more" id="topicMore" aria-expanded="false" aria-controls="topicOptions" data-i18n="moreTopics">Show more topics ▾</button>
+        </fieldset>
+        <div class="field full topic-summary" id="topicSummary" hidden>
+          <strong data-i18n="topicsSelected">Topics selected before payment:</strong>
+          <span id="topicsSummary"></span>
         </div>
         <div class="field">
-          <label class="lbl" for="email">Email address <span>(optional)</span></label>
-          <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" maxlength="120">
+          <label class="lbl" for="name" data-i18n="name">Your name</label>
+          <input id="name" name="name" type="text" autocomplete="name" data-i18n-placeholder="namePlaceholder" placeholder="Full name" required maxlength="100">
+        </div>
+        <div class="field">
+          <label class="lbl" for="email"><span data-i18n="email">Email address</span> <span data-i18n="optional">(optional)</span></label>
+          <input id="email" name="email" type="email" autocomplete="email" data-i18n-placeholder="emailPlaceholder" placeholder="you@example.com" maxlength="120">
         </div>
         <div class="field full">
-          <label class="lbl" for="mobile">Mobile / WhatsApp number</label>
-          <input id="mobile" name="mobile" type="tel" autocomplete="tel" inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" placeholder="10-digit mobile number" required>
+          <label class="lbl" for="mobile" data-i18n="mobile">Mobile / WhatsApp number</label>
+          <input id="mobile" name="mobile" type="tel" autocomplete="tel" inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" data-i18n-placeholder="mobilePlaceholder" placeholder="10-digit mobile number" required>
         </div>
         <div class="field full">
-          <label class="lbl">Date of birth</label>
+          <label class="lbl" data-i18n="birthDate">Date of birth</label>
           <div class="dob">
-            <select id="year" name="birth_year" aria-label="Birth year" required><option value="">Year</option></select>
-            <select id="month" name="birth_month" aria-label="Birth month" required><option value="">Month</option></select>
-            <select id="day" name="birth_day" aria-label="Birth day" required><option value="">Day</option></select>
+            <select id="year" name="birth_year" aria-label="Birth year" required><option value="" data-i18n="year">Year</option></select>
+            <select id="month" name="birth_month" aria-label="Birth month" required><option value="" data-i18n="month">Month</option></select>
+            <select id="day" name="birth_day" aria-label="Birth day" required><option value="" data-i18n="day">Day</option></select>
           </div>
         </div>
         <div class="field full">
-          <label class="lbl">Exact birth time <span>(if known)</span></label>
+          <label class="lbl"><span data-i18n="birthTime">Exact birth time</span> <span data-i18n="ifKnown">(if known)</span></label>
           <div class="birthtime">
             <select id="hour" name="birth_hour" aria-label="Birth hour"><option value="">HH</option></select>
             <select id="minute" name="birth_minute" aria-label="Birth minute"><option value="">MM</option></select>
             <select id="ampm" name="birth_ampm" aria-label="AM or PM"><option value="">--</option><option>AM</option><option>PM</option></select>
           </div>
-          <p class="note">If you do not know the exact time, leave these fields blank.</p>
+          <p class="note" data-i18n="birthTimeHint">If you do not know the exact time, leave these fields blank.</p>
         </div>
         <div class="field full">
-          <label class="lbl" for="place">Birth place</label>
-          <input id="place" name="birth_place" type="text" autocomplete="address-level2" placeholder="City, State, Country" required maxlength="150">
-        </div>
-        <div class="field full">
-          <label class="lbl" for="question">What is on your mind? <span>(optional)</span></label>
-          <input id="question" name="question" type="text" placeholder="Your question or concern" maxlength="500">
+          <label class="lbl" for="place" data-i18n="birthPlace">Birth place</label>
+          <input id="place" name="birth_place" type="text" autocomplete="address-level2" data-i18n-placeholder="placePlaceholder" placeholder="City, State, Country" required maxlength="150">
         </div>
       </div>
-      <button class="btn go" id="submitDetails" type="submit">Send Details</button>
+      <button class="btn go" id="submitDetails" type="submit" data-i18n="sendDetails">Send Details</button>
       <p class="err" id="error" role="alert" hidden></p>
     </form>
   </section>
 
   <section class="done" id="doneCard" hidden>
-    <h2>✅ Your details have been sent</h2>
-    <p>Acharya Narender Ji's team will contact you about your selected appointment time.</p>
-    <a class="btn wa" id="whatsapp" href="https://wa.me/917827673637">Continue on WhatsApp</a>
+    <h2 data-i18n="detailsSent">✅ Your details have been sent</h2>
+    <p data-i18n="teamContact">Acharya Narender Ji's team will contact you about your selected appointment time.</p>
+    <a class="btn wa" id="whatsapp" href="https://wa.me/917827673637" data-i18n="whatsappDetails">Message your details on WhatsApp</a>
   </section>
 
   <section class="card" id="unpaidCard" hidden>
-    <h2>Need help completing your booking?</h2>
-    <p>Message us on WhatsApp and include your payment reference if you have one.</p>
-    <a class="btn wa" id="whatsappHelp" href="https://wa.me/917827673637">Message on WhatsApp</a>
+    <h2 data-i18n="helpTitle">Need help completing your booking?</h2>
+    <p data-i18n="helpText">Message us on WhatsApp and include your payment reference if you have one.</p>
+    <a class="btn wa" id="whatsappHelp" href="https://wa.me/917827673637" data-i18n="whatsappHelp">Message on WhatsApp</a>
   </section>
-  <a class="back" href="/home">Visit our website</a>
+  <a class="back" href="/home" data-i18n="visitWebsite">Visit our website</a>
 </main>
 <script>
 (function(){
   var $=function(id){return document.getElementById(id)};
+  var TEXT={
+    en:{
+      pageTitle:'Payment Received | ASTROJAK',thankYou:'Thank you!',paidTitle:'Payment received. Thank you!',paymentPending:'If your payment went through, add your birth details below.',completeDetails:'Complete your consultation details',
+      regularHint:'Your appointment date and time were selected before payment. Share your birth details for the consultation.',reserveHint:'Choose your appointment date and time, then share your birth details for the consultation.',
+      appointmentIst:'Appointment time · India Standard Time (IST)',appointmentDate:'Choose your appointment date',appointmentTime:'Choose an available time (IST)',selectTime:'Select a time',appointmentHint:'Choose a date today or later and an available 3-hour time slot.',
+      topicQuestion:'Which problem would you like to discuss? (optional)',topicHint:'Select all that apply.',moreTopics:'Show more topics ▾',fewerTopics:'Show fewer topics ▴',selectedCount:'{count} selected',otherName:'Other',otherPlaceholder:'Tell us what you would like to discuss',topicsSelected:'Topics selected before payment:',noTopics:'No topics selected before payment.',
+      name:'Your name',namePlaceholder:'Full name',email:'Email address',optional:'(optional)',emailPlaceholder:'you@example.com',mobile:'Mobile / WhatsApp number',mobilePlaceholder:'10-digit mobile number',
+      birthDate:'Date of birth',year:'Year',month:'Month',day:'Day',birthTime:'Exact birth time',ifKnown:'(if known)',birthTimeHint:'If you do not know the exact time, leave these fields blank.',
+      birthPlace:'Birth place',placePlaceholder:'City, State, Country',additionalQuestion:'Additional question',questionPlaceholder:'Add any other details here',sendDetails:'Send Details',
+      detailsSent:'✅ Your details have been sent',teamContact:"Acharya Narender Ji's team will contact you about your selected appointment time.",
+      whatsappDetails:'Message your details on WhatsApp',helpTitle:'Need help completing your booking?',helpText:'Message us on WhatsApp and include your payment reference if you have one.',whatsappHelp:'Message on WhatsApp',visitWebsite:'Visit our website',
+      helpPayment:'Need help completing your booking?',helpMessage:'Hi! I need help with my astrology consultation booking.',paidStatus:'Your payment for {plan} ({amount}) is confirmed. {next}',
+      reserveNext:'Choose your appointment and add your birth details below.',detailsNext:'Add your birth details below.',todayOrFuture:'Please choose today or a future appointment date and an available time slot.',
+      completeRequired:'Please complete your name, mobile number, date of birth and birth place.',validMobile:'Please enter a valid 10-digit mobile number.',
+      completeBirthTime:'Enter the complete birth time, or leave all time fields blank.',sending:'Sending details…',sendFailed:"Couldn't send. Please try again.",
+      dateMonths:['January','February','March','April','May','June','July','August','September','October','November','December'],
+      timeSlots:['09:00 AM – 12:00 PM','12:00 PM – 03:00 PM','03:00 PM – 06:00 PM','06:00 PM – 09:00 PM'],
+      topics:{Business:'Business',Career:'Career',Finance:'Finance',Marriage:'Marriage',Relationships:'Relationships',Health:'Health',Education:'Education',Children:'Children',Family:'Family',Property:'Property','Legal Matters':'Legal Matters','Foreign Opportunities':'Foreign Opportunities',Relocation:'Relocation','Personal Growth':'Personal Growth','Life Purpose':'Life Purpose','Spiritual Growth':'Spiritual Growth','Major Decisions':'Major Decisions',Timing:'Timing','Obstacles & Delays':'Obstacles & Delays','Reputation & Status':'Reputation & Status',Partnership:'Partnership',Investments:'Investments','Success & Recognition':'Success & Recognition','Life Transitions':'Life Transitions'}
+    },
+    hi:{
+      pageTitle:'भुगतान प्राप्त | ASTROJAK',thankYou:'धन्यवाद!',paidTitle:'भुगतान प्राप्त हुआ। धन्यवाद!',paymentPending:'यदि आपका भुगतान हो गया है, तो नीचे जन्म विवरण भरें।',completeDetails:'परामर्श के लिए अपनी जानकारी भरें',
+      regularHint:'आपने भुगतान से पहले अपॉइंटमेंट की तारीख और समय चुना है। परामर्श के लिए जन्म विवरण साझा करें।',reserveHint:'अपॉइंटमेंट की तारीख और समय चुनें, फिर परामर्श के लिए जन्म विवरण साझा करें।',
+      appointmentIst:'अपॉइंटमेंट का समय · भारतीय मानक समय (IST)',appointmentDate:'अपॉइंटमेंट की तारीख चुनें',appointmentTime:'उपलब्ध समय चुनें (IST)',selectTime:'समय चुनें',appointmentHint:'आज या बाद की तारीख और उपलब्ध 3 घंटे का समय स्लॉट चुनें।',
+      topicQuestion:'आप किस समस्या पर चर्चा करना चाहते हैं? (वैकल्पिक)',topicHint:'लागू होने वाले सभी विकल्प चुनें।',moreTopics:'और विषय देखें ▾',fewerTopics:'कम विषय देखें ▴',selectedCount:'{count} चुने गए',otherName:'अन्य',otherPlaceholder:'बताएं कि आप किस विषय पर चर्चा करना चाहते हैं',topicsSelected:'भुगतान से पहले चुने गए विषय:',noTopics:'भुगतान से पहले कोई विषय नहीं चुना गया।',
+      name:'आपका नाम',namePlaceholder:'पूरा नाम',email:'ईमेल पता',optional:'(वैकल्पिक)',emailPlaceholder:'you@example.com',mobile:'मोबाइल / WhatsApp नंबर',mobilePlaceholder:'10 अंकों का मोबाइल नंबर',
+      birthDate:'जन्म तिथि',year:'वर्ष',month:'महीना',day:'दिन',birthTime:'जन्म का सही समय',birthHour:'जन्म का घंटा',birthMinute:'जन्म का मिनट',birthAmPm:'पूर्वाह्न या अपराह्न',ifKnown:'(यदि पता हो)',birthTimeHint:'यदि सही समय पता नहीं है, तो इन विकल्पों को खाली छोड़ें।',
+      birthPlace:'जन्म स्थान',placePlaceholder:'शहर, राज्य, देश',additionalQuestion:'अतिरिक्त सवाल',questionPlaceholder:'यहां कोई अन्य जानकारी लिखें',sendDetails:'जानकारी भेजें',
+      detailsSent:'✅ आपकी जानकारी भेज दी गई है',teamContact:'आचार्य नरेंद्र जी की टीम आपके चुने हुए अपॉइंटमेंट समय के बारे में आपसे संपर्क करेगी।',
+      whatsappDetails:'WhatsApp पर अपनी जानकारी भेजें',helpTitle:'बुकिंग पूरी करने में सहायता चाहिए?',helpText:'WhatsApp पर संदेश भेजें और भुगतान संदर्भ उपलब्ध हो तो शामिल करें।',whatsappHelp:'WhatsApp पर संदेश भेजें',visitWebsite:'वेबसाइट पर जाएं',
+      helpPayment:'बुकिंग पूरी करने में सहायता चाहिए?',helpMessage:'नमस्ते! मुझे ज्योतिष परामर्श की बुकिंग में सहायता चाहिए।',paidStatus:'आपका {plan} ({amount}) का भुगतान सफल है। {next}',
+      reserveNext:'अपॉइंटमेंट चुनें और नीचे जन्म विवरण भरें।',detailsNext:'नीचे जन्म विवरण भरें।',todayOrFuture:'कृपया आज या आगे की तारीख और उपलब्ध समय चुनें।',
+      completeRequired:'कृपया नाम, मोबाइल नंबर, जन्म तिथि और जन्म स्थान भरें।',validMobile:'कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें.',
+      completeBirthTime:'जन्म का पूरा समय भरें या समय के सभी विकल्प खाली छोड़ें।',sending:'जानकारी भेजी जा रही है…',sendFailed:'भेजा नहीं जा सका। कृपया फिर से कोशिश करें।',
+      dateMonths:['जनवरी','फ़रवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'],
+      timeSlots:['सुबह 09:00 – दोपहर 12:00','दोपहर 12:00 – 03:00','दोपहर 03:00 – शाम 06:00','शाम 06:00 – 09:00'],
+      topics:{Business:'व्यापार',Career:'करियर',Finance:'वित्त',Marriage:'विवाह',Relationships:'रिश्ते',Health:'स्वास्थ्य',Education:'शिक्षा',Children:'संतान',Family:'परिवार',Property:'संपत्ति','Legal Matters':'कानूनी मामले','Foreign Opportunities':'विदेश के अवसर',Relocation:'स्थान परिवर्तन','Personal Growth':'व्यक्तिगत विकास','Life Purpose':'जीवन का उद्देश्य','Spiritual Growth':'आध्यात्मिक विकास','Major Decisions':'महत्वपूर्ण निर्णय',Timing:'समय','Obstacles & Delays':'बाधाएं और देरी','Reputation & Status':'प्रतिष्ठा और मान-सम्मान',Partnership:'साझेदारी',Investments:'निवेश','Success & Recognition':'सफलता और पहचान','Life Transitions':'जीवन में बदलाव'}
+    },
+    hing:{
+      pageTitle:'Payment Received | ASTROJAK',thankYou:'Shukriya!',paidTitle:'Payment receive ho gaya. Shukriya!',paymentPending:'Agar payment ho gaya hai, to neeche birth details bharein.',completeDetails:'Consultation ki details bharein',
+      regularHint:'Aapne payment se pehle appointment date aur time chuna tha. Consultation ke liye birth details share karein.',reserveHint:'Appointment date aur time chunein, phir consultation ke liye birth details share karein.',
+      appointmentIst:'Appointment time · India Standard Time (IST)',appointmentDate:'Appointment date chunein',appointmentTime:'Available time chunein (IST)',selectTime:'Time chunein',appointmentHint:'Aaj ya aage ki date aur available 3-hour time slot chunein.',
+      topicQuestion:'Aap kis problem par baat karna chahte hain? (optional)',topicHint:'Jo lagu ho, sab select karein.',moreTopics:'Aur topics dekhein ▾',fewerTopics:'Kam topics dekhein ▴',selectedCount:'{count} selected',otherName:'Other',otherPlaceholder:'Batayein aap kis baare mein baat karna chahte hain',topicsSelected:'Payment se pehle chune gaye topics:',noTopics:'Payment se pehle koi topic select nahi kiya.',
+      name:'Aapka naam',namePlaceholder:'Poora naam',email:'Email address',optional:'(optional)',emailPlaceholder:'you@example.com',mobile:'Mobile / WhatsApp number',mobilePlaceholder:'10-digit mobile number',
+      birthDate:'Date of birth',year:'Year',month:'Month',day:'Day',birthTime:'Birth ka sahi time',birthHour:'Birth hour',birthMinute:'Birth minute',birthAmPm:'AM ya PM',ifKnown:'(agar pata ho)',birthTimeHint:'Agar sahi time nahi pata, to in options ko khaali chhod dein.',
+      birthPlace:'Birth place',placePlaceholder:'City, State, Country',additionalQuestion:'Extra sawaal',questionPlaceholder:'Yahan koi aur jaankari likhein',sendDetails:'Details bhejein',
+      detailsSent:'✅ Aapki details bhej di gayi hain',teamContact:'Acharya Narender Ji ki team aapke chune hue appointment time ke liye aapse sampark karegi.',
+      whatsappDetails:'WhatsApp par apni details bhejein',helpTitle:'Booking poori karne mein madad chahiye?',helpText:'WhatsApp par message karein aur payment reference ho to share karein.',whatsappHelp:'WhatsApp par message karein',visitWebsite:'Website dekhein',
+      helpPayment:'Booking poori karne mein madad chahiye?',helpMessage:'Hi! Mujhe astrology consultation booking mein madad chahiye.',paidStatus:'Aapka {plan} ({amount}) payment confirm ho gaya hai. {next}',
+      reserveNext:'Appointment chunein aur neeche birth details bharein.',detailsNext:'Neeche birth details bharein.',todayOrFuture:'Aaj ya aage ki appointment date aur available time chunein.',
+      completeRequired:'Naam, mobile number, date of birth aur birth place bharein.',validMobile:'Sahi 10-digit mobile number darj karein.',
+      completeBirthTime:'Birth time poora bharein ya saare time options khaali chhod dein.',sending:'Details bheji ja rahi hain…',sendFailed:'Details nahi bhej paaye. Dobara koshish karein.',
+      dateMonths:['January','February','March','April','May','June','July','August','September','October','November','December'],
+      timeSlots:['09:00 AM – 12:00 PM (Subah)','12:00 PM – 03:00 PM (Dopahar)','03:00 PM – 06:00 PM (Dopahar)','06:00 PM – 09:00 PM (Shaam)'],
+      topics:{Business:'Business',Career:'Career',Finance:'Finance',Marriage:'Marriage',Relationships:'Relationships',Health:'Health',Education:'Education',Children:'Children',Family:'Family',Property:'Property','Legal Matters':'Legal Matters','Foreign Opportunities':'Foreign Opportunities',Relocation:'Relocation','Personal Growth':'Personal Growth','Life Purpose':'Life Purpose','Spiritual Growth':'Spiritual Growth','Major Decisions':'Major Decisions',Timing:'Timing','Obstacles & Delays':'Rukawatein','Reputation & Status':'Pehchaan aur status',Partnership:'Partnership',Investments:'Investments','Success & Recognition':'Success aur pehchaan','Life Transitions':'Badlaav'}
+    }
+  };
+  var topics=[];
+  var lang='en';
+  try{var savedLanguage=localStorage.getItem('lang');if(TEXT[savedLanguage])lang=savedLanguage}catch(err){console.error('Could not read the saved language:',err)}
+  function t(key){return TEXT[lang][key]||TEXT.en[key]||key}
+  function applyLanguage(){
+    document.documentElement.lang=lang==='hi'?'hi':'en';
+    document.title=t('pageTitle');
+    document.querySelectorAll('[data-i18n]').forEach(function(el){el.textContent=t(el.getAttribute('data-i18n'))});
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){el.placeholder=t(el.getAttribute('data-i18n-placeholder'))});
+    document.querySelectorAll('[data-lang]').forEach(function(button){button.setAttribute('aria-pressed',String(button.getAttribute('data-lang')===lang))});
+    document.querySelector('.language').setAttribute('aria-label',lang==='hi'?'भाषा':'Language');
+    $('year').options[0].textContent=t('year');$('month').options[0].textContent=t('month');$('day').options[0].textContent=t('day');
+    Array.prototype.forEach.call($('month').options,function(option,index){if(index)option.textContent=TEXT[lang].dateMonths[index-1]});
+    Array.prototype.forEach.call($('postPayTime').options,function(option,index){if(index)option.textContent=TEXT[lang].timeSlots[index-1]});
+    Array.prototype.forEach.call($('topicOptions').querySelectorAll('[data-topic]'),function(label){label.querySelector('[data-topic-label]').textContent=(TEXT[lang].topics[label.getAttribute('data-topic')]||label.getAttribute('data-topic'))});
+    $('hour').setAttribute('aria-label',t('birthHour'));$('minute').setAttribute('aria-label',t('birthMinute'));$('ampm').setAttribute('aria-label',t('birthAmPm'));
+    $('detailsHint').textContent=t(isReserve?'reserveHint':'regularHint');
+    $('topicMore').textContent=t($('topicOptions').classList.contains('collapsed')?'moreTopics':'fewerTopics');
+    updateTopicSummary();
+    if(paid){
+      $('title').textContent=t('paidTitle');
+      $('status').textContent=t('paidStatus').replace('{plan}',planName).replace('{amount}',amount).replace('{next}',t(isReserve?'reserveNext':'detailsNext'));
+    }
+    if(paymentId)$('paymentId').textContent=(lang==='hi'?'भुगतान आईडी: ':'Payment ID: ')+paymentId;
+    if(appointment&&date&&time)updateAppointment();
+    try{localStorage.setItem('lang',lang)}catch(err){console.error('Could not save the selected language:',err)}
+  }
+  document.querySelectorAll('[data-lang]').forEach(function(button){button.addEventListener('click',function(){lang=button.getAttribute('data-lang');applyLanguage()})});
+  var topicDefinitions=[
+    ['Business','💼'],['Career','🚀'],['Finance','💰'],['Marriage','💍'],['Relationships','❤️'],['Health','🩺'],
+    ['Education','🎓'],['Children','👶'],['Family','👨‍👩‍👧'],['Property','🏠'],['Legal Matters','⚖️'],
+    ['Foreign Opportunities','✈️'],['Relocation','📦'],['Personal Growth','🌱'],['Life Purpose','🧭'],
+    ['Spiritual Growth','🕉️'],['Major Decisions','🔀'],['Timing','⏳'],['Obstacles & Delays','🚧'],
+    ['Reputation & Status','🏅'],['Partnership','🤝'],['Investments','📈'],['Success & Recognition','🏆'],['Life Transitions','🦋']
+  ];
+  topicDefinitions.forEach(function(topic){
+    var label=document.createElement('label');label.className='topic'+(topicDefinitions.indexOf(topic)>=6?' more':'');
+    var input=document.createElement('input');input.type='checkbox';input.name='topic_choice';input.value=topic[0];input.setAttribute('aria-label',topic[0]);
+    label.setAttribute('data-topic',topic[0]);label.appendChild(input);
+    var text=document.createElement('span');text.setAttribute('data-topic-label','');text.textContent=topic[1]+' '+(TEXT[lang].topics[topic[0]]||topic[0]);label.appendChild(text);
+    $('topicOptions').appendChild(label);
+  });
+  var otherLabel=document.createElement('label');otherLabel.className='topic other';otherLabel.setAttribute('data-topic','Other');
+  var otherCheck=document.createElement('input');otherCheck.type='checkbox';otherCheck.id='otherCheck';otherCheck.value='Other';otherCheck.setAttribute('aria-label',t('otherName'));otherLabel.appendChild(otherCheck);
+  var otherText=document.createElement('span');otherText.setAttribute('data-topic-label','');otherText.textContent='✍️ '+t('otherName');otherLabel.appendChild(otherText);
+  $('topicOptions').appendChild(otherLabel);
+  otherCheck.addEventListener('change',function(){
+    $('otherTopic').hidden=!otherCheck.checked;
+    if(!otherCheck.checked)$('otherTopic').value='';
+    topics=selectedTopics();updateTopicCount();
+  });
+  function selectedTopics(){
+    var selected=[].map.call(document.querySelectorAll('#topicOptions input:checked:not(#otherCheck)'),function(input){return input.value});
+    if($('otherCheck').checked)selected.push($('otherTopic').value.trim()?'Other: '+$('otherTopic').value.trim():'Other');
+    return selected;
+  }
+  function updateTopicCount(){
+    var count=selectedTopics().length;
+    $('topicCount').textContent=count?t('selectedCount').replace('{count}',count):'';
+  }
+  function updateTopicSummary(){
+    var labels=topics.map(function(topic){
+      var value=String(topic),prefix='Other: ';
+      if(value.indexOf(prefix)===0)return t('otherName')+': '+value.slice(prefix.length);
+      return TEXT[lang].topics[value]||value;
+    });
+    $('topicsSummary').textContent=labels.length?labels.join(', '):t('noTopics');
+  }
+  $('topicPicker').addEventListener('change',function(){topics=selectedTopics();updateTopicCount()});
+  $('otherTopic').addEventListener('input',function(){topics=selectedTopics();updateTopicCount()});
+  $('topicMore').addEventListener('click',function(){
+    var collapsed=$('topicOptions').classList.toggle('collapsed');
+    this.setAttribute('aria-expanded',String(!collapsed));
+    this.textContent=t(collapsed?'moreTopics':'fewerTopics');
+  });
+  $('month').setAttribute('aria-label','Birth month');
   var q=new URLSearchParams(location.search);
   var paymentId=q.get('razorpay_payment_id')||'';
   var paid=q.get('razorpay_payment_link_status')==='paid';
@@ -164,6 +346,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   var date=q.get('appointment_date')||'';
   var time=q.get('appointment_time')||'';
   var appointment='';
+  var isReserve=ref==='reserve';
   var wa='917827673637';
   var checkoutContext=null;
   try{
@@ -173,7 +356,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   }
   checkoutContext=checkoutContext&&typeof checkoutContext==='object'?checkoutContext:{};
   var selectedPlan=String(checkoutContext.selectedPlan||'');
-  var topics=Array.isArray(checkoutContext.topics)?checkoutContext.topics:[];
+  topics=Array.isArray(checkoutContext.topics)?checkoutContext.topics:[];
   var mobile=String(checkoutContext.mobile||'');
   if(!mobile){
     try{
@@ -184,6 +367,25 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     }
   }
   $('mobile').value=mobile;
+  applyLanguage();
+
+  function todayIst(){
+    return new Date(Date.now()+330*60000).toISOString().slice(0,10);
+  }
+  function updateAppointment(){
+    date=$('postPayDate').value;
+    time=$('postPayTime').value;
+    if(date&&time&&/^\d{4}-\d{2}-\d{2}$/.test(date)){
+      var parts=date.split('-');
+      var dayDate=new Date(+parts[0],+parts[1]-1,+parts[2]);
+      appointment=dayDate.toLocaleDateString(lang==='hi'?'hi-IN':'en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' · '+time;
+      $('appointmentWhen').textContent=appointment;
+      $('appointmentSummary').hidden=false;
+    }else{
+      appointment='';
+      $('appointmentSummary').hidden=true;
+    }
+  }
 
   function addOption(select,value,label){var option=document.createElement('option');option.value=value;option.textContent=label;select.appendChild(option)}
   var now=new Date();
@@ -196,7 +398,17 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   if(date&&time&&/^\d{4}-\d{2}-\d{2}$/.test(date)){
     var parts=date.split('-');
     var dayDate=new Date(+parts[0],+parts[1]-1,+parts[2]);
-    appointment=dayDate.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' · '+time;
+    appointment=dayDate.toLocaleDateString(lang==='hi'?'hi-IN':'en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' · '+time;
+    $('appointmentWhen').textContent=appointment;
+    $('appointmentSummary').hidden=false;
+  }
+  if(paid&&isReserve){
+    $('reserveAppointment').hidden=false;
+    $('postPayDate').min=todayIst();
+    $('postPayDate').required=true;
+    $('postPayTime').required=true;
+    $('postPayDate').addEventListener('change',updateAppointment);
+    $('postPayTime').addEventListener('change',updateAppointment);
   }
 
   function detailMessage(data){
@@ -219,12 +431,9 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   }
 
   if(paid){
-    $('title').textContent='Payment received. Thank you!';
-    $('status').textContent='Your payment for '+planName+(amount?' ('+amount+')':'')+' is confirmed. Add your birth details below.';
-    if(paymentId)$('paymentId').textContent='Payment ID: '+paymentId;
+    applyLanguage();
     $('detailsCard').hidden=false;
-    if(appointment)$('appointmentWhen').textContent=appointment;
-    else $('appointmentWhen').parentNode.hidden=true;
+    if(!appointment&&!isReserve)$('appointmentSummary').hidden=true;
     $('whatsapp').href='https://wa.me/'+wa+'?text='+encodeURIComponent('I have booked the consultation from your website'+
       '\nPlan: '+planName+(amount?' ('+amount+')':'')+
       (appointment?'\nAppointment: '+appointment+' IST':'')+
@@ -233,7 +442,12 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     try{if(window.fbq)fbq('track','Purchase',{value:plan?plan.price:0,currency:'INR'})}catch(e){}
   }else{
     $('unpaidCard').hidden=false;
-    $('whatsappHelp').href='https://wa.me/'+wa+'?text='+encodeURIComponent('Hi! I need help with my astrology consultation booking.'+(paymentId?' Payment ID: '+paymentId:''));
+    $('whatsappHelp').href='https://wa.me/'+wa+'?text='+encodeURIComponent(t('helpMessage')+(paymentId?' Payment ID: '+paymentId:''));
+  }
+  if(paid&&!isReserve){
+    $('topicPicker').hidden=true;
+    $('topicSummary').hidden=false;
+    updateTopicSummary();
   }
 
   $('detailsForm').addEventListener('submit',async function(event){
@@ -242,9 +456,18 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     var error=$('error');error.hidden=true;
     var name=$('name').value.trim(),email=$('email').value.trim(),y=$('year').value,m=$('month').value,d=$('day').value;
     var hr=$('hour').value,mi=$('minute').value,ap=$('ampm').value,place=$('place').value.trim(),question=$('question').value.trim(),customerMobile=$('mobile').value.trim();
-    if(!name||!y||!m||!d||!place||!customerMobile){error.textContent='Please complete your name, mobile number, date of birth and birth place.';error.hidden=false;return}
-    if(!/^[6-9]\d{9}$/.test(customerMobile)){error.textContent='Please enter a valid 10-digit mobile number.';error.hidden=false;return}
-    if((hr||mi||ap)&&!(hr&&mi&&ap)){error.textContent='Enter the complete birth time, or leave all time fields blank.';error.hidden=false;return}
+    if(!name||!y||!m||!d||!place||!customerMobile){error.textContent=t('completeRequired');error.hidden=false;return}
+    if(!/^[6-9]\d{9}$/.test(customerMobile)){error.textContent=t('validMobile');error.hidden=false;return}
+    if((hr||mi||ap)&&!(hr&&mi&&ap)){error.textContent=t('completeBirthTime');error.hidden=false;return}
+    if(isReserve){
+      updateAppointment();
+      if(!date||!time||date<todayIst()){
+        error.textContent=t('todayOrFuture');
+        error.hidden=false;
+        return;
+      }
+      topics=selectedTopics();
+    }
     var birthDate=('0'+d).slice(-2)+'/'+('0'+m).slice(-2)+'/'+y;
     var birthTime=hr?hr+':'+mi+' '+ap:'';
     var data={name:name,email:email,mobile:customerMobile,birthDate:birthDate,birthTime:birthTime,birthPlace:place,question:question};
@@ -264,7 +487,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     $('birthDateField').value=birthDate;
     $('birthTimeField').value=birthTime||'Not known';
     $('pageField').value=location.href;
-    button.disabled=true;button.textContent='Sending details…';
+    button.disabled=true;button.textContent=t('sending');
     try{
       var res=await fetch('https://splitforms.com/api/submit',{
         method:'POST',
@@ -279,14 +502,14 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
         $('detailsCard').hidden=true;$('doneCard').hidden=false;
         try{if(window.gtag)gtag('event','consultation_details_submitted',{plan:ref})}catch(e){}
       }else{
-        error.textContent=result.message||"Couldn't send. Please try again.";
+        error.textContent=result.message||t('sendFailed');
         error.hidden=false;
       }
     }catch(err){
-      error.textContent="Couldn't send. Please try again.";
+      error.textContent=t('sendFailed');
       error.hidden=false;
     }finally{
-      button.disabled=false;button.textContent='Send Details';
+      button.disabled=false;button.textContent=t('sendDetails');
     }
   });
 })();

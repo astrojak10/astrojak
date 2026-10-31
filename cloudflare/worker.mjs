@@ -271,13 +271,23 @@ export default {
         const topics = Array.isArray(input.topics)
           ? input.topics.map(topic => String(topic).slice(0, 120)).slice(0, 12)
           : [];
+        const birthDate = String(input.birth_date || '').trim().slice(0, 30);
+        const birthTime = String(input.birth_time || '').trim().slice(0, 30);
+        const birthPlace = String(input.birth_place || '').trim().slice(0, 150);
         const description = [
+          `Customer: ${name}`,
+          `Mobile: ${contact}`,
+          `Date of birth: ${birthDate || 'Not provided'}`,
+          `Birth time: ${birthTime || 'Not provided'}`,
+          `Birth place: ${birthPlace || 'Not provided'}`,
           `Plan: ${plan.name}`,
           input.selected_plan ? `Selected analysis: ${String(input.selected_plan).slice(0, 150)}` : '',
           topics.length ? `Topics: ${topics.join(', ')}` : '',
-          `Mobile: ${contact}`,
+          `Appointment: ${appointment.date}, ${appointment.time} IST`,
+          `Amount paid: ₹${(payment.amount / 100).toLocaleString('en-IN')}`,
+          `Payment ID: ${paymentId}`,
           `Payment reference: ${referenceId}`,
-        ].filter(Boolean).join('\n');
+        ].join('\n');
         const event = {
           id: await eventIdForPayment(paymentId),
           summary: `ASTROJAK Consultation – ${name}`,
@@ -296,18 +306,49 @@ export default {
           body: JSON.stringify(event),
         });
         if (calendarResult.status === 409) {
-          return response(200, { created: true, already_exists: true }, origin);
+          const updateUrl = `${calendarUrl}/${encodeURIComponent(event.id)}`;
+          const updateResult = await fetch(updateUrl, {
+            method: 'PATCH',
+            headers: {
+              Authorization: 'Bearer ' + accessToken,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(event),
+          });
+          if (!updateResult.ok) {
+            const failure = await updateResult.json().catch(() => ({}));
+            const googleError = failure.error && typeof failure.error === 'object' ? failure.error : {};
+            const reason = typeof googleError.status === 'string'
+              && /^[a-z0-9_-]+$/i.test(googleError.status)
+              ? googleError.status
+              : `HTTP_${updateResult.status}`;
+            const message = typeof googleError.message === 'string'
+              ? googleError.message.replace(/[\r\n]+/g, ' ').slice(0, 180)
+              : '';
+            return response(502, {
+              error: 'Could not update Calendar event',
+              diagnostic: `Google Calendar API: ${reason} (HTTP ${updateResult.status})${message ? ` — ${message}` : ''}`,
+            }, origin);
+          }
+          return response(200, { created: true, already_exists: true, updated: true }, origin);
         }
         if (!calendarResult.ok) {
           const failure = await calendarResult.json().catch(() => ({}));
           const googleError = failure.error && typeof failure.error === 'object' ? failure.error : {};
-          const reason = typeof googleError.status === 'string' && /^[a-z0-9_-]+$/i.test(googleError.status)
-            ? googleError.status
-            : `HTTP_${calendarResult.status}`;
-          console.error('Google Calendar event creation failed', calendarResult.status, reason);
+          const googleReason = Array.isArray(googleError.errors)
+            ? googleError.errors.find(item => item && typeof item.reason === 'string')?.reason
+            : '';
+          const reason = [googleReason, googleError.status]
+            .find(value => typeof value === 'string' && /^[a-z0-9_-]+$/i.test(value))
+            || `HTTP_${calendarResult.status}`;
+          const message = typeof googleError.message === 'string'
+            ? googleError.message.replace(/[\r\n]+/g, ' ').slice(0, 180)
+            : '';
+          const diagnostic = `Google Calendar API: ${reason} (HTTP ${calendarResult.status})${message ? ` — ${message}` : ''}`;
+          console.error('Google Calendar event creation failed', calendarResult.status, reason, message);
           return response(502, {
             error: 'Could not create Calendar event',
-            diagnostic: `Google Calendar API: ${reason} (HTTP ${calendarResult.status})`,
+            diagnostic,
           }, origin);
         }
         return response(200, { created: true, already_exists: false }, origin);

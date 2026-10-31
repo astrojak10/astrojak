@@ -38,7 +38,8 @@ The thank-you form sends completed customer details to Splitforms. After that
 submission succeeds, the Worker verifies the captured Razorpay payment and
 creates one event in the configured calendar. The event includes the customer
 name, mobile number, plan, selected analysis, discussion topics, and payment
-reference; birth date, birth time, and birth place are not added to Calendar.
+reference. The event also includes the birth date, birth time (when provided),
+and birth place submitted on the thank-you form.
 
 1. Enable the Google Calendar API in the Google Cloud project used by the
    service account.

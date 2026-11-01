@@ -32,6 +32,25 @@ the GitHub Pages build. Checkout opens in Razorpay's on-page modal.
    booking page, the server verifies and captures the payment, and success
    returns to `https://www.astrojak.in/thank-you.html`.
 
+## Meta Pixel purchase tracking
+
+The website initializes Meta Pixel `2057261584904971` and sends a browser
+`Purchase` event from `thank-you.html` only after the checkout flow receives a
+successful captured-payment verification from this Worker. The event includes
+the plan value in INR, plan name and ID, and the Razorpay payment ID as its
+event ID. The browser stores a per-payment marker so refreshing the thank-you
+page does not send the same Purchase event again in that browser.
+
+This is Pixel browser tracking, not a direct Razorpay-to-Meta integration or a
+server-side Conversions API feed. Browser privacy settings, ad blockers, or
+consent restrictions can prevent Pixel events from reaching Meta.
+
+To test it, use a Razorpay Test Mode payment and open **Events Manager → Data
+Sources → your Pixel → Test events** while completing checkout. Confirm a
+`Purchase` arrives with the expected INR value and plan, and that its event ID
+matches the Razorpay payment ID. A page refresh should not send a second
+Purchase event from the same browser.
+
 ## Google Calendar appointments
 
 The thank-you form sends completed customer details to Splitforms. After that

@@ -492,8 +492,26 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       $('doneCard').hidden=false;
       syncCalendar();
     }
-    try{if(window.gtag)gtag('event','purchase',{transaction_id:paymentId,value:plan?plan.price:0,currency:'INR',items:plan?[{item_id:ref,item_name:plan.name,price:plan.price}]:[]})}catch(e){}
-    try{if(window.fbq)fbq('track','Purchase',{value:plan?plan.price:0,currency:'INR'})}catch(e){}
+    if(paymentId&&/^pay_[A-Za-z0-9]+$/.test(paymentId)&&plan){
+      try{
+        if(window.gtag)gtag('event','purchase',{transaction_id:paymentId,value:plan.price,currency:'INR',items:[{item_id:ref,item_name:plan.name,price:plan.price}]});
+      }catch(err){console.error('Could not send the Google purchase event:',err)}
+      try{
+        var pixelPurchaseKey='astrojak_meta_purchase_'+paymentId;
+        var pixelPurchaseSent=false;
+        try{pixelPurchaseSent=localStorage.getItem(pixelPurchaseKey)==='1'}catch(err){console.error('Could not check the Meta purchase event marker:',err)}
+        if(window.fbq&&!pixelPurchaseSent){
+          fbq('track','Purchase',{
+            value:plan.price,
+            currency:'INR',
+            content_ids:[ref],
+            content_type:'product',
+            content_name:plan.name
+          },{eventID:paymentId});
+          try{localStorage.setItem(pixelPurchaseKey,'1')}catch(err){console.error('Could not save the Meta purchase event marker:',err)}
+        }
+      }catch(err){console.error('Could not send or deduplicate the Meta purchase event:',err)}
+    }
   }else{
     $('unpaidCard').hidden=false;
     $('whatsappHelp').href='https://wa.me/'+wa+'?text='+encodeURIComponent(t('helpMessage')+(paymentId?' Payment ID: '+paymentId:''));

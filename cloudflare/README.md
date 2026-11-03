@@ -51,12 +51,52 @@ Sources → your Pixel → Test events** while completing checkout. Confirm a
 matches the Razorpay payment ID. A page refresh should not send a second
 Purchase event from the same browser.
 
+## Google Sheets customer details
+
+After the customer submits the thank-you form, the page sends the form details
+to the Worker. The Worker verifies the captured Razorpay payment and appends
+one row to the `Customers` tab before sending the existing Splitforms
+notification. It uses the payment ID to avoid duplicate rows when the customer
+retries. Google credentials stay in Cloudflare and are never sent to the
+browser.
+
+1. In the Google Cloud project used by the service account, enable the Google
+   Sheets API.
+2. Create a Google spreadsheet and add a tab named exactly `Customers`.
+   Set row 1 to these headers, in this order:
+
+   ```text
+   Submitted At,Payment ID,Payment Reference,Payment Status,Plan,Selected Analysis,Amount (INR),Appointment Date,Appointment Time (IST),Discussion Topics,Customer Name,Mobile,Date of Birth,Birth Time,Birth Place,Page URL
+   ```
+
+3. Share the spreadsheet with the service account email as an **Editor**.
+   The email is the `client_email` value in the service-account JSON.
+4. Copy the spreadsheet ID from its URL (`/spreadsheets/d/<ID>/edit`).
+5. In Cloudflare, open **Workers & Pages → astrojak-payment-api → Settings →
+   Variables and Secrets** and add `GOOGLE_SHEETS_SPREADSHEET_ID` as an
+   encrypted secret. The existing `GOOGLE_SERVICE_ACCOUNT_JSON` secret can be
+   reused if it is already configured for Calendar; otherwise add the complete
+   service-account JSON as an encrypted secret too.
+6. Push the Worker and website changes to `main`. GitHub Actions deploys the
+   Worker when `cloudflare/` changes and deploys the static site on every push;
+   confirm both workflows succeed. The Worker uses the Sheets API with the
+   service account, and its existing Razorpay credentials verify that the
+   submitted payment is captured and belongs to the booking.
+7. Test with a Razorpay Test Mode payment, fill in and submit the thank-you
+   form, and verify that one row appears under the `Customers` header row.
+   Confirm that retries for the same payment do not add another row.
+
+The sheet stores customer contact details, date of birth, and birth place.
+Restrict spreadsheet sharing to staff who need it. Failed Sheets writes leave
+the form available for retry; the payment ID check prevents retries from
+creating duplicate rows.
+
 ## Google Calendar appointments
 
-The thank-you form sends completed customer details to Splitforms. After that
-submission succeeds, the Worker verifies the captured Razorpay payment and
-creates one event in the configured calendar. The event includes the customer
-name, mobile number, plan, selected analysis, discussion topics, and payment
+After the thank-you form and Sheets submission succeed, the page sends
+completed customer details to Splitforms and then asks the Worker to create
+one event in the configured calendar. The event includes the customer name,
+mobile number, plan, selected analysis, discussion topics, and payment
 reference. The event also includes the birth date, birth time (when provided),
 and birth place submitted on the thank-you form.
 
@@ -97,11 +137,13 @@ includes service-account key material.
   not exposed.
 - Google service-account credentials are stored only as Cloudflare encrypted
   secrets. Calendar event creation rechecks the payment and uses the
-  `calendar.events` scope.
+  `calendar.events` scope; Sheets appends recheck payment ownership and use the
+  `spreadsheets` scope.
 - Rotate/revoke any Razorpay key that has ever been committed or shared.
 - Configure a Cloudflare rate-limiting rule for
   `api.astrojak.in/create-order`, `api.astrojak.in/verify-payment`, and
-  `api.astrojak.in/create-calendar-event` before enabling live payments.
+  `api.astrojak.in/create-calendar-event`, and
+  `api.astrojak.in/append-customer-details` before enabling live payments.
 
 ## Local checks
 

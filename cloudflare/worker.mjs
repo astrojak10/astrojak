@@ -224,7 +224,7 @@ export default {
       });
     }
 
-    if (!['/create-order', '/verify-payment', '/create-calendar-event', '/append-customer-details'].includes(url.pathname)) {
+    if (!['/create-order', '/verify-payment', '/create-calendar-event', '/append-customer-details', '/append-checkout-lead'].includes(url.pathname)) {
       return response(404, { error: 'Not found' }, origin);
     }
     if (request.method !== 'POST') return response(405, { error: 'Use POST' }, origin);
@@ -235,6 +235,93 @@ export default {
 
     const input = await parseInput(request);
     if (!input || typeof input !== 'object') return response(400, { error: 'Invalid request' }, origin);
+
+    if (url.pathname === '/append-checkout-lead') {
+      if (!env.GOOGLE_SERVICE_ACCOUNT_JSON || !env.GOOGLE_CHECKOUT_LEADS_SPREADSHEET_ID) {
+        return response(503, { error: 'Checkout leads Google Sheet is not configured' }, origin);
+      }
+
+      const mobile = String(input.mobile || '').trim();
+      const contact = normalizedContact({ contact: mobile });
+      const planId = String(input.plan || '');
+      const plan = Object.prototype.hasOwnProperty.call(PLANS, planId) ? PLANS[planId] : null;
+      const selectedPlan = String(input.selected_plan || '').trim().slice(0, 150);
+      const appointment = input.appointment && typeof input.appointment === 'object'
+        ? { date: String(input.appointment.date || ''), time: String(input.appointment.time || '') }
+        : { date: '', time: '' };
+      const hasAppointment = !!(appointment.date || appointment.time);
+      if (!/^[6-9]\d{9}$/.test(mobile) || !contact || !plan
+        || (hasAppointment && !isValidAppointment(appointment))) {
+        return response(400, { error: 'A valid mobile number and plan are required' }, origin);
+      }
+
+      let stage = 'Google service-account credentials';
+      try {
+        let credentials;
+        try {
+          credentials = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_JSON);
+        } catch {
+          throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON must contain only valid service-account JSON');
+        }
+        if (!credentials.client_email || !credentials.private_key) {
+          throw new Error('service-account JSON must contain client_email and private_key');
+        }
+
+        stage = 'Google OAuth';
+        const accessToken = await googleAccessToken(
+          credentials,
+          'https://www.googleapis.com/auth/spreadsheets',
+        );
+        const spreadsheetId = encodeURIComponent(env.GOOGLE_CHECKOUT_LEADS_SPREADSHEET_ID);
+        const range = encodeURIComponent('Checkout Leads!A:H');
+        const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+        const page = String(input.page || '');
+        const values = [[
+          new Date().toISOString(),
+          contact,
+          plan.name,
+          selectedPlan,
+          plan.price,
+          appointment.date,
+          appointment.time,
+          [
+            String(input.position || '').slice(0, 30),
+            page.startsWith('https://www.astrojak.in/') || page.startsWith('https://astrojak.in/')
+              ? page.slice(0, 300)
+              : 'https://www.astrojak.in/',
+          ].filter(Boolean).join(' · '),
+        ]];
+        stage = 'Google Sheets append';
+        const appendResult = await fetch(appendUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ values }),
+        });
+        if (!appendResult.ok) {
+          const failure = await appendResult.json().catch(() => ({}));
+          const reason = typeof failure.error?.status === 'string'
+            && /^[a-z0-9_-]+$/i.test(failure.error.status)
+            ? failure.error.status
+            : `HTTP_${appendResult.status}`;
+          throw new Error(`Google Sheets API: ${reason}`);
+        }
+        const appendData = await appendResult.json();
+        if (appendData.updates?.updatedRows !== 1) {
+          throw new Error('Google Sheets API did not confirm the row append');
+        }
+        return response(200, { appended: true }, origin);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unexpected error';
+        console.error('Google Sheets checkout lead append failed', stage, message);
+        return response(502, {
+          error: 'Could not save checkout lead to Google Sheets',
+          diagnostic: `${stage}: ${message}`,
+        }, origin);
+      }
+    }
 
     if (url.pathname === '/append-customer-details') {
       if (!env.GOOGLE_SERVICE_ACCOUNT_JSON || !env.GOOGLE_SHEETS_SPREADSHEET_ID) {

@@ -15,7 +15,7 @@ var PRICING = {
   plans: {
     'reserve':          { name: 'Reserve Your Slot',             price: 101,  listPrice: 499  },
     'kundali':          { name: 'Kundali Analysis',              price: 999,  listPrice: 4999 },
-    'detailed-kundali': { name: 'Detailed Kundali Analysis',     price: 1499, listPrice: 9999 },
+    'detailed-kundali': { name: '10 Minutes Kundali Analysis',   price: 1499, listPrice: 9999 },
     'matchmaking':      { name: 'Marriage Matchmaking Analysis', price: 1499, listPrice: 9999 }
   }
 };

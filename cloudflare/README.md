@@ -91,6 +91,39 @@ Restrict spreadsheet sharing to staff who need it. Failed Sheets writes leave
 the form available for retry; the payment ID check prevents retries from
 creating duplicate rows.
 
+## Google Sheets pre-checkout mobile leads
+
+When a customer enters a mobile number in the pre-checkout prompt and presses
+Pay, the page saves that number and booking context to a separate spreadsheet
+before opening Razorpay. The existing post-payment `Customers` sheet is not
+changed. A failed save prevents checkout from continuing, so the customer can
+retry rather than losing the lead.
+
+1. Create a second Google spreadsheet and add a tab named exactly
+   `Checkout Leads`. Set row 1 to these headers, in this order:
+
+   ```text
+   Submitted At,Mobile,Plan,Selected Plan,Amount (INR),Appointment Date,Appointment Time (IST),Source
+   ```
+
+2. Share this spreadsheet with the same service-account email as an **Editor**.
+   The service account needs access to both spreadsheets.
+3. Copy the ID from the second spreadsheet URL
+   (`/spreadsheets/d/<ID>/edit`).
+4. In Cloudflare, open **Workers & Pages → astrojak-payment-api → Settings →
+   Variables and Secrets** and add `GOOGLE_CHECKOUT_LEADS_SPREADSHEET_ID` as
+   an encrypted secret. Keep using the existing `GOOGLE_SERVICE_ACCOUNT_JSON`
+   secret; no additional service account is required.
+5. Push the Worker and website changes to `main`. Confirm the Worker and static
+   site GitHub Actions workflows succeed.
+6. Test from the website: press a Pay button, enter a valid mobile number, and
+   continue. Confirm a row appears in `Checkout Leads` with the phone and
+   selected booking details before completing or cancelling Razorpay checkout.
+
+This sheet contains prospective customer phone numbers. Limit its sharing to
+staff who need the data and configure Cloudflare rate limiting for
+`api.astrojak.in/append-checkout-lead`.
+
 ## Google Calendar appointments
 
 After the thank-you form and Sheets submission succeed, the page sends

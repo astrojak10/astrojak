@@ -154,26 +154,46 @@
     }, 50);
   }
   function lead(id, p, c, pos, appointment, selectedPlan, topics) {
-    var fd = new FormData();
-    fd.append('access_key', SPLITFORMS_ACCESS_KEY);
-    fd.append('_subject', 'ASTROJAK booking details: ' + (selectedPlan || p.name) + ' (' + money(id) + ')');
-    fd.append('status', 'Mobile number captured');
-    fd.append('plan', selectedPlan || p.name);
-    fd.append('payment_plan', p.name);
-    fd.append('amount', money(id));
-    fd.append('mobile', c.contact || '');
-    fd.append('selected_plan', selectedPlan || p.name);
-    fd.append('topics', (topics || []).join(', '));
-    fd.append('discussion_topics', (topics || []).join(', '));
-    fd.append('appointment_date', appointment ? appointment.date : '');
-    fd.append('appointment_time', appointment ? appointment.time : '');
-    fd.append('button', pos || ''); fd.append('page', location.href);
-    return fetch(SPLITFORMS, { method: 'POST', headers: { Accept: 'application/json' }, body: fd })
-      .then(function (res) {
-        return res.json().then(function (data) {
-          if (!res.ok || !data.success) throw new Error(data.message || 'Splitforms rejected the checkout lead');
-        });
+    return fetch(API + '/append-checkout-lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mobile: digits10(c.contact),
+        plan: id,
+        selected_plan: selectedPlan || p.name,
+        appointment: appointment,
+        position: pos || '',
+        page: location.origin + location.pathname
+      })
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok || !data.appended) {
+          throw new Error(data.error || 'Could not save your number');
+        }
       });
+    }).then(function () {
+      var fd = new FormData();
+      fd.append('access_key', SPLITFORMS_ACCESS_KEY);
+      fd.append('_subject', 'ASTROJAK booking details: ' + (selectedPlan || p.name) + ' (' + money(id) + ')');
+      fd.append('status', 'Mobile number captured');
+      fd.append('plan', selectedPlan || p.name);
+      fd.append('payment_plan', p.name);
+      fd.append('amount', money(id));
+      fd.append('mobile', c.contact || '');
+      fd.append('selected_plan', selectedPlan || p.name);
+      fd.append('topics', (topics || []).join(', '));
+      fd.append('discussion_topics', (topics || []).join(', '));
+      fd.append('appointment_date', appointment ? appointment.date : '');
+      fd.append('appointment_time', appointment ? appointment.time : '');
+      fd.append('button', pos || '');
+      fd.append('page', location.href);
+      return fetch(SPLITFORMS, { method: 'POST', headers: { Accept: 'application/json' }, body: fd })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok || !data.success) throw new Error(data.message || 'Splitforms rejected the checkout lead');
+          });
+        });
+    });
   }
 
   var checkoutScript;

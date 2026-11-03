@@ -229,7 +229,8 @@ export default {
     }
     if (request.method !== 'POST') return response(405, { error: 'Use POST' }, origin);
     if (!ALLOWED_ORIGINS.has(origin)) return response(403, { error: 'Origin not allowed' }, '');
-    if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
+    if (url.pathname !== '/append-checkout-lead'
+      && (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET)) {
       return response(503, { error: 'Payment is not configured' }, origin);
     }
 

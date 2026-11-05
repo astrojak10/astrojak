@@ -135,13 +135,14 @@
       var submit = document.getElementById('pmGo');
       submit.disabled = true;
       submit.textContent = 'Opening secure payment…';
-      Promise.resolve()
-        .then(function () {
-          return lead(id, p, customer, button.getAttribute('data-pos'), appointment, selectedPlan, topics);
-        })
-        .catch(function (err) {
-          console.error('Could not send checkout lead to Splitforms:', err);
-        });
+      try {
+        lead(id, p, customer, button.getAttribute('data-pos'), appointment, selectedPlan, topics)
+          .catch(function (err) {
+            console.error('Could not send checkout lead to Splitforms:', err);
+          });
+      } catch (err) {
+        console.error('Could not start the Splitforms checkout lead request:', err);
+      }
       closeModal(); done(customer, true);
     };
     setTimeout(function () {

@@ -134,17 +134,14 @@
       }
       var submit = document.getElementById('pmGo');
       submit.disabled = true;
-      submit.textContent = 'Saving booking details…';
-      try {
-        await lead(id, p, customer, button.getAttribute('data-pos'), appointment, selectedPlan, topics);
-      } catch (err) {
-        console.error('Could not send checkout lead to Splitforms:', err);
-        x.textContent = "Couldn't save your booking details. Please try again.";
-        x.hidden = false;
-        submit.disabled = false;
-        submit.textContent = w[5] + ' ' + money(id) + ' →';
-        return;
-      }
+      submit.textContent = 'Opening secure payment…';
+      Promise.resolve()
+        .then(function () {
+          return lead(id, p, customer, button.getAttribute('data-pos'), appointment, selectedPlan, topics);
+        })
+        .catch(function (err) {
+          console.error('Could not send checkout lead to Splitforms:', err);
+        });
       closeModal(); done(customer, true);
     };
     setTimeout(function () {

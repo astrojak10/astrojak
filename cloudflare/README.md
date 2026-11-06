@@ -28,16 +28,15 @@ the GitHub Pages build. Checkout opens in Razorpay's on-page modal.
 6. Confirm `https://api.astrojak.in/create-order` and
    `https://api.astrojak.in/verify-payment` are live. The API hostname is
    configured in `pay.js`; if it differs, update that URL.
-7. With Razorpay Test Mode configured, confirm checkout detects the `rzp_test_`
-   key and redirects to WhatsApp instead of starting a test payment. For a live
-   payment test, use the production keys only when ready to accept a real charge.
+7. With Razorpay Test Mode configured, complete a test payment and confirm the
+   Worker verifies/captures it and returns to
+   `https://www.astrojak.in/thank-you.html`. Test keys are supported by checkout.
 
 The shared checkout script redirects to WhatsApp with “I have to book As soon
-as possible” if Razorpay Checkout cannot load/open, a payment fails, or the
-Worker returns a Test Mode key (`rzp_test_`). A customer who simply dismisses
-Checkout can retry normally. If payment verification fails after submission,
-the page keeps the existing warning not to pay again and asks the customer to
-contact support with the payment ID.
+as possible” if Razorpay Checkout cannot load/open or a payment fails. A
+customer who simply dismisses Checkout can retry normally. If payment
+verification fails after submission, the page keeps the existing warning not
+to pay again and asks the customer to contact support with the payment ID.
 
 The `astrojak` Worker owns the `api.astrojak.in` custom domain and is the
 deployment target in `wrangler.toml`. Keep any older Worker deployment until
@@ -85,11 +84,10 @@ plan name; the booking remains saved even if Meta is temporarily unavailable.
    - Variable `META_CAPI_GRAPH_VERSION` — a currently supported Graph API
      version in the format `vNN.0`.
    - Optional variable `META_CAPI_TEST_EVENT_CODE` — only while testing.
-3. Deploy the Worker. Keep `META_CAPI_TEST_EVENT_CODE` set to the code shown
-   in **Events Manager → Test Events** during a legitimate captured booking.
-   Confirm `Purchase` appears in Test Events with INR value and plan name.
-   Razorpay Test Mode keys intentionally redirect checkout to WhatsApp, so
-   they cannot generate a captured booking for this test.
+3. Configure both the Worker and Razorpay Checkout with Razorpay Test Mode
+   credentials. Keep `META_CAPI_TEST_EVENT_CODE` set to the code shown in
+   **Events Manager → Test Events**, complete a test payment, and confirm
+   `Purchase` appears in Test Events with INR value and plan name.
 4. Remove `META_CAPI_TEST_EVENT_CODE` and save the Worker settings before
    sending live events. The endpoint only sends after the payment is verified
    as captured and the booking row is saved. Older spreadsheet rows are not

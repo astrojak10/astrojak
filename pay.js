@@ -287,11 +287,6 @@
       loadCheckout()
         .then(function () { return post('/create-order', body); })
         .then(function (order) {
-          if (/^rzp_test_/.test(String(order.key_id || ''))) {
-            reset(b);
-            redirectToBookingWhatsApp();
-            return;
-          }
           try { if (hook.paymentOrderCreated) hook.paymentOrderCreated(id, order); } catch (err) { console.error('Could not update local slot estimate', err); }
           var checkout = new window.Razorpay({
             key: order.key_id,

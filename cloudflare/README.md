@@ -92,6 +92,12 @@ plan name; the booking remains saved even if Meta is temporarily unavailable.
    sending live events. The endpoint only sends after the payment is verified
    as captured and the booking row is saved. Older spreadsheet rows are not
    backfilled automatically.
+5. To troubleshoot, open **Workers & Pages → astrojak → Observability → Logs**
+   for the test time. A successful send logs
+   `Meta Conversions API accepted paid booking event` with Meta's trace ID.
+   A rejected or unconfigured send logs
+   `Could not send paid booking to Meta; Google Sheets booking is saved`.
+   These logs never include the access token or unhashed contact details.
 
 The supplied CRM event guide's fields are included: `action_source` is
 `system_generated`, `custom_data.event_source` is `crm`, and

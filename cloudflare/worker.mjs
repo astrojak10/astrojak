@@ -146,6 +146,11 @@ async function sendMetaPaidBookingEvent(env, booking) {
       : `HTTP_${result.status}`;
     throw new Error(`Meta Conversions API rejected the paid booking event: ${message}`);
   }
+  console.info('Meta Conversions API accepted paid booking event', {
+    eventsReceived: data.events_received,
+    fbTraceId: typeof data.fbtrace_id === 'string' ? data.fbtrace_id : '',
+    testEvent: Boolean(testEventCode),
+  });
   return { eventsReceived: data.events_received, fbTraceId: data.fbtrace_id || '' };
 }
 

@@ -597,33 +597,6 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
         error.hidden=false;
         return;
       }
-      fetch('https://api.astrojak.in/zoho-lead',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        keepalive:true,
-        body:JSON.stringify({
-          name:name,
-          phone:customerMobile,
-          description:[
-            'Paid website booking',
-            'Payment plan: '+planName,
-            'Selected analysis: '+(selectedPlan||planName),
-            'Appointment: '+(appointment||'Not provided')+' IST',
-            'Birth date: '+birthDate,
-            'Birth time: '+(birthTime||'Not provided'),
-            'Birth place: '+place,
-            'Topics: '+topics.join(', '),
-            'Payment ID: '+paymentId
-          ].join('\n'),
-          page:location.href
-        })
-      }).then(function(res){
-        return res.json().catch(function(){return {}}).then(function(result){
-          if(!res.ok||!result.success)throw new Error(result.diagnostic||result.error||'Zoho CRM rejected the booking lead');
-        });
-      }).catch(function(err){
-        console.error('Could not save customer booking to Zoho CRM:',err);
-      });
       fetch('https://splitforms.com/api/submit',{
         method:'POST',
         headers:{Accept:'application/json'},

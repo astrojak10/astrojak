@@ -9,17 +9,6 @@ const ALLOWED_ORIGINS = new Set([
 const PLANS = PRICING.plans;
 const PRECHECKOUT_LEADS_SPREADSHEET_ID = '10dAPMDIUQQVKuhYj8uww9atBGbdOSATJ_0AoxawN22g';
 const CUSTOMER_BOOKINGS_SPREADSHEET_ID = '1Ecr2oISzV7vJY5CJyu9QNyd-E1TxaENOcbns31X3fOk';
-const ZOHO_DATA_CENTERS = {
-  com: { accounts: 'https://accounts.zoho.com', api: 'https://www.zohoapis.com' },
-  eu: { accounts: 'https://accounts.zoho.eu', api: 'https://www.zohoapis.eu' },
-  in: { accounts: 'https://accounts.zoho.in', api: 'https://www.zohoapis.in' },
-  'com.au': { accounts: 'https://accounts.zoho.com.au', api: 'https://www.zohoapis.com.au' },
-  jp: { accounts: 'https://accounts.zoho.jp', api: 'https://www.zohoapis.jp' },
-  ca: { accounts: 'https://accounts.zohocloud.ca', api: 'https://www.zohoapis.ca' },
-  'com.cn': { accounts: 'https://accounts.zoho.com.cn', api: 'https://www.zohoapis.com.cn' },
-};
-
-let zohoTokenCache = null;
 
 const SLOT_LABELS = [
   '09:00 AM – 12:00 PM',
@@ -85,108 +74,6 @@ async function razorpayRequest(env, path, method, body) {
   });
   const data = await result.json().catch(() => ({}));
   return { ok: result.ok, status: result.status, data };
-}
-
-async function zohoAccessToken(env) {
-  const region = String(env.ZOHO_REGION || '').trim().toLowerCase();
-  const dataCenter = ZOHO_DATA_CENTERS[region];
-  if (!dataCenter || !env.ZOHO_CLIENT_ID || !env.ZOHO_CLIENT_SECRET || !env.ZOHO_REFRESH_TOKEN) {
-    throw new Error('Zoho CRM is not configured; check ZOHO_REGION and OAuth secrets');
-  }
-  if (zohoTokenCache?.region === region && zohoTokenCache.expiresAt > Date.now() + 60_000) {
-    return zohoTokenCache.accessToken;
-  }
-  const result = await fetch(`${dataCenter.accounts}/oauth/v2/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      client_id: env.ZOHO_CLIENT_ID,
-      client_secret: env.ZOHO_CLIENT_SECRET,
-      refresh_token: env.ZOHO_REFRESH_TOKEN,
-    }),
-  });
-  const data = await result.json().catch(() => ({}));
-  if (!result.ok || !data.access_token) {
-    const reason = typeof data.error === 'string' && /^[a-z0-9_-]+$/i.test(data.error)
-      ? data.error
-      : `HTTP_${result.status}`;
-    throw new Error(`Zoho OAuth rejected the refresh token (${reason})`);
-  }
-  const expiresIn = Number(data.expires_in) || 3600;
-  zohoTokenCache = {
-    region,
-    accessToken: data.access_token,
-    expiresAt: Date.now() + expiresIn * 1000,
-  };
-  return data.access_token;
-}
-
-async function upsertZohoLead(env, lead) {
-  const dataCenter = ZOHO_DATA_CENTERS[String(env.ZOHO_REGION || '').trim().toLowerCase()];
-  if (!dataCenter) throw new Error('Zoho CRM region is not configured');
-
-  const name = String(lead.name || '').trim().slice(0, 100);
-  const phone = String(lead.phone || '').trim().slice(0, 30);
-  const email = String(lead.email || '').trim().slice(0, 120);
-  const description = String(lead.description || '').trim().slice(0, 3000);
-  const page = String(lead.page || '').trim().slice(0, 500);
-  if (!phone && !email) {
-    throw new Error('At least one contact method is required for Zoho CRM');
-  }
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new Error('A valid email address is required for Zoho CRM');
-  }
-
-  const record = {
-    Last_Name: name || `Website lead ${phone}`,
-    Company: 'Individual',
-    Lead_Source: 'Website',
-    Description: [description, page ? `Website page: ${page}` : ''].filter(Boolean).join('\n').slice(0, 3200),
-  };
-  if (phone) {
-    record.Phone = phone;
-    record.Mobile = phone;
-  }
-  if (email) record.Email = email;
-  const duplicateFields = [];
-  if (email) duplicateFields.push('Email');
-  if (phone) duplicateFields.push('Phone');
-
-  const accessToken = await zohoAccessToken(env);
-  const result = await fetch(`${dataCenter.api}/crm/v8/Leads/upsert`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Zoho-oauthtoken ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      data: [record],
-      duplicate_check_fields: duplicateFields,
-    }),
-  });
-  const data = await result.json().catch(() => ({}));
-  if (!result.ok) {
-    const code = Array.isArray(data.data) && typeof data.data[0]?.code === 'string'
-      ? data.data[0].code
-      : `HTTP_${result.status}`;
-    const message = Array.isArray(data.data) && typeof data.data[0]?.message === 'string'
-      ? data.data[0].message.replace(/[\r\n]+/g, ' ').slice(0, 200)
-      : '';
-    throw new Error(`Zoho CRM rejected the lead (${code})${message ? `: ${message}` : ''}`);
-  }
-  const leadResult = data.data?.[0];
-  if (leadResult?.status !== 'success') {
-    const code = leadResult?.code || 'UNKNOWN';
-    const message = typeof leadResult?.message === 'string'
-      ? leadResult.message.replace(/[\r\n]+/g, ' ').slice(0, 200)
-      : '';
-    throw new Error(`Zoho CRM did not accept the lead (${code})${message ? `: ${message}` : ''}`);
-  }
-  return {
-    id: String(leadResult.details?.id || ''),
-    action: String(leadResult.action || 'upsert'),
-  };
 }
 
 async function signatureMatches(orderId, paymentId, signature, secret) {
@@ -401,37 +288,24 @@ export default {
     }
 
     const checkoutLeadRoute = url.pathname === '/append-checkout-lead';
-    const zohoLeadRoute = url.pathname === '/zoho-lead';
     const supportedRoutes = [
       '/create-order',
       '/verify-payment',
       '/create-calendar-event',
       '/append-checkout-lead',
       '/append-customer-details',
-      '/zoho-lead',
     ];
     if (!supportedRoutes.includes(url.pathname)) {
       return response(404, { error: 'Not found' }, origin);
     }
     if (request.method !== 'POST') return response(405, { error: 'Use POST' }, origin);
     if (!ALLOWED_ORIGINS.has(origin)) return response(403, { error: 'Origin not allowed' }, '');
-    if (!checkoutLeadRoute && !zohoLeadRoute && (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET)) {
+    if (!checkoutLeadRoute && (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET)) {
       return response(503, { error: 'Payment is not configured' }, origin);
     }
 
     const input = await parseInput(request);
     if (!input || typeof input !== 'object') return response(400, { error: 'Invalid request' }, origin);
-
-    if (zohoLeadRoute) {
-      try {
-        const result = await upsertZohoLead(env, input);
-        return response(200, { success: true, id: result.id, action: result.action }, origin);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unexpected error';
-        console.error('Zoho CRM lead upsert failed', message);
-        return response(502, { error: 'Could not save lead to Zoho CRM', diagnostic: message }, origin);
-      }
-    }
 
     if (checkoutLeadRoute) {
       const planId = String(input.plan || '');

@@ -124,56 +124,6 @@ access to each spreadsheet.
    successful booking. Retries for a payment ID do not create a second booking
    row.
 
-## Zoho CRM website leads
-
-The Worker sends website leads to Zoho CRM's standard **Leads** module using
-OAuth refresh tokens. CRM credentials stay in Cloudflare, not in browser code.
-Pre-checkout captures and completed paid bookings are sent to Zoho
-independently of Google Sheets. The Contact Us form is also sent after its
-normal form submission succeeds; feedback ratings are not CRM leads. Leads are
-upserted using email and/or phone so the checkout capture can be updated with
-the customer's completed details instead of creating duplicates.
-
-1. In Zoho API Console, create a **Self Client** for your Zoho CRM account.
-   Generate an authorization code with these scopes:
-   `ZohoCRM.modules.leads.CREATE,ZohoCRM.modules.leads.UPDATE`.
-2. Exchange that short-lived code for tokens using the matching account-domain
-   endpoint (for an India account):
-
-   ```text
-   POST https://accounts.zoho.in/oauth/v2/token
-   grant_type=authorization_code
-   client_id=YOUR_CLIENT_ID
-   client_secret=YOUR_CLIENT_SECRET
-   code=YOUR_AUTHORIZATION_CODE
-   ```
-
-   Send the parameters as form data. For other regions, use the matching
-   `accounts.zoho...` endpoint from the region list in step 3. Use the
-   `refresh_token` from the response. The grant code is single-use and expires
-   quickly; keep the client secret, grant code, and refresh token private.
-   Generate tokens in Zoho's UI or a secure local terminal, never in website
-   JavaScript.
-3. In **Workers & Pages → astrojak → Settings → Variables and Secrets**, add:
-   - Encrypted secret `ZOHO_CLIENT_ID`
-   - Encrypted secret `ZOHO_CLIENT_SECRET`
-   - Encrypted secret `ZOHO_REFRESH_TOKEN`
-   - Variable `ZOHO_REGION` set to the Zoho data center for your CRM login:
-     `in`, `com`, `eu`, `com.au`, `jp`, `ca`, or `com.cn`. For an India
-     account, use `in`.
-4. Deploy the Worker and website. The Worker maps name, email, phone, page, and
-   form/booking details into a Zoho Lead. It sends a best-effort CRM request;
-   a temporary Zoho error is logged and does not block checkout, Sheets, or
-   the Contact Us confirmation.
-5. Test a pre-checkout lead, a completed booking, and the Contact Us form.
-   In Zoho CRM, open **Leads** and confirm the records appear. The booking
-   should update the earlier pre-checkout lead when their phone number matches.
-
-Zoho region endpoints are selected server-side from `ZOHO_REGION`; do not
-change API URLs in browser code. For instant-form leads collected inside Meta,
-connect the Meta Lead Ads integration in Zoho CRM separately—this website
-integration handles forms submitted on astrojak.in.
-
 ## Security notes
 
 - The browser submits a plan identifier; the Worker uses the server-side
@@ -197,7 +147,7 @@ integration handles forms submitted on astrojak.in.
 - Configure a Cloudflare rate-limiting rule for
   `api.astrojak.in/create-order`, `api.astrojak.in/verify-payment`, and
   `api.astrojak.in/create-calendar-event`, `api.astrojak.in/append-checkout-lead`,
-  `api.astrojak.in/append-customer-details`, and `api.astrojak.in/zoho-lead`
+  `api.astrojak.in/append-customer-details`
   before enabling live payments.
 
 ## Local checks

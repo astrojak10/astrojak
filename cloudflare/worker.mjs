@@ -9,6 +9,7 @@ const ALLOWED_ORIGINS = new Set([
 const PLANS = PRICING.plans;
 const PRECHECKOUT_LEADS_SPREADSHEET_ID = '10dAPMDIUQQVKuhYj8uww9atBGbdOSATJ_0AoxawN22g';
 const CUSTOMER_BOOKINGS_SPREADSHEET_ID = '1Ecr2oISzV7vJY5CJyu9QNyd-E1TxaENOcbns31X3fOk';
+const GOOGLE_DRIVE_FOLDER_ID = '1dJ1-4Ij12HBPUiyOm8G8gRAd21nNq_HT';
 
 const SLOT_LABELS = [
   '09:00 AM – 12:00 PM',
@@ -253,6 +254,136 @@ async function sheetContainsValue(accessToken, spreadsheetId, range, value) {
     && data.values.some(row => Array.isArray(row) && row[0] === value);
 }
 
+async function sheetRowForValue(accessToken, spreadsheetId, range, value) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}`;
+  const result = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!result.ok) {
+    const failure = await result.json().catch(() => ({}));
+    const status = typeof failure.error?.status === 'string'
+      && /^[a-z0-9_-]+$/i.test(failure.error.status)
+      ? failure.error.status
+      : `HTTP_${result.status}`;
+    const message = typeof failure.error?.message === 'string'
+      ? failure.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
+      : '';
+    throw new Error(`Google Sheets API: ${status}${message ? ` — ${message}` : ''}`);
+  }
+  const data = await result.json();
+  const index = Array.isArray(data.values)
+    ? data.values.findIndex(row => Array.isArray(row) && row[0] === value)
+    : -1;
+  return index < 0 ? 0 : index + 2;
+}
+
+async function updateGoogleSheetCell(accessToken, spreadsheetId, range, value) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}?valueInputOption=RAW`;
+  const result = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ values: [[value]] }),
+  });
+  if (!result.ok) {
+    const failure = await result.json().catch(() => ({}));
+    const status = typeof failure.error?.status === 'string'
+      && /^[a-z0-9_-]+$/i.test(failure.error.status)
+      ? failure.error.status
+      : `HTTP_${result.status}`;
+    const message = typeof failure.error?.message === 'string'
+      ? failure.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
+      : '';
+    throw new Error(`Google Sheets API: ${status}${message ? ` — ${message}` : ''}`);
+  }
+  const data = await result.json();
+  if (data.updatedCells !== 1) {
+    throw new Error('Google Sheets API did not confirm the template link update');
+  }
+}
+
+async function saveAppointmentPng(accessToken, folderId, paymentId, bytes) {
+  const fileName = `appointment-${paymentId}.png`;
+  const query = `name='${fileName}' and '${folderId}' in parents and trashed=false`;
+  const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,webViewLink)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+  const searchResult = await fetch(searchUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!searchResult.ok) {
+    const failure = await searchResult.json().catch(() => ({}));
+    const message = typeof failure.error?.message === 'string'
+      ? failure.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
+      : `HTTP_${searchResult.status}`;
+    throw new Error(`Google Drive API: ${message}`);
+  }
+  const searchData = await searchResult.json();
+  let file = Array.isArray(searchData.files) ? searchData.files[0] : null;
+  if (!file?.id) {
+    const createResult = await fetch(
+      'https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id,webViewLink',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: fileName,
+          mimeType: 'image/png',
+          parents: [folderId],
+        }),
+      },
+    );
+    if (!createResult.ok) {
+      const failure = await createResult.json().catch(() => ({}));
+      const message = typeof failure.error?.message === 'string'
+        ? failure.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
+        : `HTTP_${createResult.status}`;
+      throw new Error(`Google Drive API: ${message}`);
+    }
+    file = await createResult.json();
+  }
+
+  const uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(file.id)}?uploadType=media&supportsAllDrives=true`;
+  const uploadResult = await fetch(uploadUrl, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'image/png',
+    },
+    body: bytes,
+  });
+  if (!uploadResult.ok) {
+    const failure = await uploadResult.json().catch(() => ({}));
+    const message = typeof failure.error?.message === 'string'
+      ? failure.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
+      : `HTTP_${uploadResult.status}`;
+    throw new Error(`Google Drive API: ${message}`);
+  }
+  const uploaded = await uploadResult.json();
+  if (typeof uploaded.webViewLink === 'string' && uploaded.webViewLink) {
+    return uploaded.webViewLink;
+  }
+  const metadataResult = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?fields=webViewLink&supportsAllDrives=true`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!metadataResult.ok) {
+    const failure = await metadataResult.json().catch(() => ({}));
+    const message = typeof failure.error?.message === 'string'
+      ? failure.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
+      : `HTTP_${metadataResult.status}`;
+    throw new Error(`Google Drive API: ${message}`);
+  }
+  const metadata = await metadataResult.json();
+  if (typeof metadata.webViewLink !== 'string' || !metadata.webViewLink) {
+    throw new Error('Google Drive API did not return a template link');
+  }
+  return metadata.webViewLink;
+}
+
 function appointmentTimes(label) {
   const times = {
     '09:00 AM – 12:00 PM': ['09:00', '12:00'],
@@ -294,6 +425,7 @@ export default {
       '/create-calendar-event',
       '/append-checkout-lead',
       '/append-customer-details',
+      '/save-appointment-template',
     ];
     if (!supportedRoutes.includes(url.pathname)) {
       return response(404, { error: 'Not found' }, origin);
@@ -456,7 +588,7 @@ export default {
         await appendGoogleSheetRow(
           accessToken,
           CUSTOMER_BOOKINGS_SPREADSHEET_ID,
-          googleSheetRange(tab, 'A:O'),
+          googleSheetRange(tab, 'A:P'),
           [[
             new Date().toISOString(),
             paymentId,
@@ -473,6 +605,7 @@ export default {
             birthPlace,
             referenceId,
             page,
+            '',
           ]],
         );
         return response(200, { appended: true, already_exists: false }, origin);
@@ -482,6 +615,120 @@ export default {
         return response(502, {
           error: 'Could not save customer booking',
           diagnostic: message.startsWith('Google Sheets API:')
+            ? message
+            : `${stage}: ${message}`,
+        }, origin);
+      }
+    }
+
+    if (url.pathname === '/save-appointment-template') {
+      if (!env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+        return response(503, { error: 'Google Drive template storage is not configured' }, origin);
+      }
+      const paymentId = String(input.payment_id || '');
+      const referenceId = String(input.reference_id || '');
+      const appointment = {
+        date: String(input.appointment_date || ''),
+        time: String(input.appointment_time || ''),
+      };
+      const imageBase64 = String(input.png_base64 || '');
+      if (!/^pay_[A-Za-z0-9]+$/.test(paymentId) || !referenceId
+        || !isValidAppointment(appointment)
+        || !/^[A-Za-z0-9+/]+={0,2}$/.test(imageBase64)
+        || imageBase64.length > 10_000_000) {
+        return response(400, { error: 'Valid payment, appointment, and PNG image are required' }, origin);
+      }
+
+      let stage = 'Razorpay payment verification';
+      try {
+        const paymentResult = await razorpayRequest(
+          env,
+          `/payments/${encodeURIComponent(paymentId)}`,
+          'GET',
+        );
+        if (!paymentResult.ok) {
+          console.error('Razorpay template payment lookup failed', paymentResult.status);
+          return response(502, { error: 'Could not verify payment' }, origin);
+        }
+        const payment = paymentResult.data;
+        const orderId = String(payment.order_id || '');
+        if (!/^order_[A-Za-z0-9]+$/.test(orderId) || payment.status !== 'captured') {
+          return response(400, { error: 'A captured payment is required' }, origin);
+        }
+        const orderResult = await razorpayRequest(
+          env,
+          `/orders/${encodeURIComponent(orderId)}`,
+          'GET',
+        );
+        if (!orderResult.ok) {
+          console.error('Razorpay template order lookup failed', orderResult.status);
+          return response(502, { error: 'Could not verify payment' }, origin);
+        }
+        const order = orderResult.data;
+        const planId = String(order.notes?.plan || '');
+        const plan = Object.prototype.hasOwnProperty.call(PLANS, planId) ? PLANS[planId] : null;
+        const orderDate = String(order.notes?.appointment_date || '');
+        const orderTime = String(order.notes?.appointment_time || '');
+        if (!plan || order.id !== orderId || order.receipt !== referenceId
+          || !referenceId.startsWith(`${planId}_`)
+          || payment.currency !== 'INR' || payment.amount !== plan.price * 100
+          || order.currency !== 'INR' || order.amount !== payment.amount
+          || ((orderDate || orderTime)
+            && (appointment.date !== orderDate || appointment.time !== orderTime))) {
+          return response(400, { error: 'Payment does not match this appointment' }, origin);
+        }
+
+        const binary = atob(imageBase64);
+        if (binary.length < 8 || binary.charCodeAt(0) !== 0x89
+          || binary.charCodeAt(1) !== 0x50 || binary.charCodeAt(2) !== 0x4e
+          || binary.charCodeAt(3) !== 0x47 || binary.charCodeAt(4) !== 0x0d
+          || binary.charCodeAt(5) !== 0x0a || binary.charCodeAt(6) !== 0x1a
+          || binary.charCodeAt(7) !== 0x0a) {
+          return response(400, { error: 'The appointment template must be a PNG image' }, origin);
+        }
+        const pngBytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+        stage = 'Google service-account credentials';
+        const credentials = googleServiceAccount(env);
+        stage = 'Google OAuth';
+        const accessToken = await googleAccessToken(
+          credentials,
+          'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets',
+        );
+        stage = 'Google Drive API';
+        const templateUrl = await saveAppointmentPng(
+          accessToken,
+          GOOGLE_DRIVE_FOLDER_ID,
+          paymentId,
+          pngBytes,
+        );
+        stage = 'Google Sheets API';
+        const tab = await googleSheetTab(
+          accessToken,
+          CUSTOMER_BOOKINGS_SPREADSHEET_ID,
+          'Customers Bookings',
+        );
+        const row = await sheetRowForValue(
+          accessToken,
+          CUSTOMER_BOOKINGS_SPREADSHEET_ID,
+          googleSheetRange(tab, 'B2:B'),
+          paymentId,
+        );
+        if (!row) {
+          throw new Error('Customer booking row was not found in the Customers Bookings sheet');
+        }
+        await updateGoogleSheetCell(
+          accessToken,
+          CUSTOMER_BOOKINGS_SPREADSHEET_ID,
+          googleSheetRange(tab, `P${row}`),
+          templateUrl,
+        );
+        return response(200, { saved: true, template_url: templateUrl }, origin);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unexpected error';
+        console.error('Appointment template save failed', stage, message);
+        return response(502, {
+          error: 'Could not save appointment template',
+          diagnostic: message.startsWith('Google ')
             ? message
             : `${stage}: ${message}`,
         }, origin);

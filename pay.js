@@ -151,6 +151,25 @@
       } catch (err) {
         console.error('Could not start the Google Sheets pre-checkout lead request:', err);
       }
+      try {
+        saveZohoLead({
+          phone: customer.contact,
+          name: '',
+          description: [
+            'Pre-checkout lead',
+            'Payment plan: ' + p.name,
+            'Selected analysis: ' + (selectedPlan || p.name),
+            'Topics: ' + (topics || []).join(', '),
+            'Appointment: ' + (appointment ? appointment.date + ' ' + appointment.time : 'Not selected yet'),
+            'Button: ' + (button.getAttribute('data-pos') || '')
+          ].join('\n'),
+          page: location.href
+        }).catch(function (err) {
+          console.error('Could not save pre-checkout lead to Zoho CRM:', err);
+        });
+      } catch (err) {
+        console.error('Could not start the Zoho CRM pre-checkout lead request:', err);
+      }
       closeModal(); done(customer, true);
     };
     setTimeout(function () {
@@ -200,6 +219,20 @@
       return res.json().catch(function () { return {}; }).then(function (data) {
         if (!res.ok || !data.appended) {
           throw new Error(data.diagnostic || data.error || 'Google Sheets rejected the checkout lead');
+        }
+      });
+    });
+  }
+  function saveZohoLead(data) {
+    return fetch(API + '/zoho-lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+      body: JSON.stringify(data)
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (result) {
+        if (!res.ok || !result.success) {
+          throw new Error(result.diagnostic || result.error || 'Zoho CRM rejected the lead');
         }
       });
     });

@@ -524,6 +524,8 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
         body:JSON.stringify({
           payment_id:templatePayload.paymentId,
           reference_id:templatePayload.referenceId,
+          name:templatePayload.name,
+          mobile:templatePayload.mobile,
           appointment_date:templatePayload.appointmentDate,
           appointment_time:templatePayload.appointmentTime,
           png_base64:pngBase64
@@ -686,6 +688,33 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
         error.hidden=false;
         return;
       }
+      fetch('https://api.astrojak.in/zoho-lead',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        keepalive:true,
+        body:JSON.stringify({
+          name:name,
+          phone:customerMobile,
+          description:[
+            'Paid website booking',
+            'Payment plan: '+planName,
+            'Selected analysis: '+(selectedPlan||planName),
+            'Appointment: '+(appointment||'Not provided')+' IST',
+            'Birth date: '+birthDate,
+            'Birth time: '+(birthTime||'Not provided'),
+            'Birth place: '+place,
+            'Topics: '+topics.join(', '),
+            'Payment ID: '+paymentId
+          ].join('\n'),
+          page:location.href
+        })
+      }).then(function(res){
+        return res.json().catch(function(){return {}}).then(function(result){
+          if(!res.ok||!result.success)throw new Error(result.diagnostic||result.error||'Zoho CRM rejected the booking lead');
+        });
+      }).catch(function(err){
+        console.error('Could not save customer booking to Zoho CRM:',err);
+      });
       fetch('https://splitforms.com/api/submit',{
         method:'POST',
         headers:{Accept:'application/json'},
@@ -719,6 +748,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
         paymentId:paymentId,
         referenceId:q.get('razorpay_payment_link_reference_id')||'',
         name:name,
+        mobile:customerMobile,
         birthDate:birthDate,
         birthTime:birthTime,
         birthPlace:place,

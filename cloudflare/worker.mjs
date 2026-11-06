@@ -10,6 +10,17 @@ const PLANS = PRICING.plans;
 const PRECHECKOUT_LEADS_SPREADSHEET_ID = '10dAPMDIUQQVKuhYj8uww9atBGbdOSATJ_0AoxawN22g';
 const CUSTOMER_BOOKINGS_SPREADSHEET_ID = '1Ecr2oISzV7vJY5CJyu9QNyd-E1TxaENOcbns31X3fOk';
 const GOOGLE_DRIVE_FOLDER_ID = '1dJ1-4Ij12HBPUiyOm8G8gRAd21nNq_HT';
+const ZOHO_DATA_CENTERS = {
+  com: { accounts: 'https://accounts.zoho.com', api: 'https://www.zohoapis.com' },
+  eu: { accounts: 'https://accounts.zoho.eu', api: 'https://www.zohoapis.eu' },
+  in: { accounts: 'https://accounts.zoho.in', api: 'https://www.zohoapis.in' },
+  'com.au': { accounts: 'https://accounts.zoho.com.au', api: 'https://www.zohoapis.com.au' },
+  jp: { accounts: 'https://accounts.zoho.jp', api: 'https://www.zohoapis.jp' },
+  ca: { accounts: 'https://accounts.zohocloud.ca', api: 'https://www.zohoapis.ca' },
+  'com.cn': { accounts: 'https://accounts.zoho.com.cn', api: 'https://www.zohoapis.com.cn' },
+};
+
+let zohoTokenCache = null;
 
 const SLOT_LABELS = [
   '09:00 AM – 12:00 PM',
@@ -75,6 +86,108 @@ async function razorpayRequest(env, path, method, body) {
   });
   const data = await result.json().catch(() => ({}));
   return { ok: result.ok, status: result.status, data };
+}
+
+async function zohoAccessToken(env) {
+  const region = String(env.ZOHO_REGION || '').trim().toLowerCase();
+  const dataCenter = ZOHO_DATA_CENTERS[region];
+  if (!dataCenter || !env.ZOHO_CLIENT_ID || !env.ZOHO_CLIENT_SECRET || !env.ZOHO_REFRESH_TOKEN) {
+    throw new Error('Zoho CRM is not configured; check ZOHO_REGION and OAuth secrets');
+  }
+  if (zohoTokenCache?.region === region && zohoTokenCache.expiresAt > Date.now() + 60_000) {
+    return zohoTokenCache.accessToken;
+  }
+  const result = await fetch(`${dataCenter.accounts}/oauth/v2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: env.ZOHO_CLIENT_ID,
+      client_secret: env.ZOHO_CLIENT_SECRET,
+      refresh_token: env.ZOHO_REFRESH_TOKEN,
+    }),
+  });
+  const data = await result.json().catch(() => ({}));
+  if (!result.ok || !data.access_token) {
+    const reason = typeof data.error === 'string' && /^[a-z0-9_-]+$/i.test(data.error)
+      ? data.error
+      : `HTTP_${result.status}`;
+    throw new Error(`Zoho OAuth rejected the refresh token (${reason})`);
+  }
+  const expiresIn = Number(data.expires_in) || 3600;
+  zohoTokenCache = {
+    region,
+    accessToken: data.access_token,
+    expiresAt: Date.now() + expiresIn * 1000,
+  };
+  return data.access_token;
+}
+
+async function upsertZohoLead(env, lead) {
+  const dataCenter = ZOHO_DATA_CENTERS[String(env.ZOHO_REGION || '').trim().toLowerCase()];
+  if (!dataCenter) throw new Error('Zoho CRM region is not configured');
+
+  const name = String(lead.name || '').trim().slice(0, 100);
+  const phone = String(lead.phone || '').trim().slice(0, 30);
+  const email = String(lead.email || '').trim().slice(0, 120);
+  const description = String(lead.description || '').trim().slice(0, 3000);
+  const page = String(lead.page || '').trim().slice(0, 500);
+  if (!phone && !email) {
+    throw new Error('At least one contact method is required for Zoho CRM');
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error('A valid email address is required for Zoho CRM');
+  }
+
+  const record = {
+    Last_Name: name || `Website lead ${phone}`,
+    Company: 'Individual',
+    Lead_Source: 'Website',
+    Description: [description, page ? `Website page: ${page}` : ''].filter(Boolean).join('\n').slice(0, 3200),
+  };
+  if (phone) {
+    record.Phone = phone;
+    record.Mobile = phone;
+  }
+  if (email) record.Email = email;
+  const duplicateFields = [];
+  if (email) duplicateFields.push('Email');
+  if (phone) duplicateFields.push('Phone');
+
+  const accessToken = await zohoAccessToken(env);
+  const result = await fetch(`${dataCenter.api}/crm/v8/Leads/upsert`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Zoho-oauthtoken ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      data: [record],
+      duplicate_check_fields: duplicateFields,
+    }),
+  });
+  const data = await result.json().catch(() => ({}));
+  if (!result.ok) {
+    const code = Array.isArray(data.data) && typeof data.data[0]?.code === 'string'
+      ? data.data[0].code
+      : `HTTP_${result.status}`;
+    const message = Array.isArray(data.data) && typeof data.data[0]?.message === 'string'
+      ? data.data[0].message.replace(/[\r\n]+/g, ' ').slice(0, 200)
+      : '';
+    throw new Error(`Zoho CRM rejected the lead (${code})${message ? `: ${message}` : ''}`);
+  }
+  const leadResult = data.data?.[0];
+  if (leadResult?.status !== 'success') {
+    const code = leadResult?.code || 'UNKNOWN';
+    const message = typeof leadResult?.message === 'string'
+      ? leadResult.message.replace(/[\r\n]+/g, ' ').slice(0, 200)
+      : '';
+    throw new Error(`Zoho CRM did not accept the lead (${code})${message ? `: ${message}` : ''}`);
+  }
+  return {
+    id: String(leadResult.details?.id || ''),
+    action: String(leadResult.action || 'upsert'),
+  };
 }
 
 async function signatureMatches(orderId, paymentId, signature, secret) {
@@ -304,9 +417,9 @@ async function updateGoogleSheetCell(accessToken, spreadsheetId, range, value) {
   }
 }
 
-async function saveAppointmentPng(accessToken, folderId, paymentId, bytes) {
-  const fileName = `appointment-${paymentId}.png`;
-  const query = `name='${fileName}' and '${folderId}' in parents and trashed=false`;
+async function saveAppointmentPng(accessToken, folderId, fileName, bytes) {
+  const queryName = fileName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const query = `name='${queryName}' and '${folderId}' in parents and trashed=false`;
   const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,webViewLink)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
   const searchResult = await fetch(searchUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -320,38 +433,39 @@ async function saveAppointmentPng(accessToken, folderId, paymentId, bytes) {
   }
   const searchData = await searchResult.json();
   let file = Array.isArray(searchData.files) ? searchData.files[0] : null;
-  if (!file?.id) {
-    const createResult = await fetch(
-      'https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id,webViewLink',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: fileName,
-          mimeType: 'image/png',
-          parents: [folderId],
-        }),
-      },
-    );
-    if (!createResult.ok) {
-      const failure = await createResult.json().catch(() => ({}));
-      const message = typeof failure.error?.message === 'string'
-        ? failure.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
-        : `HTTP_${createResult.status}`;
-      throw new Error(`Google Drive API: ${message}`);
-    }
-    file = await createResult.json();
+  const isUpdate = Boolean(file?.id);
+  const uploadUrl = isUpdate
+    ? `https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(file.id)}?uploadType=resumable&supportsAllDrives=true&fields=id,webViewLink`
+    : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true&fields=id,webViewLink';
+  const uploadSession = await fetch(uploadUrl, {
+    method: isUpdate ? 'PATCH' : 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json; charset=UTF-8',
+      'X-Upload-Content-Type': 'image/png',
+      'X-Upload-Content-Length': String(bytes.byteLength),
+    },
+    body: JSON.stringify(isUpdate
+      ? { name: fileName }
+      : { name: fileName, mimeType: 'image/png', parents: [folderId] }),
+  });
+  if (!uploadSession.ok) {
+    const failure = await uploadSession.json().catch(() => ({}));
+    const message = typeof failure.error?.message === 'string'
+      ? failure.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
+      : `HTTP_${uploadSession.status}`;
+    throw new Error(`Google Drive API: ${message}`);
   }
-
-  const uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(file.id)}?uploadType=media&supportsAllDrives=true`;
-  const uploadResult = await fetch(uploadUrl, {
-    method: 'PATCH',
+  const sessionUrl = uploadSession.headers.get('Location');
+  if (!sessionUrl) {
+    throw new Error('Google Drive API did not return a resumable upload session');
+  }
+  const uploadResult = await fetch(sessionUrl, {
+    method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'image/png',
+      'Content-Range': `bytes 0-${bytes.byteLength - 1}/${bytes.byteLength}`,
     },
     body: bytes,
   });
@@ -362,7 +476,8 @@ async function saveAppointmentPng(accessToken, folderId, paymentId, bytes) {
       : `HTTP_${uploadResult.status}`;
     throw new Error(`Google Drive API: ${message}`);
   }
-  const uploaded = await uploadResult.json();
+  file = await uploadResult.json();
+  const uploaded = file;
   if (typeof uploaded.webViewLink === 'string' && uploaded.webViewLink) {
     return uploaded.webViewLink;
   }
@@ -419,6 +534,7 @@ export default {
     }
 
     const checkoutLeadRoute = url.pathname === '/append-checkout-lead';
+    const zohoLeadRoute = url.pathname === '/zoho-lead';
     const supportedRoutes = [
       '/create-order',
       '/verify-payment',
@@ -426,18 +542,30 @@ export default {
       '/append-checkout-lead',
       '/append-customer-details',
       '/save-appointment-template',
+      '/zoho-lead',
     ];
     if (!supportedRoutes.includes(url.pathname)) {
       return response(404, { error: 'Not found' }, origin);
     }
     if (request.method !== 'POST') return response(405, { error: 'Use POST' }, origin);
     if (!ALLOWED_ORIGINS.has(origin)) return response(403, { error: 'Origin not allowed' }, '');
-    if (!checkoutLeadRoute && (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET)) {
+    if (!checkoutLeadRoute && !zohoLeadRoute && (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET)) {
       return response(503, { error: 'Payment is not configured' }, origin);
     }
 
     const input = await parseInput(request);
     if (!input || typeof input !== 'object') return response(400, { error: 'Invalid request' }, origin);
+
+    if (zohoLeadRoute) {
+      try {
+        const result = await upsertZohoLead(env, input);
+        return response(200, { success: true, id: result.id, action: result.action }, origin);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unexpected error';
+        console.error('Zoho CRM lead upsert failed', message);
+        return response(502, { error: 'Could not save lead to Zoho CRM', diagnostic: message }, origin);
+      }
+    }
 
     if (checkoutLeadRoute) {
       const planId = String(input.plan || '');
@@ -627,12 +755,15 @@ export default {
       }
       const paymentId = String(input.payment_id || '');
       const referenceId = String(input.reference_id || '');
+      const customerName = String(input.name || '').trim().slice(0, 100);
+      const customerMobile = String(input.mobile || '').replace(/\D/g, '').slice(-10);
       const appointment = {
         date: String(input.appointment_date || ''),
         time: String(input.appointment_time || ''),
       };
       const imageBase64 = String(input.png_base64 || '');
       if (!/^pay_[A-Za-z0-9]+$/.test(paymentId) || !referenceId
+        || !customerName || !/^[6-9]\d{9}$/.test(customerMobile)
         || !isValidAppointment(appointment)
         || !/^[A-Za-z0-9+/]+={0,2}$/.test(imageBase64)
         || imageBase64.length > 10_000_000) {
@@ -695,10 +826,16 @@ export default {
           'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets',
         );
         stage = 'Google Drive API';
+        const safeName = customerName
+          .replace(/[\\/:*?"'<>|#%{}[\]^~]/g, '')
+          .trim()
+          .replace(/\s+/g, '_')
+          .slice(0, 80);
+        const fileName = `${safeName || 'Customer'}_appointment_${customerMobile}.png`;
         const templateUrl = await saveAppointmentPng(
           accessToken,
           GOOGLE_DRIVE_FOLDER_ID,
-          paymentId,
+          fileName,
           pngBytes,
         );
         stage = 'Google Sheets API';

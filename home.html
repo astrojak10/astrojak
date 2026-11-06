@@ -1900,8 +1900,25 @@
     (function () {
       var ids = ['help', 'contact', 'feedback'];
       var splitformsEndpoint = 'https://splitforms.com/api/submit';
+      var apiEndpoint = 'https://api.astrojak.in/zoho-lead';
       function $(id) { return document.getElementById(id); }
       function track(n, p) { if (window.gtag) gtag('event', n, p || {}); }
+      function sendZohoLead(lead) {
+        fetch(apiEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          keepalive: true,
+          body: JSON.stringify(lead)
+        }).then(function (res) {
+          return res.json().catch(function () { return {}; }).then(function (data) {
+            if (!res.ok || !data.success) {
+              throw new Error(data.diagnostic || data.error || 'Zoho CRM rejected the lead');
+            }
+          });
+        }).catch(function (err) {
+          console.error('Could not save Contact Us lead to Zoho CRM:', err);
+        });
+      }
       async function submitForm(form, button, error, onSuccess) {
         error.hidden = true;
         button.disabled = true;
@@ -1913,6 +1930,14 @@
           });
           var data = await res.json();
           if (data.success) {
+            if (form.id === 'contactForm') {
+              sendZohoLead({
+                name: form.elements.name.value,
+                email: form.elements.email.value,
+                description: form.elements.message.value,
+                page: form.elements.page.value
+              });
+            }
             form.reset();
             onSuccess(data);
           } else {
@@ -2080,6 +2105,6 @@
   window.addEventListener('pagehide', leave);
 })();
 </script>
-<script src="/pay.js?v=20261106-1"></script>
+<script src="/pay.js?v=20261106-2"></script>
 </body>
 </html>

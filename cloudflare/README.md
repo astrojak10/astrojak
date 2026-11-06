@@ -20,17 +20,23 @@ the GitHub Pages build. Checkout opens in Razorpay's on-page modal.
    - `CLOUDFLARE_ACCOUNT_ID`
 4. Deploy the Worker using the `Deploy payment API` GitHub Actions workflow.
    The `api.astrojak.in` custom domain is declared in `wrangler.toml`.
-5. In Cloudflare, open **Workers & Pages → astrojak-payment-api → Settings →
-   Variables and Secrets**. Add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` as
-   encrypted secrets. Use Razorpay Test Mode credentials until checkout is
-   tested. Saving secrets publishes a new Worker version; never add these
-   Razorpay values to GitHub, a workflow, or website files.
+5. In Cloudflare, open **Workers & Pages → astrojak → Settings → Variables and
+   Secrets**. Add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` as encrypted
+   secrets. Use Razorpay Test Mode credentials until checkout is tested.
+   Saving secrets publishes a new Worker version; never add these Razorpay
+   values to GitHub, a workflow, or website files.
 6. Confirm `https://api.astrojak.in/create-order` and
    `https://api.astrojak.in/verify-payment` are live. The API hostname is
    configured in `pay.js`; if it differs, update that URL.
 7. Test a payment in Razorpay Test Mode and confirm Checkout opens over the
    booking page, the server verifies and captures the payment, and success
    returns to `https://www.astrojak.in/thank-you.html`.
+
+The `astrojak` Worker owns the `api.astrojak.in` custom domain and is the
+deployment target in `wrangler.toml`. Keep any older Worker deployment until
+the new deployment is healthy, the custom domain is still attached to `astrojak`,
+and the API has passed a test checkout. Then remove only the unused old Worker
+from **Workers & Pages** if desired.
 
 ## Meta Pixel purchase tracking
 

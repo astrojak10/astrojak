@@ -368,15 +368,16 @@ export default {
           date: String(order.notes?.appointment_date || ''),
           time: String(order.notes?.appointment_time || ''),
         };
+        const orderHasAppointment = Boolean(orderAppointment.date || orderAppointment.time);
         if (!plan || order.id !== orderId || order.receipt !== referenceId
           || !referenceId.startsWith(`${planId}_`)
           || payment.currency !== 'INR' || payment.amount !== plan.price * 100
           || order.currency !== 'INR' || order.amount !== payment.amount
-          || orderAppointment.date !== appointment.date
-          || orderAppointment.time !== appointment.time
-          || Boolean(orderAppointment.date) !== Boolean(orderAppointment.time)
-          || ((orderAppointment.date || orderAppointment.time)
-            && !isValidAppointment(orderAppointment))) {
+          || (!orderHasAppointment && planId !== 'reserve')
+          || (orderHasAppointment
+            && (orderAppointment.date !== appointment.date
+              || orderAppointment.time !== appointment.time
+              || !isValidAppointment(orderAppointment)))) {
           return response(400, { error: 'Payment does not match this booking' }, origin);
         }
 

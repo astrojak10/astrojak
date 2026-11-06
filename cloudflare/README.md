@@ -28,9 +28,16 @@ the GitHub Pages build. Checkout opens in Razorpay's on-page modal.
 6. Confirm `https://api.astrojak.in/create-order` and
    `https://api.astrojak.in/verify-payment` are live. The API hostname is
    configured in `pay.js`; if it differs, update that URL.
-7. Test a payment in Razorpay Test Mode and confirm Checkout opens over the
-   booking page, the server verifies and captures the payment, and success
-   returns to `https://www.astrojak.in/thank-you.html`.
+7. With Razorpay Test Mode configured, confirm checkout detects the `rzp_test_`
+   key and redirects to WhatsApp instead of starting a test payment. For a live
+   payment test, use the production keys only when ready to accept a real charge.
+
+The shared checkout script redirects to WhatsApp with “I have to book As soon
+as possible” if Razorpay Checkout cannot load/open, a payment fails, or the
+Worker returns a Test Mode key (`rzp_test_`). A customer who simply dismisses
+Checkout can retry normally. If payment verification fails after submission,
+the page keeps the existing warning not to pay again and asks the customer to
+contact support with the payment ID.
 
 The `astrojak` Worker owns the `api.astrojak.in` custom domain and is the
 deployment target in `wrangler.toml`. Keep any older Worker deployment until
@@ -56,6 +63,44 @@ Sources → your Pixel → Test events** while completing checkout. Confirm a
 `Purchase` arrives with the expected INR value and plan, and that its event ID
 matches the Razorpay payment ID. A page refresh should not send a second
 Purchase event from the same browser.
+
+## Paid booking events from Customers Bookings to Meta
+
+After `/append-customer-details` verifies a captured Razorpay payment and
+successfully appends (or confirms an existing) row in **Customers Bookings**,
+the Worker sends a `Purchase` event to the same Meta Dataset/Pixel used by the
+website. This is automatic for new submissions; no Zoho workflow, Apps Script,
+or public webhook is required. The payment ID is used as `event_id`, so the
+server event can be deduplicated against the browser Pixel Purchase event when
+both use the same event name and ID. The event time comes from Razorpay's
+payment timestamp. Meta receives a SHA-256 hashed phone number, INR value, and
+plan name; the booking remains saved even if Meta is temporarily unavailable.
+
+1. In Meta Events Manager, select the Dataset/Pixel used by the website, open
+   **Settings → Conversions API**, and generate an access token using manual
+   setup. Copy the Dataset/Pixel ID and token. Keep the token private.
+2. In **Workers & Pages → astrojak → Settings → Variables and Secrets**, add:
+   - Encrypted secret `META_CAPI_DATASET_ID` — the Dataset/Pixel ID.
+   - Encrypted secret `META_CAPI_ACCESS_TOKEN` — the Conversions API token.
+   - Variable `META_CAPI_GRAPH_VERSION` — a currently supported Graph API
+     version in the format `vNN.0`.
+   - Optional variable `META_CAPI_TEST_EVENT_CODE` — only while testing.
+3. Deploy the Worker. Keep `META_CAPI_TEST_EVENT_CODE` set to the code shown
+   in **Events Manager → Test Events** during a legitimate captured booking.
+   Confirm `Purchase` appears in Test Events with INR value and plan name.
+   Razorpay Test Mode keys intentionally redirect checkout to WhatsApp, so
+   they cannot generate a captured booking for this test.
+4. Remove `META_CAPI_TEST_EVENT_CODE` and save the Worker settings before
+   sending live events. The endpoint only sends after the payment is verified
+   as captured and the booking row is saved. Older spreadsheet rows are not
+   backfilled automatically.
+
+The supplied CRM event guide's fields are included: `action_source` is
+`system_generated`, `custom_data.event_source` is `crm`, and
+`lead_event_source` identifies the Customers Bookings Google Sheet. A Meta
+Instant Form `lead_id` is not present in website bookings, so the Worker does
+not invent one. The customer's email is not collected on this booking form;
+only the available phone identifier is hashed and sent.
 
 ## Google Calendar appointments
 

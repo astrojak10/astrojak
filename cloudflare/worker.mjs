@@ -76,6 +76,88 @@ async function razorpayRequest(env, path, method, body) {
   return { ok: result.ok, status: result.status, data };
 }
 
+async function sha256(value) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function metaPhone(value) {
+  let digits = String(value || '').replace(/\D/g, '').replace(/^0+/, '');
+  if (/^[6-9]\d{9}$/.test(digits)) digits = `91${digits}`;
+  return digits.length >= 8 && digits.length <= 15 ? digits : '';
+}
+
+async function sendMetaPaidBookingEvent(env, booking) {
+  const datasetId = String(env.META_CAPI_DATASET_ID || '').trim();
+  const accessToken = String(env.META_CAPI_ACCESS_TOKEN || '').trim();
+  const graphVersion = String(env.META_CAPI_GRAPH_VERSION || '').trim();
+  if (!datasetId || !accessToken || !/^v\d+\.\d+$/.test(graphVersion)) {
+    throw new Error('Meta Conversions API is not configured');
+  }
+
+  const userData = {};
+  const email = String(booking.email || '').trim().toLowerCase();
+  const phone = metaPhone(booking.phone);
+  if (email) {
+    userData.em = [await sha256(email)];
+  }
+  if (phone) userData.ph = [await sha256(phone)];
+  if (!userData.em && !userData.ph) {
+    throw new Error('A valid customer email or phone is required for Meta matching');
+  }
+  const rawEventTime = Number(booking.eventTime);
+  const eventTime = Math.floor(rawEventTime > 1e12 ? rawEventTime / 1000 : rawEventTime);
+  const now = Math.floor(Date.now() / 1000);
+  if (!eventTime || eventTime > now + 300 || eventTime < now - 7 * 24 * 60 * 60) {
+    throw new Error('Razorpay payment time is invalid or too old for Meta event reporting');
+  }
+
+  const event = {
+    event_name: 'Purchase',
+    event_time: eventTime,
+    action_source: 'system_generated',
+    event_id: String(booking.paymentId),
+    user_data: userData,
+    custom_data: {
+      event_source: 'crm',
+      lead_event_source: 'Customers Bookings Google Sheet',
+      value: booking.amount,
+      currency: 'INR',
+      content_name: booking.plan,
+    },
+  };
+  const payload = { data: [event] };
+  const testEventCode = String(env.META_CAPI_TEST_EVENT_CODE || '').trim();
+  if (testEventCode) payload.test_event_code = testEventCode;
+
+  const url = new URL(
+    `https://graph.facebook.com/${graphVersion}/${encodeURIComponent(datasetId)}/events`,
+  );
+  url.searchParams.set('access_token', accessToken);
+  const result = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await result.json().catch(() => ({}));
+  if (!result.ok || Number(data.events_received) !== 1) {
+    const message = typeof data.error?.message === 'string'
+      ? data.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
+      : `HTTP_${result.status}`;
+    throw new Error(`Meta Conversions API rejected the paid booking event: ${message}`);
+  }
+  return { eventsReceived: data.events_received, fbTraceId: data.fbtrace_id || '' };
+}
+
+async function trackMetaPaidBooking(env, booking) {
+  try {
+    await sendMetaPaidBookingEvent(env, booking);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unexpected error';
+    console.error('Could not send paid booking to Meta; Google Sheets booking is saved:', message);
+  }
+}
+
 async function signatureMatches(orderId, paymentId, signature, secret) {
   const key = await crypto.subtle.importKey(
     'raw',
@@ -269,7 +351,7 @@ async function eventIdForPayment(paymentId) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const origin = request.headers.get('Origin') || '';
     const url = new URL(request.url);
 
@@ -446,6 +528,13 @@ export default {
           paymentId,
         );
         if (alreadyExists) {
+          ctx.waitUntil(trackMetaPaidBooking(env, {
+            paymentId,
+            phone: contact,
+            amount: payment.amount / 100,
+            plan: plan.name,
+            eventTime: payment.created_at,
+          }));
           return response(200, { appended: true, already_exists: true }, origin);
         }
         const topics = Array.isArray(input.topics)
@@ -475,6 +564,13 @@ export default {
             page,
           ]],
         );
+        ctx.waitUntil(trackMetaPaidBooking(env, {
+          paymentId,
+          phone: contact,
+          amount: payment.amount / 100,
+          plan: plan.name,
+          eventTime: payment.created_at,
+        }));
         return response(200, { appended: true, already_exists: false }, origin);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error';

@@ -53,6 +53,10 @@
   var SPLITFORMS_ACCESS_KEY = '9d208e837cab446dbcaf6f562900f3e6';
   var CHECKOUT_CONTEXT = 'astrojak_pending_checkout';
   var ov = null;
+  function redirectToBookingWhatsApp() {
+    var message = 'I have to book As soon as possible';
+    location.href = 'https://wa.me/917827673637?text=' + encodeURIComponent(message);
+  }
   function digits10(v) {
     var d = String(v || '').replace(/\D/g, '');
     if (d.length === 12 && d.slice(0, 2) === '91') d = d.slice(2);
@@ -283,6 +287,11 @@
       loadCheckout()
         .then(function () { return post('/create-order', body); })
         .then(function (order) {
+          if (/^rzp_test_/.test(String(order.key_id || ''))) {
+            reset(b);
+            redirectToBookingWhatsApp();
+            return;
+          }
           try { if (hook.paymentOrderCreated) hook.paymentOrderCreated(id, order); } catch (err) { console.error('Could not update local slot estimate', err); }
           var checkout = new window.Razorpay({
             key: order.key_id,
@@ -315,13 +324,17 @@
                 });
             }
           });
+          checkout.on('payment.failed', function (failure) {
+            console.error('Razorpay payment failed:', failure && failure.error);
+            reset(b);
+            redirectToBookingWhatsApp();
+          });
           checkout.open();
         })
         .catch(function (err) {
           reset(b);
           console.error('Razorpay checkout could not be opened:', err);
-          alert('Unable to open Razorpay checkout right now. Your number is saved; please try again in a moment.' +
-            (err && err.message && err.message !== 'Failed to fetch' ? '\n\n' + err.message : ''));
+          redirectToBookingWhatsApp();
         });
     }
     openModal(id, p, cust, go, b);

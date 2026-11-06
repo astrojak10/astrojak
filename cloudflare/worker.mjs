@@ -187,12 +187,49 @@ async function appendGoogleSheetRow(accessToken, spreadsheetId, range, values) {
       && /^[a-z0-9_-]+$/i.test(failure.error.status)
       ? failure.error.status
       : `HTTP_${result.status}`;
-    throw new Error(`Google Sheets API: ${status}`);
+    const message = typeof failure.error?.message === 'string'
+      ? failure.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
+      : '';
+    throw new Error(`Google Sheets API: ${status}${message ? ` — ${message}` : ''}`);
   }
   const data = await result.json();
   if (data.updates?.updatedRows !== 1) {
     throw new Error('Google Sheets API did not confirm the row append');
   }
+}
+
+async function googleSheetTab(accessToken, spreadsheetId, preferredTitle) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}?fields=sheets.properties(title)`;
+  const result = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!result.ok) {
+    const failure = await result.json().catch(() => ({}));
+    const status = typeof failure.error?.status === 'string'
+      && /^[a-z0-9_-]+$/i.test(failure.error.status)
+      ? failure.error.status
+      : `HTTP_${result.status}`;
+    const message = typeof failure.error?.message === 'string'
+      ? failure.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
+      : '';
+    throw new Error(`Google Sheets API: ${status}${message ? ` — ${message}` : ''}`);
+  }
+  const spreadsheet = await result.json();
+  const titles = Array.isArray(spreadsheet.sheets)
+    ? spreadsheet.sheets
+      .map(sheet => sheet?.properties?.title)
+      .filter(title => typeof title === 'string' && title.length > 0)
+    : [];
+  if (!titles.length) {
+    throw new Error('Google Sheets API returned no worksheet tabs for this spreadsheet');
+  }
+  if (titles.includes(preferredTitle)) return preferredTitle;
+  console.warn('Preferred Google Sheets tab was not found; using the first worksheet tab', preferredTitle, titles[0]);
+  return titles[0];
+}
+
+function googleSheetRange(tabTitle, columns) {
+  return `'${tabTitle.replace(/'/g, "''")}'!${columns}`;
 }
 
 async function sheetContainsValue(accessToken, spreadsheetId, range, value) {
@@ -206,7 +243,10 @@ async function sheetContainsValue(accessToken, spreadsheetId, range, value) {
       && /^[a-z0-9_-]+$/i.test(failure.error.status)
       ? failure.error.status
       : `HTTP_${result.status}`;
-    throw new Error(`Google Sheets API: ${status}`);
+    const message = typeof failure.error?.message === 'string'
+      ? failure.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
+      : '';
+    throw new Error(`Google Sheets API: ${status}${message ? ` — ${message}` : ''}`);
   }
   const data = await result.json();
   return Array.isArray(data.values)
@@ -286,13 +326,18 @@ export default {
           credentials,
           'https://www.googleapis.com/auth/spreadsheets',
         );
+        const tab = await googleSheetTab(
+          accessToken,
+          PRECHECKOUT_LEADS_SPREADSHEET_ID,
+          'Pre-Checkout Leads',
+        );
         const topics = Array.isArray(input.topics)
           ? input.topics.map(topic => String(topic).slice(0, 120)).slice(0, 12).join(', ')
           : '';
         await appendGoogleSheetRow(
           accessToken,
           PRECHECKOUT_LEADS_SPREADSHEET_ID,
-          "'Pre-Checkout Leads'!A:I",
+          googleSheetRange(tab, 'A:I'),
           [[
             new Date().toISOString(),
             contact,
@@ -389,10 +434,15 @@ export default {
           'https://www.googleapis.com/auth/spreadsheets',
         );
         stage = 'Google Sheets API';
+        const tab = await googleSheetTab(
+          accessToken,
+          CUSTOMER_BOOKINGS_SPREADSHEET_ID,
+          'Customers Bookings',
+        );
         const alreadyExists = await sheetContainsValue(
           accessToken,
           CUSTOMER_BOOKINGS_SPREADSHEET_ID,
-          "'Customers Bookings'!B2:B",
+          googleSheetRange(tab, 'B2:B'),
           paymentId,
         );
         if (alreadyExists) {
@@ -406,7 +456,7 @@ export default {
         await appendGoogleSheetRow(
           accessToken,
           CUSTOMER_BOOKINGS_SPREADSHEET_ID,
-          "'Customers Bookings'!A:O",
+          googleSheetRange(tab, 'A:O'),
           [[
             new Date().toISOString(),
             paymentId,
@@ -431,7 +481,9 @@ export default {
         console.error('Customer Google Sheets append failed', stage, message);
         return response(502, {
           error: 'Could not save customer booking',
-          diagnostic: `${stage}: ${message}`,
+          diagnostic: message.startsWith('Google Sheets API:')
+            ? message
+            : `${stage}: ${message}`,
         }, origin);
       }
     }

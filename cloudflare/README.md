@@ -102,9 +102,9 @@ access to each spreadsheet.
    [Customers Bookings](https://docs.google.com/spreadsheets/d/1Ecr2oISzV7vJY5CJyu9QNyd-E1TxaENOcbns31X3fOk/edit)
    with the service account email shown in `GOOGLE_SERVICE_ACCOUNT_JSON`, with
    **Editor** permission.
-3. In each spreadsheet, create a worksheet tab with the exact name shown above.
-   The Worker appends these columns in order (add these as the first-row
-   headers):
+3. The Worker uses a worksheet tab with the exact name shown above when it
+   exists; otherwise it uses the spreadsheet's first worksheet tab. Add these
+   headers to the first row of the tab that will receive records:
    - **Pre-Checkout Leads:** Timestamp, Mobile, Payment plan, Selected
      analysis, Discussion topics, Amount (INR), Appointment date, Appointment
      time, Source / page.

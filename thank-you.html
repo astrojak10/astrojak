@@ -14,7 +14,6 @@
   gtag('js', new Date());
   gtag('config', 'G-DB1MQGC3LS');
 </script>
-<!-- Meta Pixel temporarily disabled for testing; uncomment this script to re-enable.
 <script>
 !function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -27,7 +26,6 @@ s.parentNode.insertBefore(t,s)}(window, document,'script',
 fbq('init', '2057261584904971');
 fbq('track', 'PageView');
 </script>
--->
 <script src="/pricing.js"></script>
 <style>
 :root{--gold:linear-gradient(135deg,#F8B700,#FF9800);--ink:#1A1A1A;--muted:#5C5C5C;--border:#F2E4C4;--bg:#FFFBEE;--card:#fff;--dark:#E65100;--soft:#FFF6DC}
@@ -87,9 +85,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
 </style>
 </head>
 <body>
-<!-- Meta Pixel noscript tracking temporarily disabled for testing:
 <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2057261584904971&ev=PageView&noscript=1" alt=""></noscript>
--->
 <main class="box">
   <nav class="language" role="group" aria-label="Language">
     <button type="button" data-lang="en" aria-pressed="true">English</button>
@@ -502,7 +498,6 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
         if(window.gtag)gtag('event','purchase',{transaction_id:paymentId,value:plan.price,currency:'INR',items:[{item_id:ref,item_name:plan.name,price:plan.price}]});
       }catch(err){console.error('Could not send the Google purchase event:',err)}
       try{
-        /* Meta Pixel Purchase temporarily disabled for testing; uncomment to re-enable.
         var pixelPurchaseKey='astrojak_meta_purchase_'+paymentId;
         var pixelPurchaseSent=false;
         try{pixelPurchaseSent=localStorage.getItem(pixelPurchaseKey)==='1'}catch(err){console.error('Could not check the Meta purchase event marker:',err)}
@@ -516,7 +511,6 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
           },{eventID:paymentId});
           try{localStorage.setItem(pixelPurchaseKey,'1')}catch(err){console.error('Could not save the Meta purchase event marker:',err)}
         }
-        */
       }catch(err){console.error('Could not send or deduplicate the Meta purchase event:',err)}
     }
   }else{

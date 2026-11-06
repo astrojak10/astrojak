@@ -214,7 +214,6 @@
   gtag('js', new Date());
   gtag('config', 'G-DB1MQGC3LS');
 
-  /* Meta Pixel temporarily disabled for testing; uncomment this block to re-enable.
   !function(f,b,e,v,n,t,s)
   {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
   n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -222,15 +221,13 @@
   n.queue=[];}(window, document);
   fbq('init', '2057261584904971');
   fbq('track', 'PageView');
-  */
 
   function initAnalytics(){
     if(window._analyticsInit) return;
     window._analyticsInit = true;
     (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-P95LFD42');
     var g=document.createElement('script');g.async=true;g.src='https://www.googletagmanager.com/gtag/js?id=G-DB1MQGC3LS';document.head.appendChild(g);
-    // Meta Pixel temporarily disabled for testing; restore this line to re-enable.
-    // var fb=document.createElement('script');fb.async=true;fb.src='https://connect.facebook.net/en_US/fbevents.js';document.head.appendChild(fb);
+    var fb=document.createElement('script');fb.async=true;fb.src='https://connect.facebook.net/en_US/fbevents.js';document.head.appendChild(fb);
   }
   if('requestIdleCallback' in window){
     window.addEventListener('load', function(){ requestIdleCallback(initAnalytics, {timeout: 2500}); });
@@ -524,9 +521,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
 </style>
 </head>
 <body>
-<!-- Meta Pixel noscript tracking temporarily disabled for testing:
 <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2057261584904971&ev=PageView&noscript=1" alt=""></noscript>
--->
 <header><div class="wrap bar"><a class="brand" href="/">ASTRO<span>JAK</span></a><div class="header-tools"><div class="lang-switch" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="hing" aria-pressed="false">Hinglish</button><button type="button" data-lang="hi" aria-pressed="true" class="on">हिन्दी</button></div><a class="back" href="/home" data-i18n="back-home">Home</a></div></div></header>
 
 <main class="wrap">

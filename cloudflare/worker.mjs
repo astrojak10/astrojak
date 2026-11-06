@@ -81,20 +81,75 @@ async function sha256(value) {
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
+function metaApiUrl(env, datasetId) {
+  const accessToken = String(env.META_CAPI_ACCESS_TOKEN || '').trim();
+  const graphVersion = String(env.META_CAPI_GRAPH_VERSION || '').trim();
+  if (!datasetId || !accessToken || !/^v\d+\.\d+$/.test(graphVersion)) {
+    throw new Error('Meta Conversions API is not configured');
+  }
+  const url = new URL(
+    `https://graph.facebook.com/${graphVersion}/${encodeURIComponent(datasetId)}/events`,
+  );
+  url.searchParams.set('access_token', accessToken);
+  return url;
+}
+
+function metaTestCode(env) {
+  return String(env.META_CAPI_TEST_EVENT_CODE || '').trim();
+}
+
+async function postMetaEvent(env, event, eventType) {
+  const payload = { data: [event] };
+  const testEventCode = metaTestCode(env);
+  if (testEventCode) payload.test_event_code = testEventCode;
+  const result = await fetch(metaApiUrl(env, String(env.META_CAPI_DATASET_ID || '').trim()), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await result.json().catch(() => ({}));
+  if (!result.ok || Number(data.events_received) !== 1) {
+    const message = typeof data.error?.message === 'string'
+      ? data.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
+      : `HTTP_${result.status}`;
+    throw new Error(`Meta Conversions API rejected the ${eventType} event: ${message}`);
+  }
+  console.info(`Meta Conversions API accepted ${eventType} event`, {
+    eventsReceived: data.events_received,
+    fbTraceId: typeof data.fbtrace_id === 'string' ? data.fbtrace_id : '',
+    testEvent: Boolean(testEventCode),
+  });
+}
+
 function metaPhone(value) {
   let digits = String(value || '').replace(/\D/g, '').replace(/^0+/, '');
   if (/^[6-9]\d{9}$/.test(digits)) digits = `91${digits}`;
   return digits.length >= 8 && digits.length <= 15 ? digits : '';
 }
 
-async function sendMetaPaidBookingEvent(env, booking) {
-  const datasetId = String(env.META_CAPI_DATASET_ID || '').trim();
-  const accessToken = String(env.META_CAPI_ACCESS_TOKEN || '').trim();
-  const graphVersion = String(env.META_CAPI_GRAPH_VERSION || '').trim();
-  if (!datasetId || !accessToken || !/^v\d+\.\d+$/.test(graphVersion)) {
-    throw new Error('Meta Conversions API is not configured');
+async function sendMetaCheckoutLeadEvent(env, lead) {
+  const phone = metaPhone(lead.phone);
+  if (!phone) throw new Error('A valid customer phone is required for Meta matching');
+  const pageUrl = new URL(String(lead.page || ''));
+  if (!ALLOWED_ORIGINS.has(pageUrl.origin)) {
+    throw new Error('The checkout page URL is not an allowed website origin');
   }
+  pageUrl.search = '';
+  pageUrl.hash = '';
+  const eventTime = Math.floor(Date.now() / 1000);
+  const phoneHash = await sha256(phone);
+  await postMetaEvent(env, {
+    event_name: 'Lead',
+    event_time: eventTime,
+    action_source: 'website',
+    event_source_url: pageUrl.toString(),
+    event_id: `lead_${phoneHash.slice(0, 32)}_${eventTime}`,
+    user_data: { ph: [phoneHash] },
+    custom_data: { content_name: lead.plan },
+  }, 'checkout lead');
+}
 
+async function sendMetaPaidBookingEvent(env, booking) {
   const userData = {};
   const email = String(booking.email || '').trim().toLowerCase();
   const phone = metaPhone(booking.phone);
@@ -115,43 +170,26 @@ async function sendMetaPaidBookingEvent(env, booking) {
   const event = {
     event_name: 'Purchase',
     event_time: eventTime,
-    action_source: 'system_generated',
+    action_source: 'website',
     event_id: String(booking.paymentId),
+    event_source_url: 'https://www.astrojak.in/thank-you.html',
     user_data: userData,
     custom_data: {
-      event_source: 'crm',
-      lead_event_source: 'Customers Bookings Google Sheet',
       value: booking.amount,
       currency: 'INR',
       content_name: booking.plan,
     },
   };
-  const payload = { data: [event] };
-  const testEventCode = String(env.META_CAPI_TEST_EVENT_CODE || '').trim();
-  if (testEventCode) payload.test_event_code = testEventCode;
+  await postMetaEvent(env, event, 'paid booking');
+}
 
-  const url = new URL(
-    `https://graph.facebook.com/${graphVersion}/${encodeURIComponent(datasetId)}/events`,
-  );
-  url.searchParams.set('access_token', accessToken);
-  const result = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  const data = await result.json().catch(() => ({}));
-  if (!result.ok || Number(data.events_received) !== 1) {
-    const message = typeof data.error?.message === 'string'
-      ? data.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
-      : `HTTP_${result.status}`;
-    throw new Error(`Meta Conversions API rejected the paid booking event: ${message}`);
+async function trackMetaCheckoutLead(env, lead) {
+  try {
+    await sendMetaCheckoutLeadEvent(env, lead);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unexpected error';
+    console.error('Could not send checkout lead to Meta; checkout lead is saved:', message);
   }
-  console.info('Meta Conversions API accepted paid booking event', {
-    eventsReceived: data.events_received,
-    fbTraceId: typeof data.fbtrace_id === 'string' ? data.fbtrace_id : '',
-    testEvent: Boolean(testEventCode),
-  });
-  return { eventsReceived: data.events_received, fbTraceId: data.fbtrace_id || '' };
 }
 
 async function trackMetaPaidBooking(env, booking) {
@@ -407,6 +445,11 @@ export default {
         return response(400, { error: 'Valid mobile and booking details are required' }, origin);
       }
 
+      ctx.waitUntil(trackMetaCheckoutLead(env, {
+        phone: contact,
+        page: String(input.page || ''),
+        plan: String(input.selected_plan || plan.name).slice(0, 150),
+      }));
       try {
         const credentials = googleServiceAccount(env);
         const accessToken = await googleAccessToken(
@@ -539,6 +582,7 @@ export default {
             amount: payment.amount / 100,
             plan: plan.name,
             eventTime: payment.created_at,
+            page: String(input.page || ''),
           }));
           return response(200, { appended: true, already_exists: true }, origin);
         }
@@ -575,6 +619,7 @@ export default {
           amount: payment.amount / 100,
           plan: plan.name,
           eventTime: payment.created_at,
+          page: String(input.page || ''),
         }));
         return response(200, { appended: true, already_exists: false }, origin);
       } catch (error) {

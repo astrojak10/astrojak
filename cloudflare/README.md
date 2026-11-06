@@ -63,17 +63,17 @@ Sources → your Pixel → Test events** while completing checkout. Confirm a
 matches the Razorpay payment ID. A page refresh should not send a second
 Purchase event from the same browser.
 
-## Paid booking events from Customers Bookings to Meta
+## Lead and paid booking events from the website to Meta
 
-After `/append-customer-details` verifies a captured Razorpay payment and
-successfully appends (or confirms an existing) row in **Customers Bookings**,
-the Worker sends a `Purchase` event to the same Meta Dataset/Pixel used by the
-website. This is automatic for new submissions; no Zoho workflow, Apps Script,
-or public webhook is required. The payment ID is used as `event_id`, so the
-server event can be deduplicated against the browser Pixel Purchase event when
-both use the same event name and ID. The event time comes from Razorpay's
-payment timestamp. Meta receives a SHA-256 hashed phone number, INR value, and
-plan name; the booking remains saved even if Meta is temporarily unavailable.
+When a visitor submits a mobile number to start checkout, the Worker sends a
+`Lead` event. If the person later completes payment and submits the thank-you
+form, the Worker verifies the captured Razorpay payment, saves (or finds) the
+row in **Customers Bookings**, and sends a `Purchase` event. Meta can then
+compare leads that progressed to paid bookings with leads that did not. No
+separate "not converted" event is sent; non-conversion is represented by a
+Lead without a corresponding Purchase. Both events use SHA-256 hashed phone
+matching data. The Purchase includes its INR value and plan. Meta delivery is
+best-effort and does not block the Sheets write or checkout.
 
 1. In Meta Events Manager, select the Dataset/Pixel used by the website, open
    **Settings → Conversions API**, and generate an access token using manual
@@ -86,25 +86,24 @@ plan name; the booking remains saved even if Meta is temporarily unavailable.
    - Optional variable `META_CAPI_TEST_EVENT_CODE` — only while testing.
 3. Configure both the Worker and Razorpay Checkout with Razorpay Test Mode
    credentials. Keep `META_CAPI_TEST_EVENT_CODE` set to the code shown in
-   **Events Manager → Test Events**, complete a test payment, and confirm
-   `Purchase` appears in Test Events with INR value and plan name.
+   **Events Manager → Test Events**, submit the checkout mobile form and
+   complete a test payment. Confirm `Lead` and then `Purchase` appear in Test
+   Events; the Purchase should show the INR value and plan name.
 4. Remove `META_CAPI_TEST_EVENT_CODE` and save the Worker settings before
    sending live events. The endpoint only sends after the payment is verified
    as captured and the booking row is saved. Older spreadsheet rows are not
    backfilled automatically.
 5. To troubleshoot, open **Workers & Pages → astrojak → Observability → Logs**
-   for the test time. A successful send logs
-   `Meta Conversions API accepted paid booking event` with Meta's trace ID.
-   A rejected or unconfigured send logs
-   `Could not send paid booking to Meta; Google Sheets booking is saved`.
-   These logs never include the access token or unhashed contact details.
+   for the test time. Successful sends log
+   `Meta Conversions API accepted checkout lead event` or
+   `Meta Conversions API accepted paid booking event`. Failures log the event
+   type and a diagnostic without including the access token or unhashed phone.
 
-The supplied CRM event guide's fields are included: `action_source` is
-`system_generated`, `custom_data.event_source` is `crm`, and
-`lead_event_source` identifies the Customers Bookings Google Sheet. A Meta
-Instant Form `lead_id` is not present in website bookings, so the Worker does
-not invent one. The customer's email is not collected on this booking form;
-only the available phone identifier is hashed and sent.
+The website Lead event uses `action_source: website` and the page URL where
+checkout began. The Purchase uses `action_source: website`, the thank-you page,
+and Razorpay's payment timestamp. A Meta Instant Form `lead_id` is not
+available for website leads, so the Worker does not invent one. The booking
+form does not collect email; the customer's phone is hashed and sent.
 
 ## Google Calendar appointments
 

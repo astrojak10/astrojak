@@ -94,8 +94,8 @@ Worker secret is needed: the existing `GOOGLE_SERVICE_ACCOUNT_JSON` secret is
 used for both Sheets and Calendar access. The service account needs **Editor**
 access to each spreadsheet.
 
-1. Enable the Google Sheets API and Google Drive API in the Google Cloud
-   project that owns the service account.
+1. Enable the Google Sheets API in the Google Cloud project that owns the
+   service account.
 2. Share spreadsheet
    [Pre-Checkout Leads](https://docs.google.com/spreadsheets/d/10dAPMDIUQQVKuhYj8uww9atBGbdOSATJ_0AoxawN22g/edit)
    and spreadsheet
@@ -111,25 +111,12 @@ access to each spreadsheet.
    - **Customers Bookings:** Timestamp, Payment ID, Customer name, Mobile,
      Payment plan, Selected analysis, Discussion topics, Appointment date,
      Appointment time, Amount paid (INR), Date of birth, Birth time, Birth
-     place, Payment reference, Page, Appointment template link.
+     place, Payment reference, Page.
 4. Confirm `GOOGLE_SERVICE_ACCOUNT_JSON` is saved as an encrypted secret on
    **Workers & Pages → astrojak → Settings → Variables and Secrets**. The two
    spreadsheet IDs and worksheet names are configured in the Worker code; no
    `GOOGLE_SHEETS_SPREADSHEET_ID` secret is used.
-5. Create a folder for appointment images inside a Google Workspace Shared
-   Drive. Add the service-account email as a **Contributor** or
-   **Content manager** to that Shared Drive. The folder ID is configured as a
-   constant in `cloudflare/worker.mjs`; update that constant if the folder
-   changes. The service account needs the folder to be in a Shared Drive
-   because service accounts cannot own files in a personal My Drive.
-6. Deploy the Worker and website. `Appointment-template.png` must be deployed
-   at the website root. After the booking row is saved, the thank-you page
-   generates a PNG from that design, uploads it through Google's resumable
-   upload flow, and writes its link to column P. The filename is
-   `CustomerName_appointment_MobileNumber.png`; a retry updates the matching
-   file rather than making another copy. If image saving fails, the page offers
-   a retry without requiring the customer to resubmit their details.
-   A pre-checkout Sheets request is best-effort
+5. Deploy the Worker and website. A pre-checkout Sheets request is best-effort
    and does not delay or prevent Razorpay from opening. The thank-you form
    requires the booking row to be saved before it reports success; if saving
    fails, the customer can retry. Splitforms notification is best-effort after
@@ -205,14 +192,12 @@ integration handles forms submitted on astrojak.in.
   not exposed.
 - Google service-account credentials are stored only as Cloudflare encrypted
   secrets. Calendar event creation rechecks the payment and uses the
-  `calendar.events` scope; Sheets writes use the `spreadsheets` scope, and
-  appointment image uploads use `drive.file`.
+  `calendar.events` scope; Sheets writes use the `spreadsheets` scope.
 - Rotate/revoke any Razorpay key that has ever been committed or shared.
 - Configure a Cloudflare rate-limiting rule for
   `api.astrojak.in/create-order`, `api.astrojak.in/verify-payment`, and
   `api.astrojak.in/create-calendar-event`, `api.astrojak.in/append-checkout-lead`,
-  `api.astrojak.in/append-customer-details`, and
-  `api.astrojak.in/save-appointment-template`, and `api.astrojak.in/zoho-lead`
+  `api.astrojak.in/append-customer-details`, and `api.astrojak.in/zoho-lead`
   before enabling live payments.
 
 ## Local checks

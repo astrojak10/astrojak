@@ -593,38 +593,40 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
         error.hidden=false;
         return;
       }
-      var res=await fetch('https://splitforms.com/api/submit',{
+      fetch('https://splitforms.com/api/submit',{
         method:'POST',
         headers:{Accept:'application/json'},
-        body:new FormData(form)
+        body:new FormData(form),
+        keepalive:true
+      }).then(function(res){
+        return res.json().catch(function(){return {}}).then(function(result){
+          if(!res.ok||!result.success)throw new Error(result.message||'Splitforms rejected the submission');
+        });
+      }).catch(function(err){
+        console.error('Could not send customer details to Splitforms; Google Sheets already has the booking:',err);
       });
-      var result=await res.json();
-      if(result.success){
-        calendarPayload={
-          payment_id:paymentId,
-          reference_id:q.get('razorpay_payment_link_reference_id')||'',
-          appointment_date:date,
-          appointment_time:time,
-          name:name,
-          mobile:customerMobile,
-          birth_date:birthDate,
-          birth_time:birthTime,
-          birth_place:place,
-          selected_plan:selectedPlan,
-          topics:topics
-        };
-        try{sessionStorage.setItem(calendarSyncKey,JSON.stringify(calendarPayload))}catch(err){console.error('Could not save pending Calendar sync details:',err)}
-        form.reset();
-        showWhatsApp(data);
-        try{sessionStorage.removeItem('astrojak_pending_checkout')}catch(err){console.error('Could not clear saved checkout details:',err)}
-        $('detailsCard').hidden=true;$('doneCard').hidden=false;
-        await syncCalendar();
-        try{if(window.gtag)gtag('event','consultation_details_submitted',{plan:ref})}catch(e){}
-      }else{
-        error.textContent=result.message||t('sendFailed');
-        error.hidden=false;
-      }
+      calendarPayload={
+        payment_id:paymentId,
+        reference_id:q.get('razorpay_payment_link_reference_id')||'',
+        appointment_date:date,
+        appointment_time:time,
+        name:name,
+        mobile:customerMobile,
+        birth_date:birthDate,
+        birth_time:birthTime,
+        birth_place:place,
+        selected_plan:selectedPlan,
+        topics:topics
+      };
+      try{sessionStorage.setItem(calendarSyncKey,JSON.stringify(calendarPayload))}catch(err){console.error('Could not save pending Calendar sync details:',err)}
+      form.reset();
+      showWhatsApp(data);
+      try{sessionStorage.removeItem('astrojak_pending_checkout')}catch(err){console.error('Could not clear saved checkout details:',err)}
+      $('detailsCard').hidden=true;$('doneCard').hidden=false;
+      await syncCalendar();
+      try{if(window.gtag)gtag('event','consultation_details_submitted',{plan:ref})}catch(e){}
     }catch(err){
+      console.error('Could not submit customer booking:',err);
       error.textContent=t('sendFailed');
       error.hidden=false;
     }finally{

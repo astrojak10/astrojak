@@ -119,8 +119,10 @@ access to each spreadsheet.
 5. Deploy the Worker and website. A pre-checkout Sheets request is best-effort
    and does not delay or prevent Razorpay from opening. The thank-you form
    requires the booking row to be saved before it reports success; if saving
-   fails, the customer can retry. Retries for a payment ID do not create a
-   second booking row.
+   fails, the customer can retry. Splitforms notification is best-effort after
+   the Sheets save, so an unavailable Splitforms service does not block a
+   successful booking. Retries for a payment ID do not create a second booking
+   row.
 
 ## Security notes
 

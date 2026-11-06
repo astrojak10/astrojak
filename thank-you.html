@@ -568,6 +568,31 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     $('pageField').value=location.href;
     button.disabled=true;button.textContent=t('sending');
     try{
+      var sheetsRes=await fetch('https://api.astrojak.in/append-customer-details',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          payment_id:paymentId,
+          reference_id:q.get('razorpay_payment_link_reference_id')||'',
+          name:name,
+          mobile:customerMobile,
+          appointment_date:date,
+          appointment_time:time,
+          selected_plan:selectedPlan,
+          topics:topics,
+          birth_date:birthDate,
+          birth_time:birthTime,
+          birth_place:place,
+          page:location.origin+location.pathname
+        })
+      });
+      var sheetsResult=await sheetsRes.json().catch(function(){return {}});
+      if(!sheetsRes.ok||!sheetsResult.appended){
+        console.error('Could not save customer booking to Google Sheets:',sheetsResult.diagnostic||sheetsResult.error||sheetsRes.status);
+        error.textContent=sheetsResult.diagnostic||t('sendFailed');
+        error.hidden=false;
+        return;
+      }
       var res=await fetch('https://splitforms.com/api/submit',{
         method:'POST',
         headers:{Accept:'application/json'},

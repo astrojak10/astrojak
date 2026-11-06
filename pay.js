@@ -143,6 +143,14 @@
       } catch (err) {
         console.error('Could not start the Splitforms checkout lead request:', err);
       }
+      try {
+        saveCheckoutLead(id, customer, button.getAttribute('data-pos'), appointment, selectedPlan, topics)
+          .catch(function (err) {
+            console.error('Could not save pre-checkout lead to Google Sheets:', err);
+          });
+      } catch (err) {
+        console.error('Could not start the Google Sheets pre-checkout lead request:', err);
+      }
       closeModal(); done(customer, true);
     };
     setTimeout(function () {
@@ -172,6 +180,29 @@
           if (!res.ok || !data.success) throw new Error(data.message || 'Splitforms rejected the checkout lead');
         });
       });
+  }
+  function saveCheckoutLead(id, customer, pos, appointment, selectedPlan, topics) {
+    return fetch(API + '/append-checkout-lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+      body: JSON.stringify({
+        mobile: customer.contact,
+        plan: id,
+        selected_plan: selectedPlan || '',
+        topics: topics || [],
+        position: pos || '',
+        appointment_date: appointment ? appointment.date : '',
+        appointment_time: appointment ? appointment.time : '',
+        page: location.origin + location.pathname
+      })
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok || !data.appended) {
+          throw new Error(data.diagnostic || data.error || 'Google Sheets rejected the checkout lead');
+        }
+      });
+    });
   }
 
   var checkoutScript;

@@ -7,6 +7,8 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 
 const PLANS = PRICING.plans;
+const PRECHECKOUT_LEADS_SPREADSHEET_ID = '10dAPMDIUQQVKuhYj8uww9atBGbdOSATJ_0AoxawN22g';
+const CUSTOMER_BOOKINGS_SPREADSHEET_ID = '1Ecr2oISzV7vJY5CJyu9QNyd-E1TxaENOcbns31X3fOk';
 
 const SLOT_LABELS = [
   '09:00 AM – 12:00 PM',
@@ -107,12 +109,12 @@ function base64Url(value) {
   return btoa(binary).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
 
-async function googleAccessToken(credentials) {
+async function googleAccessToken(credentials, scope = 'https://www.googleapis.com/auth/calendar.events') {
   const now = Math.floor(Date.now() / 1000);
   const header = base64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const claim = base64Url(JSON.stringify({
     iss: credentials.client_email,
-    scope: 'https://www.googleapis.com/auth/calendar.events',
+    scope,
     aud: 'https://oauth2.googleapis.com/token',
     iat: now,
     exp: now + 3600,
@@ -153,6 +155,64 @@ async function googleAccessToken(credentials) {
   return data.access_token;
 }
 
+function googleServiceAccount(env) {
+  if (!env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON is not configured');
+  }
+  let credentials;
+  try {
+    credentials = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_JSON);
+  } catch {
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON must contain valid service-account JSON');
+  }
+  if (!credentials.client_email || !credentials.private_key) {
+    throw new Error('Service-account JSON must contain client_email and private_key');
+  }
+  return credentials;
+}
+
+async function appendGoogleSheetRow(accessToken, spreadsheetId, range, values) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+  const result = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ values }),
+  });
+  if (!result.ok) {
+    const failure = await result.json().catch(() => ({}));
+    const status = typeof failure.error?.status === 'string'
+      && /^[a-z0-9_-]+$/i.test(failure.error.status)
+      ? failure.error.status
+      : `HTTP_${result.status}`;
+    throw new Error(`Google Sheets API: ${status}`);
+  }
+  const data = await result.json();
+  if (data.updates?.updatedRows !== 1) {
+    throw new Error('Google Sheets API did not confirm the row append');
+  }
+}
+
+async function sheetContainsValue(accessToken, spreadsheetId, range, value) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}`;
+  const result = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!result.ok) {
+    const failure = await result.json().catch(() => ({}));
+    const status = typeof failure.error?.status === 'string'
+      && /^[a-z0-9_-]+$/i.test(failure.error.status)
+      ? failure.error.status
+      : `HTTP_${result.status}`;
+    throw new Error(`Google Sheets API: ${status}`);
+  }
+  const data = await result.json();
+  return Array.isArray(data.values)
+    && data.values.some(row => Array.isArray(row) && row[0] === value);
+}
+
 function appointmentTimes(label) {
   const times = {
     '09:00 AM – 12:00 PM': ['09:00', '12:00'],
@@ -187,17 +247,193 @@ export default {
       });
     }
 
-    if (!['/create-order', '/verify-payment', '/create-calendar-event'].includes(url.pathname)) {
+    const checkoutLeadRoute = url.pathname === '/append-checkout-lead';
+    const supportedRoutes = [
+      '/create-order',
+      '/verify-payment',
+      '/create-calendar-event',
+      '/append-checkout-lead',
+      '/append-customer-details',
+    ];
+    if (!supportedRoutes.includes(url.pathname)) {
       return response(404, { error: 'Not found' }, origin);
     }
     if (request.method !== 'POST') return response(405, { error: 'Use POST' }, origin);
     if (!ALLOWED_ORIGINS.has(origin)) return response(403, { error: 'Origin not allowed' }, '');
-    if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
+    if (!checkoutLeadRoute && (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET)) {
       return response(503, { error: 'Payment is not configured' }, origin);
     }
 
     const input = await parseInput(request);
     if (!input || typeof input !== 'object') return response(400, { error: 'Invalid request' }, origin);
+
+    if (checkoutLeadRoute) {
+      const planId = String(input.plan || '');
+      const plan = Object.prototype.hasOwnProperty.call(PLANS, planId) ? PLANS[planId] : null;
+      const contact = normalizedContact({ contact: input.mobile });
+      const appointment = {
+        date: String(input.appointment_date || ''),
+        time: String(input.appointment_time || ''),
+      };
+      if (!plan || !contact || ((appointment.date || appointment.time)
+        && !isValidAppointment(appointment))) {
+        return response(400, { error: 'Valid mobile and booking details are required' }, origin);
+      }
+
+      try {
+        const credentials = googleServiceAccount(env);
+        const accessToken = await googleAccessToken(
+          credentials,
+          'https://www.googleapis.com/auth/spreadsheets',
+        );
+        const topics = Array.isArray(input.topics)
+          ? input.topics.map(topic => String(topic).slice(0, 120)).slice(0, 12).join(', ')
+          : '';
+        await appendGoogleSheetRow(
+          accessToken,
+          PRECHECKOUT_LEADS_SPREADSHEET_ID,
+          "'Pre-Checkout Leads'!A:I",
+          [[
+            new Date().toISOString(),
+            contact,
+            plan.name,
+            String(input.selected_plan || '').trim().slice(0, 150),
+            topics,
+            plan.price,
+            appointment.date,
+            appointment.time,
+            `${String(input.position || '').slice(0, 30)} | ${String(input.page || '').slice(0, 300)}`,
+          ]],
+        );
+        return response(200, { appended: true }, origin);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unexpected error';
+        console.error('Pre-checkout Google Sheets append failed', message);
+        return response(502, { error: 'Could not save pre-checkout lead', diagnostic: message }, origin);
+      }
+    }
+
+    if (url.pathname === '/append-customer-details') {
+      if (!env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+        return response(503, { error: 'Google Sheets is not configured' }, origin);
+      }
+      const paymentId = String(input.payment_id || '');
+      const referenceId = String(input.reference_id || '');
+      const name = String(input.name || '').trim().slice(0, 100);
+      const contact = normalizedContact({ contact: input.mobile });
+      const birthDate = String(input.birth_date || '').trim().slice(0, 30);
+      const birthTime = String(input.birth_time || '').trim().slice(0, 30);
+      const birthPlace = String(input.birth_place || '').trim().slice(0, 150);
+      const appointment = {
+        date: String(input.appointment_date || ''),
+        time: String(input.appointment_time || ''),
+      };
+      if (!/^pay_[A-Za-z0-9]+$/.test(paymentId) || !referenceId || !name || !contact
+        || !birthDate || !birthPlace
+        || Boolean(appointment.date) !== Boolean(appointment.time)
+        || ((appointment.date || appointment.time) && !isValidAppointment(appointment))) {
+        return response(400, { error: 'Valid payment, customer, and booking details are required' }, origin);
+      }
+
+      let stage = 'Razorpay payment verification';
+      try {
+        const paymentResult = await razorpayRequest(
+          env,
+          `/payments/${encodeURIComponent(paymentId)}`,
+          'GET',
+        );
+        if (!paymentResult.ok) {
+          console.error('Razorpay Sheets payment lookup failed', paymentResult.status);
+          return response(502, { error: 'Could not verify payment' }, origin);
+        }
+        const payment = paymentResult.data;
+        const orderId = String(payment.order_id || '');
+        if (!/^order_[A-Za-z0-9]+$/.test(orderId) || payment.status !== 'captured') {
+          return response(400, { error: 'A captured payment is required' }, origin);
+        }
+
+        const orderResult = await razorpayRequest(
+          env,
+          `/orders/${encodeURIComponent(orderId)}`,
+          'GET',
+        );
+        if (!orderResult.ok) {
+          console.error('Razorpay Sheets order lookup failed', orderResult.status);
+          return response(502, { error: 'Could not verify payment' }, origin);
+        }
+        const order = orderResult.data;
+        const planId = String(order.notes?.plan || '');
+        const plan = Object.prototype.hasOwnProperty.call(PLANS, planId) ? PLANS[planId] : null;
+        const orderAppointment = {
+          date: String(order.notes?.appointment_date || ''),
+          time: String(order.notes?.appointment_time || ''),
+        };
+        if (!plan || order.id !== orderId || order.receipt !== referenceId
+          || !referenceId.startsWith(`${planId}_`)
+          || payment.currency !== 'INR' || payment.amount !== plan.price * 100
+          || order.currency !== 'INR' || order.amount !== payment.amount
+          || orderAppointment.date !== appointment.date
+          || orderAppointment.time !== appointment.time
+          || Boolean(orderAppointment.date) !== Boolean(orderAppointment.time)
+          || ((orderAppointment.date || orderAppointment.time)
+            && !isValidAppointment(orderAppointment))) {
+          return response(400, { error: 'Payment does not match this booking' }, origin);
+        }
+
+        stage = 'Google service-account credentials';
+        const credentials = googleServiceAccount(env);
+        stage = 'Google OAuth';
+        const accessToken = await googleAccessToken(
+          credentials,
+          'https://www.googleapis.com/auth/spreadsheets',
+        );
+        stage = 'Google Sheets API';
+        const alreadyExists = await sheetContainsValue(
+          accessToken,
+          CUSTOMER_BOOKINGS_SPREADSHEET_ID,
+          "'Customers Bookings'!B2:B",
+          paymentId,
+        );
+        if (alreadyExists) {
+          return response(200, { appended: true, already_exists: true }, origin);
+        }
+        const topics = Array.isArray(input.topics)
+          ? input.topics.map(topic => String(topic).slice(0, 120)).slice(0, 12).join(', ')
+          : '';
+        const selectedPlan = String(input.selected_plan || '').trim().slice(0, 150);
+        const page = String(input.page || '').slice(0, 500);
+        await appendGoogleSheetRow(
+          accessToken,
+          CUSTOMER_BOOKINGS_SPREADSHEET_ID,
+          "'Customers Bookings'!A:O",
+          [[
+            new Date().toISOString(),
+            paymentId,
+            name,
+            contact,
+            plan.name,
+            selectedPlan,
+            topics,
+            appointment.date,
+            appointment.time,
+            payment.amount / 100,
+            birthDate,
+            birthTime,
+            birthPlace,
+            referenceId,
+            page,
+          ]],
+        );
+        return response(200, { appended: true, already_exists: false }, origin);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unexpected error';
+        console.error('Customer Google Sheets append failed', stage, message);
+        return response(502, {
+          error: 'Could not save customer booking',
+          diagnostic: `${stage}: ${message}`,
+        }, origin);
+      }
+    }
 
     if (url.pathname === '/create-calendar-event') {
       if (!env.GOOGLE_SERVICE_ACCOUNT_JSON || !env.GOOGLE_CALENDAR_ID) {
@@ -256,15 +492,7 @@ export default {
           return response(400, { error: 'Payment does not match this booking' }, origin);
         }
 
-        let credentials;
-        try {
-          credentials = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_JSON);
-        } catch {
-          throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON must contain only valid service-account JSON');
-        }
-        if (!credentials.client_email || !credentials.private_key) {
-          throw new Error('service-account JSON must contain client_email and private_key');
-        }
+        const credentials = googleServiceAccount(env);
         stage = 'Google OAuth';
         const accessToken = await googleAccessToken(credentials);
         const [startTime, endTime] = appointmentTimes(appointment.time);

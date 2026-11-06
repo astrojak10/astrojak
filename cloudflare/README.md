@@ -85,6 +85,43 @@ submit their details again. The retry message includes a safe diagnostic such
 as an OAuth rejection reason or Calendar API permission/status code; it never
 includes service-account key material.
 
+## Google Sheets lead and booking records
+
+The same `astrojak` Worker appends pre-checkout mobile captures to the
+**Pre-Checkout Leads** spreadsheet and completed thank-you form details to the
+**Customers Bookings** spreadsheet. No second service account or additional
+Worker secret is needed: the existing `GOOGLE_SERVICE_ACCOUNT_JSON` secret is
+used for both Sheets and Calendar access. The service account needs **Editor**
+access to each spreadsheet.
+
+1. Enable the Google Sheets API in the Google Cloud project that owns the
+   service account.
+2. Share spreadsheet
+   [Pre-Checkout Leads](https://docs.google.com/spreadsheets/d/10dAPMDIUQQVKuhYj8uww9atBGbdOSATJ_0AoxawN22g/edit)
+   and spreadsheet
+   [Customers Bookings](https://docs.google.com/spreadsheets/d/1Ecr2oISzV7vJY5CJyu9QNyd-E1TxaENOcbns31X3fOk/edit)
+   with the service account email shown in `GOOGLE_SERVICE_ACCOUNT_JSON`, with
+   **Editor** permission.
+3. In each spreadsheet, create a worksheet tab with the exact name shown above.
+   The Worker appends these columns in order (add these as the first-row
+   headers):
+   - **Pre-Checkout Leads:** Timestamp, Mobile, Payment plan, Selected
+     analysis, Discussion topics, Amount (INR), Appointment date, Appointment
+     time, Source / page.
+   - **Customers Bookings:** Timestamp, Payment ID, Customer name, Mobile,
+     Payment plan, Selected analysis, Discussion topics, Appointment date,
+     Appointment time, Amount paid (INR), Date of birth, Birth time, Birth
+     place, Payment reference, Page.
+4. Confirm `GOOGLE_SERVICE_ACCOUNT_JSON` is saved as an encrypted secret on
+   **Workers & Pages → astrojak → Settings → Variables and Secrets**. The two
+   spreadsheet IDs and worksheet names are configured in the Worker code; no
+   `GOOGLE_SHEETS_SPREADSHEET_ID` secret is used.
+5. Deploy the Worker and website. A pre-checkout Sheets request is best-effort
+   and does not delay or prevent Razorpay from opening. The thank-you form
+   requires the booking row to be saved before it reports success; if saving
+   fails, the customer can retry. Retries for a payment ID do not create a
+   second booking row.
+
 ## Security notes
 
 - The browser submits a plan identifier; the Worker uses the server-side
@@ -103,11 +140,12 @@ includes service-account key material.
   not exposed.
 - Google service-account credentials are stored only as Cloudflare encrypted
   secrets. Calendar event creation rechecks the payment and uses the
-  `calendar.events` scope.
+  `calendar.events` scope; Sheets writes use the `spreadsheets` scope.
 - Rotate/revoke any Razorpay key that has ever been committed or shared.
 - Configure a Cloudflare rate-limiting rule for
   `api.astrojak.in/create-order`, `api.astrojak.in/verify-payment`, and
-  `api.astrojak.in/create-calendar-event` before enabling live payments.
+  `api.astrojak.in/create-calendar-event`, `api.astrojak.in/append-checkout-lead`,
+  and `api.astrojak.in/append-customer-details` before enabling live payments.
 
 ## Local checks
 

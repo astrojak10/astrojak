@@ -3,6 +3,7 @@ https://astrojak.in/*              https://www.astrojak.in/:splat  301!
 https://astrojak.netlify.app/*     https://www.astrojak.in/:splat  301!
 /book         /            301!
 /book.html    /            301!
+/shop         https://shop.astrojak.in/  301!
 /home         /home.html   200
 /plan         /plan.html   200
 /about        /about.html  200

@@ -62,6 +62,13 @@
     if (d.length === 12 && d.slice(0, 2) === '91') d = d.slice(2);
     return d.length === 10 ? d : '';
   }
+  function phoneInputDigits(v) {
+    var d = String(v || '').replace(/\D/g, '');
+    if ((d.length === 12 && d.slice(0, 2) === '91') || (d.length === 11 && d.charAt(0) === '0')) {
+      d = d.slice(-10);
+    }
+    return d.slice(0, 10);
+  }
   function validPhone(v) { return /^[6-9]\d{9}$/.test(String(v || '')); }
   function saved() { try { return JSON.parse(localStorage.getItem('astrojak_cust') || '{}') || {}; } catch (_) { return {}; } }
   function words() {
@@ -96,7 +103,7 @@
     var s = saved(), w = words();
     ov = document.createElement('div'); ov.className = 'pm-ov';
     ov.innerHTML = '<div class="pm" role="dialog" aria-modal="true" aria-label="' + w[0] + '"><h3>' + w[0] + '</h3><p>' + w[1] + '</p>'
-      + '<label for="pmP">' + w[2] + '</label><div class="pm-phone"><span class="pm-prefix" aria-hidden="true">+91</span><input id="pmP" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" pattern="[6-9][0-9]{9}" aria-label="' + w[3] + '" placeholder="XXXXXXXXXX"></div>'
+      + '<label for="pmP">' + w[2] + '</label><div class="pm-phone"><span class="pm-prefix" aria-hidden="true">+91</span><input id="pmP" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[6-9][0-9]{9}" aria-label="' + w[3] + '" placeholder="XXXXXXXXXX"></div>'
       + '<p class="pm-err" id="pmX" hidden></p>'
       + '<button type="button" class="paybtn" id="pmGo">' + w[5] + ' ' + money(id) + ' →</button>'
       + '<button type="button" class="pm-x" id="pmC">' + w[6] + '</button></div>';
@@ -110,7 +117,10 @@
     var g = function (i) { return document.getElementById(i); };
     g('pmP').value = digits10(pre.contact || s.phone || '');
     g('pmP').addEventListener('input', function () {
-      this.value = this.value.replace(/\D/g, '').slice(0, 10);
+      this.value = phoneInputDigits(this.value);
+    });
+    g('pmP').addEventListener('change', function () {
+      this.value = phoneInputDigits(this.value);
     });
     g('pmC').onclick = closeModal;
     ov.addEventListener('click', function (e) { if (e.target === ov) closeModal(); });

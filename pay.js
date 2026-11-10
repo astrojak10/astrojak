@@ -43,6 +43,12 @@
     + '.pm-err{color:#C62828!important;font-weight:600;margin-top:8px!important}'
     + '.pm .paybtn{margin-top:16px;padding-left:28px;padding-right:28px}.pm-x{display:block;width:100%;margin-top:8px;padding:12px;border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:#6b6b6b;cursor:pointer}'
     + '@media(max-width:380px){.pm .paybtn{white-space:normal;flex-wrap:wrap;font-size:15px;padding:14px 24px}}'
+    + '.cf-ov{position:fixed;inset:0;z-index:10001;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,14,0,.58)}'
+    + '.cf-modal{display:flex;flex-direction:column;width:min(100%,480px);height:min(82dvh,720px);overflow:hidden;border-radius:18px 18px 0 0;background:#fff;box-shadow:0 -12px 40px rgba(0,0,0,.25)}'
+    + '.cf-head{display:flex;flex:0 0 50px;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #eee;color:#292318;font:600 15px/1.2 system-ui,sans-serif}'
+    + '.cf-close{width:36px;height:36px;border:0;border-radius:50%;background:#f5f5f5;color:#292318;font:24px/1 system-ui,sans-serif;cursor:pointer}'
+    + '.cf-frame{flex:1;min-height:0;width:100%;overflow:hidden}'
+    + '@media(min-width:600px){.cf-ov{align-items:center;padding:16px}.cf-modal{height:min(85dvh,740px);border-radius:18px}}'
     + '@media (prefers-reduced-motion:reduce){.paybtn::after{animation:none;display:none}}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -297,18 +303,81 @@
   }
 
   function openCashfreeCheckout(order, button) {
-    var cashfree = window.Cashfree({ mode: order.cashfree_mode });
-    return cashfree.checkout({
-      paymentSessionId: order.payment_session_id,
-      redirectTarget: '_modal'
-    }).then(function (result) {
+    var overlay = document.createElement('div');
+    overlay.className = 'cf-ov';
+    var modal = document.createElement('div');
+    modal.className = 'cf-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Secure Cashfree checkout');
+    var header = document.createElement('div');
+    header.className = 'cf-head';
+    var title = document.createElement('span');
+    title.textContent = 'Secure checkout';
+    var close = document.createElement('button');
+    close.className = 'cf-close';
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Close checkout');
+    close.textContent = '×';
+    var frame = document.createElement('div');
+    frame.className = 'cf-frame';
+    header.appendChild(title);
+    header.appendChild(close);
+    modal.appendChild(header);
+    modal.appendChild(frame);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    var closed = false;
+    var previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    function dismiss() {
+      if (closed) return;
+      closed = true;
+      document.removeEventListener('keydown', onKeydown);
+      document.body.style.overflow = previousBodyOverflow;
+      overlay.remove();
+      reset(button);
+    }
+    function onKeydown(event) {
+      if (event.key === 'Escape') dismiss();
+    }
+    close.addEventListener('click', dismiss);
+    overlay.addEventListener('click', function (event) {
+      if (event.target === overlay) dismiss();
+    });
+    document.addEventListener('keydown', onKeydown);
+
+    var width = Math.min(480, window.innerWidth);
+    var height = Math.max(300, Math.floor(Math.min(720, window.innerHeight * 0.82) - 50));
+    var checkout;
+    try {
+      var cashfree = window.Cashfree({ mode: order.cashfree_mode });
+      checkout = cashfree.checkout({
+        paymentSessionId: order.payment_session_id,
+        redirectTarget: frame,
+        appearance: {
+          width: width + 'px',
+          height: height + 'px'
+        }
+      });
+    } catch (err) {
+      dismiss();
+      console.error('Cashfree Checkout could not be opened:', err);
+      alert('Secure checkout could not be opened. Please try again.');
+      return Promise.resolve();
+    }
+    return checkout.then(function (result) {
+      if (closed) return;
       if (result && result.paymentDetails) {
         button.textContent = 'Verifying payment…';
+        title.textContent = 'Verifying payment…';
         return verifyCashfreeOrder(order.order_id).then(function (verified) {
           var query = new URLSearchParams({
             gateway: 'cashfree',
             order_id: verified.order_id
           });
+          dismiss();
           location.href = '/thank-you.html?' + query.toString();
         }).catch(function (err) {
           dismiss();
@@ -318,15 +387,15 @@
       }
       if (result && result.redirect) {
         console.warn('Cashfree requested its redirect fallback; checkout may not be supported in this browser context.');
-        reset(button);
+        dismiss();
         return;
       }
       if (result && result.error) {
         console.warn('Cashfree Checkout closed or payment did not complete:', result.error);
       }
-      reset(button);
+      dismiss();
     }).catch(function (err) {
-      reset(button);
+      dismiss();
       console.error('Cashfree Checkout could not be opened:', err);
       alert('Secure checkout could not be opened. Please try again.');
     });

@@ -13,3 +13,4 @@ https://astrojak.netlify.app/*     https://www.astrojak.in/:splat  301!
 /sade-sati-guide  /sade-sati-guide.html  200
 /consultation-faq  /consultation-faq.html  200
 /thank-you    /thank-you.html   200
+/admin        /payment-admin.html   301!

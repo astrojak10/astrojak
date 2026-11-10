@@ -17,21 +17,91 @@ const SLOT_LABELS = [
   '06:00 PM – 09:00 PM',
 ];
 
-function response(status, body, origin) {
+function response(status, body, origin, extraHeaders = {}) {
   const headers = {
     'Cache-Control': 'no-store',
     'Content-Type': 'application/json; charset=utf-8',
+    ...extraHeaders,
   };
   if (ALLOWED_ORIGINS.has(origin)) {
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, OPTIONS';
     headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type';
+    headers['Access-Control-Allow-Credentials'] = 'true';
     headers.Vary = 'Origin';
   }
   return new Response(JSON.stringify(body), { status, headers });
 }
 
+const ADMIN_SESSION_COOKIE = 'astrojak_admin_session';
+const ADMIN_SESSION_SECONDS = 8 * 60 * 60;
 const DEFAULT_PAYMENT_SETTINGS = { activeGateway: 'razorpay', cashfreeMode: 'sandbox' };
+
+function constantTimeEqual(left, right) {
+  const encoder = new TextEncoder();
+  const a = encoder.encode(String(left));
+  const b = encoder.encode(String(right));
+  let difference = a.length ^ b.length;
+  for (let index = 0; index < Math.max(a.length, b.length); index += 1) {
+    difference |= (a[index] || 0) ^ (b[index] || 0);
+  }
+  return difference === 0;
+}
+
+async function adminSessionKey(secret, usages) {
+  return crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    usages,
+  );
+}
+
+async function createAdminSession(username, secret) {
+  const payload = base64Url(JSON.stringify({
+    username,
+    expiresAt: Math.floor(Date.now() / 1000) + ADMIN_SESSION_SECONDS,
+  }));
+  const key = await adminSessionKey(secret, ['sign']);
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
+  return `${payload}.${base64Url(new Uint8Array(signature))}`;
+}
+
+function requestCookie(request, name) {
+  const cookies = String(request.headers.get('Cookie') || '').split(';');
+  const match = cookies.map(cookie => cookie.trim()).find(cookie => cookie.startsWith(`${name}=`));
+  return match ? match.slice(name.length + 1) : '';
+}
+
+async function hasAdminSession(request, env) {
+  const secret = String(env.ADMIN_SESSION_SECRET || '');
+  if (!secret) return false;
+  const [payload, signature, extra] = requestCookie(request, ADMIN_SESSION_COOKIE).split('.');
+  if (!payload || !signature || extra !== undefined) return false;
+  try {
+    const key = await adminSessionKey(secret, ['verify']);
+    const signatureBytes = Uint8Array.from(
+      atob(signature.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - signature.length % 4) % 4)),
+      character => character.charCodeAt(0),
+    );
+    const valid = await crypto.subtle.verify(
+      'HMAC',
+      key,
+      signatureBytes,
+      new TextEncoder().encode(payload),
+    );
+    if (!valid) return false;
+    const claims = JSON.parse(atob(
+      payload.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - payload.length % 4) % 4),
+    ));
+    return claims.username === env.ADMIN_USERNAME
+      && Number.isInteger(claims.expiresAt)
+      && claims.expiresAt > Math.floor(Date.now() / 1000);
+  } catch {
+    return false;
+  }
+}
 
 async function getPaymentSettings(env) {
   if (!env.PAYMENT_SETTINGS) throw new Error('Payment settings storage is not configured');
@@ -471,9 +541,45 @@ export default {
           'Access-Control-Allow-Origin': origin,
           'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
           'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+          'Access-Control-Allow-Credentials': 'true',
           'Access-Control-Max-Age': '86400',
           Vary: 'Origin',
         },
+      });
+    }
+
+    if (url.pathname === '/admin/login') {
+      if (request.method !== 'POST') return response(405, { error: 'Use POST' }, origin);
+      if (!ALLOWED_ORIGINS.has(origin)) return response(403, { error: 'Origin not allowed' }, '');
+      if (!env.ADMIN_USERNAME || env.ADMIN_USERNAME.length > 64
+        || !env.ADMIN_PASSWORD || env.ADMIN_PASSWORD.length < 12
+        || env.ADMIN_PASSWORD.length > 256
+        || !env.ADMIN_SESSION_SECRET || env.ADMIN_SESSION_SECRET.length < 32) {
+        return response(503, { error: 'Admin login is not configured' }, origin);
+      }
+      const input = await parseInput(request);
+      if (!input || typeof input.username !== 'string' || typeof input.password !== 'string'
+        || input.username.length > 64 || input.password.length > 256
+        || !constantTimeEqual(input.username, env.ADMIN_USERNAME)
+        || !constantTimeEqual(input.password, env.ADMIN_PASSWORD)) {
+        return response(401, { error: 'Invalid username or password' }, origin);
+      }
+      try {
+        const session = await createAdminSession(env.ADMIN_USERNAME, env.ADMIN_SESSION_SECRET);
+        return response(200, { authenticated: true }, origin, {
+          'Set-Cookie': `${ADMIN_SESSION_COOKIE}=${session}; Domain=astrojak.in; Path=/admin; Max-Age=${ADMIN_SESSION_SECONDS}; Secure; HttpOnly; SameSite=Strict`,
+        });
+      } catch (error) {
+        console.error('Could not create admin session', error);
+        return response(503, { error: 'Admin login is unavailable' }, origin);
+      }
+    }
+
+    if (url.pathname === '/admin/logout') {
+      if (request.method !== 'POST') return response(405, { error: 'Use POST' }, origin);
+      if (!ALLOWED_ORIGINS.has(origin)) return response(403, { error: 'Origin not allowed' }, '');
+      return response(200, { loggedOut: true }, origin, {
+        'Set-Cookie': `${ADMIN_SESSION_COOKIE}=; Domain=astrojak.in; Path=/admin; Max-Age=0; Secure; HttpOnly; SameSite=Strict`,
       });
     }
 
@@ -494,12 +600,14 @@ export default {
 
     if (url.pathname === '/admin/payment-settings') {
       if (!ALLOWED_ORIGINS.has(origin)) return response(403, { error: 'Origin not allowed' }, '');
-      if (!env.ADMIN_API_TOKEN) {
+      if (!env.ADMIN_USERNAME || env.ADMIN_USERNAME.length > 64
+        || !env.ADMIN_PASSWORD || env.ADMIN_PASSWORD.length < 12
+        || env.ADMIN_PASSWORD.length > 256
+        || !env.ADMIN_SESSION_SECRET || env.ADMIN_SESSION_SECRET.length < 32) {
         return response(503, { error: 'Payment admin is not configured' }, origin);
       }
-      const suppliedToken = request.headers.get('Authorization') || '';
-      if (suppliedToken !== `Bearer ${env.ADMIN_API_TOKEN}`) {
-        return response(401, { error: 'Invalid admin token' }, origin);
+      if (!await hasAdminSession(request, env)) {
+        return response(401, { error: 'Please sign in again' }, origin);
       }
       if (request.method !== 'GET' && request.method !== 'PUT') {
         return response(405, { error: 'Use GET or PUT' }, origin);

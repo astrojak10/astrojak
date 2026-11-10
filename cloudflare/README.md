@@ -33,8 +33,19 @@ or the GitHub Pages build. The active gateway is selected in
    - `RAZORPAY_KEY_SECRET`
    - `CASHFREE_APP_ID`
    - `CASHFREE_SECRET_KEY`
-   - `ADMIN_API_TOKEN` — generate a long, unique random token for
-     `/payment-admin.html`.
+   - `ADMIN_USERNAME` — the username you will use to sign in.
+   - `ADMIN_PASSWORD` — a unique password of at least 12 characters.
+   - `ADMIN_SESSION_SECRET` — a separate random value of at least 32
+     characters used to sign eight-hour admin sessions. Generate one in
+     PowerShell with:
+     ```powershell
+     $bytes = New-Object byte[] 48
+     [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+     [Convert]::ToBase64String($bytes)
+     ```
+     Save the output privately, then paste it as the secret value in Cloudflare.
+   Remove the old `ADMIN_API_TOKEN` secret if you configured it previously; the
+   username/password login replaces it.
    Set the Cashfree keys to match the Sandbox or Production mode selected in
    the admin page. In the Cashfree dashboard, whitelist `www.astrojak.in` for
    web checkout. Avoid changing Cashfree environments while payments are in
@@ -43,10 +54,12 @@ or the GitHub Pages build. The active gateway is selected in
    `https://api.astrojak.in/create-order`, and
    `https://api.astrojak.in/verify-payment` are live. The API hostname is
    configured in `pay.js`; if it differs, update that URL.
-8. Open `https://www.astrojak.in/payment-admin.html`, enter the admin token,
-   select a gateway whose credentials are configured, and save. Cashfree
-   credentials must match the selected environment. The page never accepts
-   gateway secrets; manage those only in Cloudflare Worker secrets.
+8. Open `https://www.astrojak.in/payment-admin.html` and sign in with
+   `ADMIN_USERNAME` and `ADMIN_PASSWORD`. Select a gateway whose credentials
+   are configured and save. Sessions use an HttpOnly, Secure cookie and expire
+   after eight hours. Cashfree credentials must match the selected environment.
+   The page never accepts gateway secrets; manage those only in Cloudflare
+   Worker secrets.
 9. Complete a test payment and confirm the Worker verifies it and returns to
    `https://www.astrojak.in/thank-you.html`. Test keys are supported by checkout.
 
@@ -213,14 +226,16 @@ access to each spreadsheet.
 - The Worker returns only public checkout data (Razorpay key ID or Cashfree
   payment-session ID, order ID, amount, and reference); it never returns or
   logs credentials. Gateway failure details are deliberately not exposed.
-- `/admin/payment-settings` requires the encrypted `ADMIN_API_TOKEN`; the
-  admin page stores it only in the current browser session. Payment settings
-  are stored in the dedicated KV namespace, not in the website or source tree.
+- `/admin/payment-settings` requires a valid, signed eight-hour admin session.
+  Login credentials and the session signing key are Cloudflare encrypted
+  secrets; the session cookie is Secure, HttpOnly, and scoped to the admin API.
+  Payment settings are stored in the dedicated KV namespace, not in the website
+  or source tree. Apply Cloudflare rate limiting to `/admin/login`.
 - Google service-account credentials are stored only as Cloudflare encrypted
   secrets. Calendar event creation rechecks the payment and uses the
   `calendar.events` scope; Sheets writes use the `spreadsheets` scope.
-- Rotate/revoke any gateway key or admin token that has ever been committed or
-  shared.
+- Rotate/revoke any gateway key, admin password, or session secret that has
+  ever been committed or shared.
 - Configure a Cloudflare rate-limiting rule for
   `api.astrojak.in/create-order`, `api.astrojak.in/verify-payment`, and
   `api.astrojak.in/create-calendar-event`, `api.astrojak.in/append-checkout-lead`,

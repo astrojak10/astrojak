@@ -43,6 +43,10 @@
     + '.pm-err{color:#C62828!important;font-weight:600;margin-top:8px!important}'
     + '.pm .paybtn{margin-top:16px;padding-left:28px;padding-right:28px}.pm-x{display:block;width:100%;margin-top:8px;padding:12px;border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:#6b6b6b;cursor:pointer}'
     + '@media(max-width:380px){.pm .paybtn{white-space:normal;flex-wrap:wrap;font-size:15px;padding:14px 24px}}'
+    + '.cf-ov{position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(20,14,0,.62)}'
+    + '.cf-modal{position:relative;width:min(100%,425px);height:min(700px,calc(100dvh - 32px));overflow:hidden;border-radius:18px;background:#fff;box-shadow:0 16px 56px rgba(0,0,0,.3)}'
+    + '.cf-close{position:absolute;z-index:2;top:8px;right:8px;width:36px;height:36px;border:0;border-radius:50%;background:#fff;color:#292318;font:inherit;font-size:24px;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.16)}'
+    + '.cf-frame{width:100%;height:100%;overflow:auto;-webkit-overflow-scrolling:touch}'
     + '@media (prefers-reduced-motion:reduce){.paybtn::after{animation:none;display:none}}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -296,6 +300,88 @@
     return verifyPayment({ gateway: 'cashfree', order_id: orderId });
   }
 
+  function openCashfreeCheckout(order, button) {
+    var overlay = document.createElement('div');
+    overlay.className = 'cf-ov';
+    overlay.setAttribute('role', 'presentation');
+    var modal = document.createElement('div');
+    modal.className = 'cf-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Secure Cashfree checkout');
+    var close = document.createElement('button');
+    close.className = 'cf-close';
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Close checkout');
+    close.textContent = '×';
+    var frame = document.createElement('div');
+    frame.className = 'cf-frame';
+    modal.appendChild(close);
+    modal.appendChild(frame);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    var closed = false;
+    function dismiss() {
+      if (closed) return;
+      closed = true;
+      document.removeEventListener('keydown', onKeydown);
+      overlay.remove();
+      reset(button);
+    }
+    close.addEventListener('click', dismiss);
+    overlay.addEventListener('click', function (event) {
+      if (event.target === overlay) dismiss();
+    });
+    document.addEventListener('keydown', onKeydown);
+    function onKeydown(event) {
+      if (event.key === 'Escape') dismiss();
+    }
+
+    var cashfree = window.Cashfree({ mode: order.cashfree_mode });
+    var width = Math.min(425, Math.max(280, window.innerWidth - 32));
+    var height = Math.min(700, Math.max(320, window.innerHeight - 32));
+    return cashfree.checkout({
+      paymentSessionId: order.payment_session_id,
+      redirectTarget: frame,
+      appearance: {
+        width: width + 'px',
+        height: height + 'px'
+      }
+    }).then(function (result) {
+      if (closed) return;
+      if (result && result.paymentDetails) {
+        button.textContent = 'Verifying payment…';
+        return verifyCashfreeOrder(order.order_id).then(function (verified) {
+          document.removeEventListener('keydown', onKeydown);
+          overlay.remove();
+          var query = new URLSearchParams({
+            gateway: 'cashfree',
+            order_id: verified.order_id
+          });
+          location.href = '/thank-you.html?' + query.toString();
+        }).catch(function (err) {
+          dismiss();
+          console.error('Cashfree payment could not be verified:', err);
+          alert('Your payment was submitted, but we could not confirm it yet. Please do not pay again. Contact us and share order ID ' + order.order_id + '.');
+        });
+      }
+      if (result && result.redirect) {
+        console.warn('Cashfree requested its redirect fallback; the current browser may not support embedded checkout.');
+        dismiss();
+        return;
+      }
+      if (result && result.error) {
+        console.warn('Cashfree Checkout closed or payment did not complete:', result.error);
+      }
+      dismiss();
+    }).catch(function (err) {
+      dismiss();
+      console.error('Cashfree Checkout could not be opened:', err);
+      alert('Secure checkout could not be opened. Please try again.');
+    });
+  }
+
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-pay]'); if (!b) return;
     e.preventDefault();
@@ -333,38 +419,7 @@
         .then(function (order) {
           try { if (hook.paymentOrderCreated) hook.paymentOrderCreated(id, order); } catch (err) { console.error('Could not update local slot estimate', err); }
           if (order.gateway === 'cashfree') {
-            var cashfree = window.Cashfree({ mode: order.cashfree_mode });
-            return cashfree.checkout({
-              paymentSessionId: order.payment_session_id,
-              redirectTarget: '_modal'
-            }).then(function (result) {
-              if (result && result.paymentDetails) {
-                b.textContent = 'Verifying payment…';
-                return verifyCashfreeOrder(order.order_id).then(function (verified) {
-                  var query = new URLSearchParams({
-                    gateway: 'cashfree',
-                    order_id: verified.order_id
-                  });
-                  location.href = '/thank-you.html?' + query.toString();
-                }).catch(function (err) {
-                  reset(b);
-                  console.error('Cashfree payment could not be verified:', err);
-                  alert('Your payment was submitted, but we could not confirm it yet. Please do not pay again. Contact us and share order ID ' + order.order_id + '.');
-                });
-              }
-              if (result && result.redirect) return;
-              if (result && result.error) {
-                console.warn('Cashfree Checkout closed or payment did not complete:', result.error);
-                reset(b);
-                alert('Checkout was closed or the payment did not complete. You can try again.');
-                return;
-              }
-              reset(b);
-            }).catch(function (err) {
-              reset(b);
-              console.error('Cashfree Checkout could not be opened:', err);
-              alert('Secure checkout could not be opened. Please try again.');
-            });
+            return openCashfreeCheckout(order, b);
           }
           var checkout = new window.Razorpay({
             key: order.key_id,

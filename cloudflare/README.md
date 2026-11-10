@@ -65,13 +65,13 @@ or the GitHub Pages build. The active gateway is selected in
 
 The shared checkout script preloads the active gateway SDK for faster checkout.
 Razorpay retains its existing WhatsApp fallback on checkout errors, and a
-customer who dismisses Razorpay checkout can retry normally. Cashfree opens in
-a popup modal on the same page; closing it leaves the customer on the booking
-page so they can retry.
+customer who dismisses Razorpay checkout can retry normally. Cashfree's hosted
+checkout is mounted inline inside a responsive, same-page overlay; closing it
+leaves the customer on the booking page so they can retry.
 After a Cashfree payment attempt, the Worker verifies the order directly with
 Cashfree before navigating to the thank-you page. Cashfree's documented
-same-window redirect fallback still returns to the same verification flow when
-a modal cannot open.
+embedded checkout can still request its redirect fallback in unsupported
+in-app browsers.
 
 The `astrojak` Worker owns the `api.astrojak.in` custom domain and is the
 deployment target in `wrangler.toml`. Keep any older Worker deployment until

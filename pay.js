@@ -237,19 +237,25 @@
     if (gateway === 'payu') return Promise.resolve();
     if (gateway === 'cashfree' && window.Cashfree) return Promise.resolve();
     if (gateway === 'razorpay' && window.Razorpay) return Promise.resolve();
+    if (gateway === 'easebuzz' && window.EasebuzzCheckout) return Promise.resolve();
     if (checkoutScripts[gateway]) return checkoutScripts[gateway];
     checkoutScripts[gateway] = new Promise(function (resolve, reject) {
       var script = document.createElement('script');
       script.src = gateway === 'cashfree'
         ? 'https://sdk.cashfree.com/js/v3/cashfree.js'
-        : 'https://checkout.razorpay.com/v1/checkout.js';
+        : gateway === 'easebuzz'
+          ? 'https://ebz-static.s3.ap-south-1.amazonaws.com/easecheckout/v2.0.0/easebuzz-checkout-v2.min.js'
+          : 'https://checkout.razorpay.com/v1/checkout.js';
       script.onload = function () {
         if ((gateway === 'cashfree' && window.Cashfree)
+          || (gateway === 'easebuzz' && window.EasebuzzCheckout)
           || (gateway === 'razorpay' && window.Razorpay)) resolve();
         else {
           checkoutScripts[gateway] = null;
           reject(new Error(gateway === 'cashfree'
             ? 'Cashfree Checkout could not be initialized'
+            : gateway === 'easebuzz'
+              ? 'Easebuzz Checkout could not be initialized'
             : 'Razorpay Checkout could not be initialized'));
         }
       };
@@ -257,6 +263,8 @@
         checkoutScripts[gateway] = null;
         reject(new Error(gateway === 'cashfree'
           ? 'Cashfree Checkout could not be loaded'
+          : gateway === 'easebuzz'
+            ? 'Easebuzz Checkout could not be loaded'
           : 'Razorpay Checkout could not be loaded'));
       };
       document.head.appendChild(script);
@@ -266,7 +274,7 @@
   var paymentConfigPromise = fetch(API + '/payment-config', { cache: 'no-store' })
     .then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (config) {
-        if (!res.ok || !['razorpay', 'cashfree', 'payu'].includes(config.activeGateway)) {
+        if (!res.ok || !['razorpay', 'cashfree', 'payu', 'easebuzz'].includes(config.activeGateway)) {
           throw new Error(config.error || 'Could not load payment settings');
         }
         return loadCheckout(config.activeGateway).then(function () { return config; });
@@ -551,6 +559,104 @@
     form.submit();
   }
 
+  function openEasebuzzCheckout(order, button) {
+    var completed = false;
+    var cleanup = function () {};
+    function onResponse(result) {
+      if (completed) return;
+      completed = true;
+      if (result && result.error) {
+        reset(button);
+        console.error('Easebuzz Checkout returned an error:', result.message || 'Unknown error');
+        alert('Secure checkout could not be completed. Please try again.');
+        return;
+      }
+      button.textContent = 'Verifying payment…';
+      verifyPayment({ gateway: 'easebuzz', txnid: order.txnid }).then(function (verified) {
+        try {
+          sessionStorage.setItem('astrojak_easebuzz_verified_' + order.txnid, JSON.stringify({
+            txnid: order.txnid,
+            payment_id: verified.payment_id,
+            reference_id: verified.reference_id,
+            plan: verified.plan,
+            appointment_date: verified.appointment_date || '',
+            appointment_time: verified.appointment_time || ''
+          }));
+        } catch (err) {
+          console.error('Could not save Easebuzz payment confirmation:', err);
+        }
+        var query = new URLSearchParams({
+          gateway: 'easebuzz',
+          txnid: order.txnid,
+          payment_status: 'paid',
+          payment_id: verified.payment_id,
+          reference_id: verified.reference_id,
+          plan: verified.plan
+        });
+        if (verified.appointment_date) query.set('appointment_date', verified.appointment_date);
+        if (verified.appointment_time) query.set('appointment_time', verified.appointment_time);
+        location.href = '/thank-you.html?' + query.toString();
+      }).catch(function (err) {
+        reset(button);
+        console.error('Easebuzz payment could not be verified:', err);
+        alert('Your payment was submitted, but we could not confirm it yet. Please do not pay again. Contact us and share transaction ID ' + order.txnid + '.');
+      });
+    }
+    try {
+      var checkout = new window.EasebuzzCheckout(order.merchant_key, order.easebuzz_mode);
+      var container = document.getElementById('easebuzz-container-' + checkout.ebcid);
+      var iframe = document.getElementById('easebuzz-checkout-frame-' + checkout.ebcid);
+      // EaseCheckout expands to full viewport on mobile; keep it in the site's partial-screen modal.
+      var resizeModal = function () {
+        if (!container || !iframe) return;
+        var width = Math.min(480, window.innerWidth);
+        var height = Math.max(160, Math.floor(Math.min(720, window.innerHeight * 0.82)));
+        container.style.overflow = 'hidden';
+        iframe.style.position = 'absolute';
+        iframe.style.width = width + 'px';
+        iframe.style.maxWidth = width + 'px';
+        iframe.style.height = height + 'px';
+        iframe.style.minHeight = '0';
+        iframe.style.maxHeight = height + 'px';
+        iframe.style.bottom = window.innerWidth < 600 ? '0' : 'auto';
+        iframe.style.top = window.innerWidth < 600 ? 'auto' : '50%';
+        iframe.style.transform = window.innerWidth < 600
+          ? 'translateX(-50%)'
+          : 'translate(-50%, -50%)';
+        iframe.style.borderRadius = window.innerWidth < 600 ? '18px 18px 0 0' : '18px';
+      };
+      var observer = container ? new MutationObserver(function () {
+        if (container.style.visibility === 'hidden') {
+          cleanup();
+          container.remove();
+          if (!completed) reset(button);
+        }
+      }) : null;
+      if (observer) observer.observe(container, { attributes: true, attributeFilter: ['style'] });
+      var originalResize = checkout.resizeCheckoutIframe;
+      checkout.resizeCheckoutIframe = function (dimensions) {
+        originalResize.call(checkout, dimensions);
+        resizeModal();
+      };
+      window.addEventListener('resize', resizeModal);
+      cleanup = function () {
+        window.removeEventListener('resize', resizeModal);
+        if (observer) observer.disconnect();
+      };
+      checkout.initiatePayment({
+        access_key: order.access_key,
+        onResponse: onResponse,
+        theme: '#F8B700'
+      });
+      resizeModal();
+    } catch (err) {
+      cleanup();
+      reset(button);
+      console.error('Easebuzz Checkout could not be opened:', err);
+      alert('Secure checkout could not be opened. Please try again.');
+    }
+  }
+
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-pay]'); if (!b) return;
     e.preventDefault();
@@ -592,6 +698,9 @@
           }
           if (order.gateway === 'payu') {
             return openPayuCheckout(order, b, body);
+          }
+          if (order.gateway === 'easebuzz') {
+            return openEasebuzzCheckout(order, b);
           }
           var checkout = new window.Razorpay({
             key: order.key_id,
@@ -639,7 +748,8 @@
         });
     }
     paymentConfigPromise.then(function (config) {
-      openModal(id, p, cust, go, b, !config || config.activeGateway === 'payu');
+      openModal(id, p, cust, go, b, !config || config.activeGateway === 'payu'
+        || config.activeGateway === 'easebuzz');
     });
   });
 })();

@@ -417,9 +417,49 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       });
     }
   }
-  var paymentId=q.get('razorpay_payment_id')||(cashfreeVerified?cashfreeVerified.payment_id:payuVerified?payuVerified.payment_id:q.get('payment_id')||'');
-  var referenceId=q.get('razorpay_payment_link_reference_id')||(cashfreeVerified?cashfreeVerified.reference_id:payuVerified?payuVerified.reference_id:q.get('reference_id')||'');
-  var paid=q.get('razorpay_payment_link_status')==='paid'||Boolean(cashfreeVerified)||Boolean(payuVerified);
+  var easebuzzTransactionId=q.get('txnid')||'';
+  var easebuzzVerified=null;
+  if(gateway==='easebuzz'&&easebuzzTransactionId){
+    try{
+      var savedEasebuzz=JSON.parse(sessionStorage.getItem('astrojak_easebuzz_verified_'+easebuzzTransactionId)||'null');
+      if(savedEasebuzz&&savedEasebuzz.reference_id===easebuzzTransactionId&&q.get('payment_status')==='paid'){
+        easebuzzVerified=savedEasebuzz;
+      }
+    }catch(err){console.error('Could not read Easebuzz payment confirmation:',err)}
+    if(!easebuzzVerified){
+      $('status').textContent='Checking Easebuzz payment status…';
+      fetch('https://api.astrojak.in/verify-payment',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({gateway:'easebuzz',txnid:easebuzzTransactionId})
+      }).then(function(res){
+        return res.json().catch(function(){return {}}).then(function(result){
+          if(!res.ok||!result.verified)throw new Error(result.error||'Payment is not confirmed yet');
+          var confirmed={
+            payment_id:result.payment_id,
+            reference_id:result.reference_id,
+            plan:result.plan,
+            appointment_date:result.appointment_date||'',
+            appointment_time:result.appointment_time||''
+          };
+          sessionStorage.setItem('astrojak_easebuzz_verified_'+easebuzzTransactionId,JSON.stringify(confirmed));
+          q.set('payment_status','paid');
+          q.set('payment_id',confirmed.payment_id);
+          q.set('reference_id',confirmed.reference_id);
+          q.set('plan',confirmed.plan);
+          if(confirmed.appointment_date)q.set('appointment_date',confirmed.appointment_date);
+          if(confirmed.appointment_time)q.set('appointment_time',confirmed.appointment_time);
+          location.replace(location.pathname+'?'+q.toString());
+        });
+      }).catch(function(err){
+        console.error('Easebuzz payment could not be verified:',err);
+        $('status').textContent='Your payment is not confirmed yet. If you completed payment, refresh this page in a moment or contact us before paying again.';
+      });
+    }
+  }
+  var paymentId=q.get('razorpay_payment_id')||(cashfreeVerified?cashfreeVerified.payment_id:payuVerified?payuVerified.payment_id:easebuzzVerified?easebuzzVerified.payment_id:q.get('payment_id')||'');
+  var referenceId=q.get('razorpay_payment_link_reference_id')||(cashfreeVerified?cashfreeVerified.reference_id:payuVerified?payuVerified.reference_id:easebuzzVerified?easebuzzVerified.reference_id:q.get('reference_id')||'');
+  var paid=q.get('razorpay_payment_link_status')==='paid'||Boolean(cashfreeVerified)||Boolean(payuVerified)||Boolean(easebuzzVerified);
   var ref=q.get('plan')||referenceId.split('_')[0];
   var plan=window.PRICING&&PRICING.plans[ref];
   var planName=plan?plan.name:'Consultation';
@@ -575,7 +615,9 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       $('doneCard').hidden=false;
       syncCalendar();
     }
-    if(paymentId&&((gateway==='payu'&&/^\d{1,20}$/.test(paymentId))||/^pay_[A-Za-z0-9]+$/.test(paymentId))&&plan){
+    if(paymentId&&((gateway==='payu'&&/^\d{1,20}$/.test(paymentId))
+      ||(gateway==='easebuzz'&&/^[A-Za-z0-9]{1,40}$/.test(paymentId))
+      ||/^pay_[A-Za-z0-9]+$/.test(paymentId))&&plan){
       try{
         if(window.gtag)gtag('event','purchase',{transaction_id:paymentId,value:plan.price,currency:'INR',items:[{item_id:ref,item_name:plan.name,price:plan.price}]});
       }catch(err){console.error('Could not send the Google purchase event:',err)}

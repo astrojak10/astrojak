@@ -39,6 +39,7 @@ const DEFAULT_PAYMENT_SETTINGS = {
   activeGateway: 'razorpay',
   cashfreeMode: 'sandbox',
   payuMode: 'sandbox',
+  easebuzzMode: 'sandbox',
 };
 const PAYU_PLAN_PREFIXES = {
   reserve: 'res',
@@ -118,9 +119,10 @@ async function getPaymentSettings(env) {
   const saved = await env.PAYMENT_SETTINGS.get('gateway-settings', 'json');
   if (!saved) return { ...DEFAULT_PAYMENT_SETTINGS };
   const settings = { ...DEFAULT_PAYMENT_SETTINGS, ...saved };
-  if (!['razorpay', 'cashfree', 'payu'].includes(settings.activeGateway)
+  if (!['razorpay', 'cashfree', 'payu', 'easebuzz'].includes(settings.activeGateway)
     || !['sandbox', 'production'].includes(settings.cashfreeMode)
-    || !['sandbox', 'production'].includes(settings.payuMode)) {
+    || !['sandbox', 'production'].includes(settings.payuMode)
+    || !['sandbox', 'production'].includes(settings.easebuzzMode)) {
     throw new Error('Saved payment settings are invalid');
   }
   return settings;
@@ -129,6 +131,7 @@ async function getPaymentSettings(env) {
 function paymentGatewayConfigured(env, gateway) {
   if (gateway === 'cashfree') return Boolean(env.CASHFREE_APP_ID && env.CASHFREE_SECRET_KEY);
   if (gateway === 'payu') return Boolean(env.PAYU_MERCHANT_KEY && env.PAYU_MERCHANT_SALT);
+  if (gateway === 'easebuzz') return Boolean(env.EASEBUZZ_KEY && env.EASEBUZZ_SALT);
   return Boolean(env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET);
 }
 
@@ -182,9 +185,78 @@ function payuBaseUrl(settings) {
   return settings.payuMode === 'sandbox' ? 'https://test.payu.in' : 'https://secure.payu.in';
 }
 
+function easebuzzBaseUrl(settings) {
+  return settings.easebuzzMode === 'sandbox' ? 'https://testpay.easebuzz.in' : 'https://pay.easebuzz.in';
+}
+
+function easebuzzTransactionUrl(settings) {
+  return settings.easebuzzMode === 'sandbox'
+    ? 'https://testdashboard.easebuzz.in/transaction/v2.1/retrieve'
+    : 'https://dashboard.easebuzz.in/transaction/v2.1/retrieve';
+}
+
 async function sha512(value) {
   const digest = await crypto.subtle.digest('SHA-512', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function easebuzzRequest(url, fields) {
+  const result = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+    },
+    body: new URLSearchParams(fields),
+  });
+  const data = await result.json().catch(() => ({}));
+  return { ok: result.ok, status: result.status, data };
+}
+
+async function verifiedEasebuzzTransaction(env, settings, transactionId) {
+  if (!/^[A-Za-z0-9_|/-]{1,40}$/.test(transactionId)) return null;
+  const key = env.EASEBUZZ_KEY;
+  const salt = env.EASEBUZZ_SALT;
+  const hash = await sha512(`${key}|${transactionId}|${salt}`);
+  const result = await easebuzzRequest(easebuzzTransactionUrl(settings), {
+    key,
+    txnid: transactionId,
+    hash,
+  });
+  if (!result.ok || result.data.status !== true || !Array.isArray(result.data.msg)) return null;
+
+  const transaction = result.data.msg.find(entry => entry && entry.txnid === transactionId);
+  if (!transaction || String(transaction.status || '').toLowerCase() !== 'success'
+    || transaction.key !== key) return null;
+  const planId = String(transaction.udf1 || '');
+  const plan = Object.prototype.hasOwnProperty.call(PLANS, planId) ? PLANS[planId] : null;
+  const amount = Math.round(Number(transaction.amount) * 100);
+  const appointmentDate = String(transaction.udf2 || '');
+  const appointmentTimeCode = String(transaction.udf3 || '');
+  if (appointmentTimeCode && !/^[1-4]$/.test(appointmentTimeCode)) return null;
+  const appointmentTime = appointmentTimeCode
+    ? SLOT_LABELS[Number(appointmentTimeCode) - 1]
+    : '';
+  if (!plan || !transactionId.startsWith(`e${PAYU_PLAN_PREFIXES[planId]}`)
+    || !/^[A-Za-z0-9]{1,40}$/.test(String(transaction.easepayid || ''))
+    || !Number.isFinite(amount) || amount !== plan.price * 100
+    || transaction.productinfo !== `ASTROJAK ${plan.name}`
+    || ((appointmentDate || appointmentTime)
+      && !isValidAppointment({ date: appointmentDate, time: appointmentTime }))
+    || (!appointmentDate && !appointmentTime && planId !== 'reserve')) return null;
+
+  const addedOn = Date.parse(`${String(transaction.addedon || '').replace(' ', 'T')}Z`);
+  return {
+    paymentId: String(transaction.easepayid),
+    orderId: transactionId,
+    referenceId: transactionId,
+    planId,
+    amount,
+    currency: 'INR',
+    appointmentDate,
+    appointmentTime,
+    createdAt: Number.isFinite(addedOn) ? Math.floor(addedOn / 1000) : Math.floor(Date.now() / 1000),
+  };
 }
 
 async function payuRequest(settings, fields) {
@@ -694,6 +766,7 @@ export default {
           activeGateway: settings.activeGateway,
           cashfreeMode: settings.cashfreeMode,
           payuMode: settings.payuMode,
+          easebuzzMode: settings.easebuzzMode,
         }, origin);
       } catch (error) {
         console.error('Could not read payment settings', error);
@@ -745,13 +818,15 @@ export default {
               razorpay: paymentGatewayConfigured(env, 'razorpay'),
               cashfree: paymentGatewayConfigured(env, 'cashfree'),
               payu: paymentGatewayConfigured(env, 'payu'),
+              easebuzz: paymentGatewayConfigured(env, 'easebuzz'),
             },
           }, origin);
         }
         const input = await parseInput(request);
-        if (!input || !['razorpay', 'cashfree', 'payu'].includes(input.activeGateway)
+        if (!input || !['razorpay', 'cashfree', 'payu', 'easebuzz'].includes(input.activeGateway)
           || !['sandbox', 'production'].includes(input.cashfreeMode)
-          || !['sandbox', 'production'].includes(input.payuMode)) {
+          || !['sandbox', 'production'].includes(input.payuMode)
+          || !['sandbox', 'production'].includes(input.easebuzzMode)) {
           return response(400, { error: 'Invalid payment settings' }, origin);
         }
         if (!paymentGatewayConfigured(env, input.activeGateway)) {
@@ -761,6 +836,7 @@ export default {
           activeGateway: input.activeGateway,
           cashfreeMode: input.cashfreeMode,
           payuMode: input.payuMode,
+          easebuzzMode: input.easebuzzMode,
         };
         await env.PAYMENT_SETTINGS.put('gateway-settings', JSON.stringify(settings));
         return response(200, { saved: true, ...settings }, origin);
@@ -848,7 +924,7 @@ export default {
         return response(503, { error: 'Google Sheets is not configured' }, origin);
       }
       const gateway = String(input.gateway || 'razorpay');
-      if (!['razorpay', 'cashfree', 'payu'].includes(gateway)) {
+      if (!['razorpay', 'cashfree', 'payu', 'easebuzz'].includes(gateway)) {
         return response(400, { error: 'Unknown payment gateway' }, origin);
       }
       const paymentId = String(input.payment_id || '');
@@ -866,7 +942,9 @@ export default {
         ? /^[A-Za-z0-9_-]{1,45}$/.test(paymentId)
         : gateway === 'payu'
           ? /^\d{1,20}$/.test(paymentId)
-          : /^pay_[A-Za-z0-9]+$/.test(paymentId))
+          : gateway === 'easebuzz'
+            ? /^[A-Za-z0-9]{1,40}$/.test(paymentId)
+            : /^pay_[A-Za-z0-9]+$/.test(paymentId))
         || !referenceId || !name || !contact
         || !birthDate || !birthPlace
         || Boolean(appointment.date) !== Boolean(appointment.time)
@@ -924,6 +1002,29 @@ export default {
               appointment_time: verified.appointmentTime,
             },
           };
+        } else if (gateway === 'easebuzz') {
+          const settings = await getPaymentSettings(env);
+          const verified = await verifiedEasebuzzTransaction(env, settings, referenceId);
+          if (!verified || verified.paymentId !== paymentId) {
+            return response(400, { error: 'A successful Easebuzz transaction is required' }, origin);
+          }
+          payment = {
+            amount: verified.amount,
+            currency: verified.currency,
+            status: 'captured',
+            created_at: verified.createdAt,
+          };
+          order = {
+            id: verified.orderId,
+            receipt: verified.referenceId,
+            currency: verified.currency,
+            amount: verified.amount,
+            notes: {
+              plan: verified.planId,
+              appointment_date: verified.appointmentDate,
+              appointment_time: verified.appointmentTime,
+            },
+          };
         } else {
           const paymentResult = await razorpayRequest(
             env,
@@ -959,7 +1060,8 @@ export default {
         };
         const orderHasAppointment = Boolean(orderAppointment.date || orderAppointment.time);
         if (!plan || order.id !== orderId || order.receipt !== referenceId
-          || (gateway !== 'payu' && !referenceId.startsWith(`${planId}_`))
+          || (!['payu', 'easebuzz'].includes(gateway)
+            && !referenceId.startsWith(`${planId}_`))
           || payment.currency !== 'INR' || payment.amount !== plan.price * 100
           || order.currency !== 'INR' || order.amount !== payment.amount
           || (!orderHasAppointment && planId !== 'reserve')
@@ -1054,7 +1156,7 @@ export default {
       }
 
       const gateway = String(input.gateway || 'razorpay');
-      if (!['razorpay', 'cashfree', 'payu'].includes(gateway)) {
+      if (!['razorpay', 'cashfree', 'payu', 'easebuzz'].includes(gateway)) {
         return response(400, { error: 'Unknown payment gateway' }, origin);
       }
       const paymentId = String(input.payment_id || '');
@@ -1069,7 +1171,9 @@ export default {
         ? /^[A-Za-z0-9_-]{1,45}$/.test(paymentId)
         : gateway === 'payu'
           ? /^\d{1,20}$/.test(paymentId)
-          : /^pay_[A-Za-z0-9]+$/.test(paymentId))
+          : gateway === 'easebuzz'
+            ? /^[A-Za-z0-9]{1,40}$/.test(paymentId)
+            : /^pay_[A-Za-z0-9]+$/.test(paymentId))
         || !name || !contact
         || !referenceId || !isValidAppointment(appointment)) {
         return response(400, { error: 'Valid payment, customer, and appointment details are required' }, origin);
@@ -1115,6 +1219,24 @@ export default {
               appointment_time: verified.appointmentTime,
             },
           };
+        } else if (gateway === 'easebuzz') {
+          const settings = await getPaymentSettings(env);
+          const verified = await verifiedEasebuzzTransaction(env, settings, referenceId);
+          if (!verified || verified.paymentId !== paymentId) {
+            return response(400, { error: 'A successful Easebuzz transaction is required' }, origin);
+          }
+          payment = { amount: verified.amount, currency: verified.currency };
+          order = {
+            id: verified.orderId,
+            receipt: verified.referenceId,
+            currency: verified.currency,
+            amount: verified.amount,
+            notes: {
+              plan: verified.planId,
+              appointment_date: verified.appointmentDate,
+              appointment_time: verified.appointmentTime,
+            },
+          };
         } else {
           const paymentResult = await razorpayRequest(
             env,
@@ -1147,7 +1269,8 @@ export default {
         const orderDate = String(order.notes?.appointment_date || '');
         const orderTime = String(order.notes?.appointment_time || '');
         if (!plan || order.id !== orderId || order.receipt !== referenceId
-          || (gateway !== 'payu' && !referenceId.startsWith(`${planId}_`))
+          || (!['payu', 'easebuzz'].includes(gateway)
+            && !referenceId.startsWith(`${planId}_`))
           || payment.currency !== 'INR' || payment.amount !== plan.price * 100
           || order.currency !== 'INR' || order.amount !== payment.amount
           || ((orderDate || orderTime) && (appointment.date !== orderDate || appointment.time !== orderTime))) {
@@ -1335,6 +1458,74 @@ export default {
             fields,
           }, origin);
         }
+        if (gateway === 'easebuzz') {
+          const email = String(input.customer?.email || '').trim();
+          if (email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return response(400, { error: 'A valid email address is required for Easebuzz checkout' }, origin);
+          }
+          const txnid = `e${PAYU_PLAN_PREFIXES[planId]}${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
+          const amount = plan.price.toFixed(2);
+          const productinfo = `ASTROJAK ${plan.name}`;
+          const rawName = String(input.customer?.name || 'ASTROJAK Customer').trim();
+          const firstname = rawName.replace(/[^a-zA-Z0-9&\-._ ()\/,@]/g, ' ').trim().slice(0, 150)
+            || 'ASTROJAK Customer';
+          const udf1 = planId;
+          const udf2 = isValidAppointment(appointment) ? String(appointment.date) : '';
+          const udf3 = isValidAppointment(appointment)
+            ? String(SLOT_LABELS.indexOf(String(appointment.time)) + 1)
+            : '';
+          const returnUrl = `https://www.astrojak.in/thank-you.html?gateway=easebuzz&txnid=${encodeURIComponent(txnid)}`;
+          const fields = {
+            key: env.EASEBUZZ_KEY,
+            txnid,
+            amount,
+            productinfo,
+            firstname,
+            phone: contact.slice(-10),
+            email,
+            surl: returnUrl,
+            furl: returnUrl,
+            udf1,
+            udf2,
+            udf3,
+          };
+          for (let index = 4; index <= 10; index += 1) fields[`udf${index}`] = '';
+          fields.hash = await sha512([
+            fields.key,
+            fields.txnid,
+            fields.amount,
+            fields.productinfo,
+            fields.firstname,
+            fields.email,
+            fields.udf1,
+            fields.udf2,
+            fields.udf3,
+            fields.udf4,
+            fields.udf5,
+            fields.udf6,
+            fields.udf7,
+            fields.udf8,
+            fields.udf9,
+            fields.udf10,
+            env.EASEBUZZ_SALT,
+          ].join('|'));
+          const result = await easebuzzRequest(
+            `${easebuzzBaseUrl(settings)}/payment/initiateLink`,
+            fields,
+          );
+          if (!result.ok || result.data.status !== 1 || typeof result.data.data !== 'string'
+            || !/^[A-Za-z0-9_-]{1,100}$/.test(result.data.data)) {
+            console.error('Easebuzz payment initiation failed', result.status);
+            return response(502, { error: 'Could not create payment order' }, origin);
+          }
+          return response(200, {
+            gateway,
+            txnid,
+            access_key: result.data.data,
+            merchant_key: env.EASEBUZZ_KEY,
+            easebuzz_mode: settings.easebuzzMode === 'sandbox' ? 'test' : 'prod',
+          }, origin);
+        }
         if (gateway === 'cashfree') {
           const result = await cashfreeRequest(env, settings, '/orders', 'POST', {
             order_id: reference,
@@ -1437,6 +1628,30 @@ export default {
         }, origin);
       } catch (error) {
         console.error('PayU payment verification failed', error);
+        return response(502, { error: 'Could not verify payment' }, origin);
+      }
+    }
+
+    if (input.gateway === 'easebuzz') {
+      if (!paymentGatewayConfigured(env, 'easebuzz')) {
+        return response(503, { error: 'Easebuzz is not configured' }, origin);
+      }
+      try {
+        const settings = await getPaymentSettings(env);
+        const transactionId = String(input.txnid || '');
+        const verified = await verifiedEasebuzzTransaction(env, settings, transactionId);
+        if (!verified) return response(409, { error: 'Easebuzz payment is not confirmed as successful' }, origin);
+        return response(200, {
+          verified: true,
+          payment_id: verified.paymentId,
+          order_id: verified.orderId,
+          reference_id: verified.referenceId,
+          plan: verified.planId,
+          appointment_date: verified.appointmentDate,
+          appointment_time: verified.appointmentTime,
+        }, origin);
+      } catch (error) {
+        console.error('Easebuzz payment verification failed', error);
         return response(502, { error: 'Could not verify payment' }, origin);
       }
     }

@@ -62,6 +62,10 @@
           <input id="payu" type="radio" name="gateway" value="payu">
           <label for="payu">PayU<small id="payuStatus">Checking credentials…</small></label>
         </div>
+        <div class="choice">
+          <input id="easebuzz" type="radio" name="gateway" value="easebuzz">
+          <label for="easebuzz">Easebuzz<small id="easebuzzStatus">Checking credentials…</small></label>
+        </div>
       </fieldset>
       <label for="cashfreeMode">Cashfree environment</label>
       <select id="cashfreeMode">
@@ -73,7 +77,12 @@
         <option value="sandbox">Sandbox / test</option>
         <option value="production">Production / live</option>
       </select>
-      <p class="note">Store gateway credentials as encrypted Cloudflare Worker secrets. Cashfree credentials must match its selected environment. PayU uses its merchant Key and Salt. Never enter API keys or secrets on this page.</p>
+      <label for="easebuzzMode">Easebuzz environment</label>
+      <select id="easebuzzMode">
+        <option value="sandbox">Sandbox / test</option>
+        <option value="production">Production / live</option>
+      </select>
+      <p class="note">Store gateway credentials as encrypted Cloudflare Worker secrets. Cashfree, PayU, and Easebuzz credentials must match their selected environments. PayU and Easebuzz use their merchant Key and Salt. Never enter API keys or secrets on this page.</p>
       <button id="save" type="submit">Save payment settings</button>
       </form>
     </section>
@@ -116,18 +125,28 @@
           var credentials=settings.credentials||{};
           var hasPayuSupport=typeof credentials.payu==='boolean'
             &&typeof settings.payuMode==='string';
+          var hasEasebuzzSupport=typeof credentials.easebuzz==='boolean'
+            &&typeof settings.easebuzzMode==='string';
           document.getElementById('razorpay').disabled=!credentials.razorpay;
           document.getElementById('cashfree').disabled=!credentials.cashfree;
           document.getElementById('payu').disabled=!hasPayuSupport||!credentials.payu;
+          document.getElementById('easebuzz').disabled=!hasEasebuzzSupport||!credentials.easebuzz;
           document.getElementById('razorpayStatus').textContent=credentials.razorpay?'Credentials configured':'Add Razorpay Worker secrets first';
           document.getElementById('cashfreeStatus').textContent=credentials.cashfree?'Credentials configured':'Add Cashfree Worker secrets first';
           document.getElementById('payuStatus').textContent=!hasPayuSupport
             ?'Payment API is outdated; deploy the latest Worker'
             :credentials.payu?'Credentials configured':'Add PAYU_MERCHANT_KEY and PAYU_MERCHANT_SALT Worker secrets';
+          document.getElementById('easebuzzStatus').textContent=!hasEasebuzzSupport
+            ?'Payment API is outdated; deploy the latest Worker'
+            :credentials.easebuzz?'Credentials configured':'Add EASEBUZZ_KEY and EASEBUZZ_SALT Worker secrets';
           document.getElementById(settings.activeGateway).checked=true;
           document.getElementById('cashfreeMode').value=settings.cashfreeMode;
           document.getElementById('payuMode').value=hasPayuSupport?settings.payuMode:'sandbox';
-          setStatus(hasPayuSupport?'Settings loaded.':'Deploy the latest Cloudflare Worker before enabling PayU.',!hasPayuSupport);
+          document.getElementById('easebuzzMode').value=hasEasebuzzSupport?settings.easebuzzMode:'sandbox';
+          var currentGatewaySupported=settings.activeGateway!=='payu'||hasPayuSupport;
+          currentGatewaySupported=currentGatewaySupported
+            &&(settings.activeGateway!=='easebuzz'||hasEasebuzzSupport);
+          setStatus(currentGatewaySupported?'Settings loaded.':'Deploy the latest Cloudflare Worker before enabling this gateway.',!currentGatewaySupported);
         }).catch(function(error){
           signedIn(false);
           var needsLogin=error.message==='Please sign in again';
@@ -165,7 +184,8 @@
         request('/admin/payment-settings','PUT',{
           activeGateway:activeGateway,
           cashfreeMode:document.getElementById('cashfreeMode').value,
-          payuMode:document.getElementById('payuMode').value
+          payuMode:document.getElementById('payuMode').value,
+          easebuzzMode:document.getElementById('easebuzzMode').value
         }).then(function(){
           setStatus('Payment settings saved.',false);
         }).catch(function(error){

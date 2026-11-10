@@ -113,16 +113,21 @@
       function loadSettings(){
         request('/admin/payment-settings','GET').then(function(settings){
           signedIn(true);
-          document.getElementById('razorpay').disabled=!settings.credentials.razorpay;
-          document.getElementById('cashfree').disabled=!settings.credentials.cashfree;
-          document.getElementById('payu').disabled=!settings.credentials.payu;
-          document.getElementById('razorpayStatus').textContent=settings.credentials.razorpay?'Credentials configured':'Add Razorpay Worker secrets first';
-          document.getElementById('cashfreeStatus').textContent=settings.credentials.cashfree?'Credentials configured':'Add Cashfree Worker secrets first';
-          document.getElementById('payuStatus').textContent=settings.credentials.payu?'Credentials configured':'Add PayU Worker secrets first';
+          var credentials=settings.credentials||{};
+          var hasPayuSupport=typeof credentials.payu==='boolean'
+            &&typeof settings.payuMode==='string';
+          document.getElementById('razorpay').disabled=!credentials.razorpay;
+          document.getElementById('cashfree').disabled=!credentials.cashfree;
+          document.getElementById('payu').disabled=!hasPayuSupport||!credentials.payu;
+          document.getElementById('razorpayStatus').textContent=credentials.razorpay?'Credentials configured':'Add Razorpay Worker secrets first';
+          document.getElementById('cashfreeStatus').textContent=credentials.cashfree?'Credentials configured':'Add Cashfree Worker secrets first';
+          document.getElementById('payuStatus').textContent=!hasPayuSupport
+            ?'Payment API is outdated; deploy the latest Worker'
+            :credentials.payu?'Credentials configured':'Add PAYU_MERCHANT_KEY and PAYU_MERCHANT_SALT Worker secrets';
           document.getElementById(settings.activeGateway).checked=true;
           document.getElementById('cashfreeMode').value=settings.cashfreeMode;
-          document.getElementById('payuMode').value=settings.payuMode;
-          setStatus('Settings loaded.',false);
+          document.getElementById('payuMode').value=hasPayuSupport?settings.payuMode:'sandbox';
+          setStatus(hasPayuSupport?'Settings loaded.':'Deploy the latest Cloudflare Worker before enabling PayU.',!hasPayuSupport);
         }).catch(function(error){
           signedIn(false);
           var needsLogin=error.message==='Please sign in again';

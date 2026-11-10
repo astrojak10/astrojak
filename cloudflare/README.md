@@ -67,6 +67,13 @@ or the GitHub Pages build. The active gateway is selected in
 9. Complete a test payment and confirm the Worker verifies it and returns to
    `https://www.astrojak.in/thank-you.html`. Test keys are supported by checkout.
 
+If the admin page says the payment API is outdated, redeploy the
+**Deploy payment API** workflow from the `main` branch. Confirm
+`/payment-config` includes `payuMode` and a GET to `/payu-callback` returns
+405 before trying to enable PayU again. If those checks still show the old
+Worker after a successful deployment, check that `api.astrojak.in` is routed
+to the `astrojak` Worker in the same Cloudflare account used by GitHub Actions.
+
 The shared checkout script preloads the active gateway SDK for faster checkout.
 Razorpay retains its existing WhatsApp fallback on checkout errors, and a
 customer who dismisses Razorpay checkout can retry normally. Cashfree's hosted

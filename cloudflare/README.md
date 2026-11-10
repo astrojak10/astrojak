@@ -64,10 +64,14 @@ or the GitHub Pages build. The active gateway is selected in
    `https://www.astrojak.in/thank-you.html`. Test keys are supported by checkout.
 
 The shared checkout script preloads the active gateway SDK for faster checkout.
-If a gateway checkout cannot load/open or a payment fails, it redirects to
-WhatsApp with “I have to book As soon as possible”. A customer who dismisses
-checkout can retry normally. Cashfree return pages verify the order directly
-with Cashfree on the Worker before showing a successful payment.
+Razorpay retains its existing WhatsApp fallback on checkout errors, and a
+customer who dismisses Razorpay checkout can retry normally. Cashfree opens in
+a popup modal on the same page; closing it leaves the customer on the booking
+page so they can retry.
+After a Cashfree payment attempt, the Worker verifies the order directly with
+Cashfree before navigating to the thank-you page. Cashfree's documented
+same-window redirect fallback still returns to the same verification flow when
+a modal cannot open.
 
 The `astrojak` Worker owns the `api.astrojak.in` custom domain and is the
 deployment target in `wrangler.toml`. Keep any older Worker deployment until

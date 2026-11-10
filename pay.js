@@ -292,6 +292,10 @@
     return verify();
   }
 
+  function verifyCashfreeOrder(orderId) {
+    return verifyPayment({ gateway: 'cashfree', order_id: orderId });
+  }
+
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-pay]'); if (!b) return;
     e.preventDefault();
@@ -332,11 +336,34 @@
             var cashfree = window.Cashfree({ mode: order.cashfree_mode });
             return cashfree.checkout({
               paymentSessionId: order.payment_session_id,
-              redirectTarget: '_self'
+              redirectTarget: '_modal'
+            }).then(function (result) {
+              if (result && result.paymentDetails) {
+                b.textContent = 'Verifying payment…';
+                return verifyCashfreeOrder(order.order_id).then(function (verified) {
+                  var query = new URLSearchParams({
+                    gateway: 'cashfree',
+                    order_id: verified.order_id
+                  });
+                  location.href = '/thank-you.html?' + query.toString();
+                }).catch(function (err) {
+                  reset(b);
+                  console.error('Cashfree payment could not be verified:', err);
+                  alert('Your payment was submitted, but we could not confirm it yet. Please do not pay again. Contact us and share order ID ' + order.order_id + '.');
+                });
+              }
+              if (result && result.redirect) return;
+              if (result && result.error) {
+                console.warn('Cashfree Checkout closed or payment did not complete:', result.error);
+                reset(b);
+                alert('Checkout was closed or the payment did not complete. You can try again.');
+                return;
+              }
+              reset(b);
             }).catch(function (err) {
               reset(b);
               console.error('Cashfree Checkout could not be opened:', err);
-              redirectToBookingWhatsApp();
+              alert('Secure checkout could not be opened. Please try again.');
             });
           }
           var checkout = new window.Razorpay({

@@ -24,11 +24,76 @@ function response(status, body, origin) {
   };
   if (ALLOWED_ORIGINS.has(origin)) {
     headers['Access-Control-Allow-Origin'] = origin;
-    headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
-    headers['Access-Control-Allow-Headers'] = 'Content-Type';
+    headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, OPTIONS';
+    headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type';
     headers.Vary = 'Origin';
   }
   return new Response(JSON.stringify(body), { status, headers });
+}
+
+const DEFAULT_PAYMENT_SETTINGS = { activeGateway: 'razorpay', cashfreeMode: 'sandbox' };
+
+async function getPaymentSettings(env) {
+  if (!env.PAYMENT_SETTINGS) throw new Error('Payment settings storage is not configured');
+  const saved = await env.PAYMENT_SETTINGS.get('gateway-settings', 'json');
+  if (!saved) return { ...DEFAULT_PAYMENT_SETTINGS };
+  if (!['razorpay', 'cashfree'].includes(saved.activeGateway)
+    || !['sandbox', 'production'].includes(saved.cashfreeMode)) {
+    throw new Error('Saved payment settings are invalid');
+  }
+  return saved;
+}
+
+function paymentGatewayConfigured(env, gateway) {
+  return gateway === 'cashfree'
+    ? Boolean(env.CASHFREE_APP_ID && env.CASHFREE_SECRET_KEY)
+    : Boolean(env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET);
+}
+
+async function cashfreeRequest(env, settings, path, method, body) {
+  const baseUrl = settings.cashfreeMode === 'sandbox'
+    ? 'https://sandbox.cashfree.com/pg'
+    : 'https://api.cashfree.com/pg';
+  const result = await fetch(`${baseUrl}${path}`, {
+    method,
+    headers: {
+      'x-client-id': env.CASHFREE_APP_ID,
+      'x-client-secret': env.CASHFREE_SECRET_KEY,
+      'x-api-version': '2025-01-01',
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const data = await result.json().catch(() => ({}));
+  return { ok: result.ok, status: result.status, data };
+}
+
+async function verifiedCashfreeOrder(env, settings, orderId) {
+  if (!/^[A-Za-z0-9_-]{1,45}$/.test(orderId)) return null;
+  const result = await cashfreeRequest(
+    env,
+    settings,
+    `/orders/${encodeURIComponent(orderId)}`,
+    'GET',
+  );
+  if (!result.ok || result.data.order_status !== 'PAID') return null;
+  const order = result.data;
+  const planId = String(order.order_tags?.plan || '');
+  const plan = Object.prototype.hasOwnProperty.call(PLANS, planId) ? PLANS[planId] : null;
+  if (!plan || !orderId.startsWith(`${planId}_`)
+    || order.order_id !== orderId || order.order_currency !== 'INR'
+    || Number(order.order_amount) !== plan.price) return null;
+  return {
+    paymentId: orderId,
+    orderId,
+    referenceId: orderId,
+    planId,
+    amount: Math.round(Number(order.order_amount) * 100),
+    currency: order.order_currency,
+    appointmentDate: String(order.order_tags?.appointment_date || ''),
+    appointmentTime: String(order.order_tags?.appointment_time || ''),
+  };
 }
 
 function normalizedContact(customer) {
@@ -164,7 +229,7 @@ async function sendMetaPaidBookingEvent(env, booking) {
   const eventTime = Math.floor(rawEventTime > 1e12 ? rawEventTime / 1000 : rawEventTime);
   const now = Math.floor(Date.now() / 1000);
   if (!eventTime || eventTime > now + 300 || eventTime < now - 7 * 24 * 60 * 60) {
-    throw new Error('Razorpay payment time is invalid or too old for Meta event reporting');
+    throw new Error('Payment time is invalid or too old for Meta event reporting');
   }
 
   const event = {
@@ -404,12 +469,70 @@ export default {
         status: 204,
         headers: {
           'Access-Control-Allow-Origin': origin,
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Authorization, Content-Type',
           'Access-Control-Max-Age': '86400',
           Vary: 'Origin',
         },
       });
+    }
+
+    if (url.pathname === '/payment-config') {
+      if (request.method !== 'GET') return response(405, { error: 'Use GET' }, origin);
+      if (!ALLOWED_ORIGINS.has(origin)) return response(403, { error: 'Origin not allowed' }, '');
+      try {
+        const settings = await getPaymentSettings(env);
+        return response(200, {
+          activeGateway: settings.activeGateway,
+          cashfreeMode: settings.cashfreeMode,
+        }, origin);
+      } catch (error) {
+        console.error('Could not read payment settings', error);
+        return response(503, { error: 'Payment settings are unavailable' }, origin);
+      }
+    }
+
+    if (url.pathname === '/admin/payment-settings') {
+      if (!ALLOWED_ORIGINS.has(origin)) return response(403, { error: 'Origin not allowed' }, '');
+      if (!env.ADMIN_API_TOKEN) {
+        return response(503, { error: 'Payment admin is not configured' }, origin);
+      }
+      const suppliedToken = request.headers.get('Authorization') || '';
+      if (suppliedToken !== `Bearer ${env.ADMIN_API_TOKEN}`) {
+        return response(401, { error: 'Invalid admin token' }, origin);
+      }
+      if (request.method !== 'GET' && request.method !== 'PUT') {
+        return response(405, { error: 'Use GET or PUT' }, origin);
+      }
+      try {
+        if (request.method === 'GET') {
+          const settings = await getPaymentSettings(env);
+          return response(200, {
+            ...settings,
+            credentials: {
+              razorpay: paymentGatewayConfigured(env, 'razorpay'),
+              cashfree: paymentGatewayConfigured(env, 'cashfree'),
+            },
+          }, origin);
+        }
+        const input = await parseInput(request);
+        if (!input || !['razorpay', 'cashfree'].includes(input.activeGateway)
+          || !['sandbox', 'production'].includes(input.cashfreeMode)) {
+          return response(400, { error: 'Invalid payment settings' }, origin);
+        }
+        if (!paymentGatewayConfigured(env, input.activeGateway)) {
+          return response(400, { error: 'Add the selected gateway credentials before enabling it' }, origin);
+        }
+        const settings = {
+          activeGateway: input.activeGateway,
+          cashfreeMode: input.cashfreeMode,
+        };
+        await env.PAYMENT_SETTINGS.put('gateway-settings', JSON.stringify(settings));
+        return response(200, { saved: true, ...settings }, origin);
+      } catch (error) {
+        console.error('Could not update payment settings', error);
+        return response(503, { error: 'Payment settings could not be saved' }, origin);
+      }
     }
 
     const checkoutLeadRoute = url.pathname === '/append-checkout-lead';
@@ -425,9 +548,6 @@ export default {
     }
     if (request.method !== 'POST') return response(405, { error: 'Use POST' }, origin);
     if (!ALLOWED_ORIGINS.has(origin)) return response(403, { error: 'Origin not allowed' }, '');
-    if (!checkoutLeadRoute && (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET)) {
-      return response(503, { error: 'Payment is not configured' }, origin);
-    }
 
     const input = await parseInput(request);
     if (!input || typeof input !== 'object') return response(400, { error: 'Invalid request' }, origin);
@@ -492,6 +612,10 @@ export default {
       if (!env.GOOGLE_SERVICE_ACCOUNT_JSON) {
         return response(503, { error: 'Google Sheets is not configured' }, origin);
       }
+      const gateway = String(input.gateway || 'razorpay');
+      if (!['razorpay', 'cashfree'].includes(gateway)) {
+        return response(400, { error: 'Unknown payment gateway' }, origin);
+      }
       const paymentId = String(input.payment_id || '');
       const referenceId = String(input.reference_id || '');
       const name = String(input.name || '').trim().slice(0, 100);
@@ -503,40 +627,70 @@ export default {
         date: String(input.appointment_date || ''),
         time: String(input.appointment_time || ''),
       };
-      if (!/^pay_[A-Za-z0-9]+$/.test(paymentId) || !referenceId || !name || !contact
+      if (!(gateway === 'cashfree'
+        ? /^[A-Za-z0-9_-]{1,45}$/.test(paymentId)
+        : /^pay_[A-Za-z0-9]+$/.test(paymentId))
+        || !referenceId || !name || !contact
         || !birthDate || !birthPlace
         || Boolean(appointment.date) !== Boolean(appointment.time)
         || ((appointment.date || appointment.time) && !isValidAppointment(appointment))) {
         return response(400, { error: 'Valid payment, customer, and booking details are required' }, origin);
       }
 
-      let stage = 'Razorpay payment verification';
+      let stage = `${gateway} payment verification`;
       try {
-        const paymentResult = await razorpayRequest(
-          env,
-          `/payments/${encodeURIComponent(paymentId)}`,
-          'GET',
-        );
-        if (!paymentResult.ok) {
-          console.error('Razorpay Sheets payment lookup failed', paymentResult.status);
-          return response(502, { error: 'Could not verify payment' }, origin);
+        let payment;
+        let order;
+        if (gateway === 'cashfree') {
+          const settings = await getPaymentSettings(env);
+          const verified = await verifiedCashfreeOrder(env, settings, paymentId);
+          if (!verified || verified.referenceId !== referenceId) {
+            return response(400, { error: 'A paid Cashfree order is required' }, origin);
+          }
+          payment = {
+            amount: verified.amount,
+            currency: verified.currency,
+            status: 'captured',
+            created_at: Math.floor(Date.now() / 1000),
+          };
+          order = {
+            id: verified.orderId,
+            receipt: verified.referenceId,
+            currency: verified.currency,
+            amount: verified.amount,
+            notes: {
+              plan: verified.planId,
+              appointment_date: verified.appointmentDate,
+              appointment_time: verified.appointmentTime,
+            },
+          };
+        } else {
+          const paymentResult = await razorpayRequest(
+            env,
+            `/payments/${encodeURIComponent(paymentId)}`,
+            'GET',
+          );
+          if (!paymentResult.ok) {
+            console.error('Razorpay Sheets payment lookup failed', paymentResult.status);
+            return response(502, { error: 'Could not verify payment' }, origin);
+          }
+          payment = paymentResult.data;
+          const orderId = String(payment.order_id || '');
+          if (!/^order_[A-Za-z0-9]+$/.test(orderId) || payment.status !== 'captured') {
+            return response(400, { error: 'A captured payment is required' }, origin);
+          }
+          const orderResult = await razorpayRequest(
+            env,
+            `/orders/${encodeURIComponent(orderId)}`,
+            'GET',
+          );
+          if (!orderResult.ok) {
+            console.error('Razorpay Sheets order lookup failed', orderResult.status);
+            return response(502, { error: 'Could not verify payment' }, origin);
+          }
+          order = orderResult.data;
         }
-        const payment = paymentResult.data;
-        const orderId = String(payment.order_id || '');
-        if (!/^order_[A-Za-z0-9]+$/.test(orderId) || payment.status !== 'captured') {
-          return response(400, { error: 'A captured payment is required' }, origin);
-        }
-
-        const orderResult = await razorpayRequest(
-          env,
-          `/orders/${encodeURIComponent(orderId)}`,
-          'GET',
-        );
-        if (!orderResult.ok) {
-          console.error('Razorpay Sheets order lookup failed', orderResult.status);
-          return response(502, { error: 'Could not verify payment' }, origin);
-        }
-        const order = orderResult.data;
+        const orderId = String(order.id || '');
         const planId = String(order.notes?.plan || '');
         const plan = Object.prototype.hasOwnProperty.call(PLANS, planId) ? PLANS[planId] : null;
         const orderAppointment = {
@@ -639,6 +793,10 @@ export default {
         return response(503, { error: 'Google Calendar is not configured' }, origin);
       }
 
+      const gateway = String(input.gateway || 'razorpay');
+      if (!['razorpay', 'cashfree'].includes(gateway)) {
+        return response(400, { error: 'Unknown payment gateway' }, origin);
+      }
       const paymentId = String(input.payment_id || '');
       const referenceId = String(input.reference_id || '');
       const appointment = {
@@ -647,38 +805,63 @@ export default {
       };
       const name = String(input.name || '').trim().slice(0, 100);
       const contact = normalizedContact({ contact: input.mobile });
-      if (!/^pay_[A-Za-z0-9]+$/.test(paymentId) || !name || !contact
+      if (!(gateway === 'cashfree'
+        ? /^[A-Za-z0-9_-]{1,45}$/.test(paymentId)
+        : /^pay_[A-Za-z0-9]+$/.test(paymentId))
+        || !name || !contact
         || !referenceId || !isValidAppointment(appointment)) {
         return response(400, { error: 'Valid payment, customer, and appointment details are required' }, origin);
       }
 
-      let stage = 'Google service-account credentials';
+      let stage = `${gateway} payment verification`;
       try {
-        const paymentResult = await razorpayRequest(
-          env,
-          `/payments/${encodeURIComponent(paymentId)}`,
-          'GET',
-        );
-        if (!paymentResult.ok) {
-          console.error('Razorpay calendar payment lookup failed', paymentResult.status);
-          return response(502, { error: 'Could not verify payment' }, origin);
+        let payment;
+        let order;
+        if (gateway === 'cashfree') {
+          const settings = await getPaymentSettings(env);
+          const verified = await verifiedCashfreeOrder(env, settings, paymentId);
+          if (!verified || verified.referenceId !== referenceId) {
+            return response(400, { error: 'A paid Cashfree order is required' }, origin);
+          }
+          payment = { amount: verified.amount, currency: verified.currency };
+          order = {
+            id: verified.orderId,
+            receipt: verified.referenceId,
+            currency: verified.currency,
+            amount: verified.amount,
+            notes: {
+              plan: verified.planId,
+              appointment_date: verified.appointmentDate,
+              appointment_time: verified.appointmentTime,
+            },
+          };
+        } else {
+          const paymentResult = await razorpayRequest(
+            env,
+            `/payments/${encodeURIComponent(paymentId)}`,
+            'GET',
+          );
+          if (!paymentResult.ok) {
+            console.error('Razorpay calendar payment lookup failed', paymentResult.status);
+            return response(502, { error: 'Could not verify payment' }, origin);
+          }
+          payment = paymentResult.data;
+          const orderId = String(payment.order_id || '');
+          if (!/^order_[A-Za-z0-9]+$/.test(orderId) || payment.status !== 'captured') {
+            return response(400, { error: 'A captured payment is required' }, origin);
+          }
+          const orderResult = await razorpayRequest(
+            env,
+            `/orders/${encodeURIComponent(orderId)}`,
+            'GET',
+          );
+          if (!orderResult.ok) {
+            console.error('Razorpay calendar order lookup failed', orderResult.status);
+            return response(502, { error: 'Could not verify payment' }, origin);
+          }
+          order = orderResult.data;
         }
-        const payment = paymentResult.data;
-        const orderId = String(payment.order_id || '');
-        if (!/^order_[A-Za-z0-9]+$/.test(orderId) || payment.status !== 'captured') {
-          return response(400, { error: 'A captured payment is required' }, origin);
-        }
-
-        const orderResult = await razorpayRequest(
-          env,
-          `/orders/${encodeURIComponent(orderId)}`,
-          'GET',
-        );
-        if (!orderResult.ok) {
-          console.error('Razorpay calendar order lookup failed', orderResult.status);
-          return response(502, { error: 'Could not verify payment' }, origin);
-        }
-        const order = orderResult.data;
+        const orderId = String(order.id || '');
         const planId = String(order.notes?.plan || '');
         const plan = Object.prototype.hasOwnProperty.call(PLANS, planId) ? PLANS[planId] : null;
         const orderDate = String(order.notes?.appointment_date || '');
@@ -807,7 +990,52 @@ export default {
       }
 
       const reference = `${planId}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      let settings;
       try {
+        settings = await getPaymentSettings(env);
+      } catch (error) {
+        console.error('Could not read payment settings', error);
+        return response(503, { error: 'Payment settings are unavailable' }, origin);
+      }
+      const gateway = settings.activeGateway;
+      if (!paymentGatewayConfigured(env, gateway)) {
+        return response(503, { error: 'Selected payment gateway is not configured' }, origin);
+      }
+      try {
+        if (gateway === 'cashfree') {
+          const result = await cashfreeRequest(env, settings, '/orders', 'POST', {
+            order_id: reference,
+            order_amount: plan.price,
+            order_currency: 'INR',
+            customer_details: {
+              customer_id: reference.slice(0, 50),
+              customer_name: String(input.customer?.name || 'ASTROJAK Customer').slice(0, 100),
+              customer_phone: contact.slice(-10),
+            },
+            order_meta: {
+              return_url: `https://www.astrojak.in/thank-you.html?gateway=cashfree&order_id=${encodeURIComponent(reference)}`,
+            },
+            order_note: `ASTROJAK ${plan.name}`,
+            order_tags: {
+              plan: planId,
+              appointment_date: isValidAppointment(appointment) ? String(appointment.date) : '',
+              appointment_time: isValidAppointment(appointment) ? String(appointment.time) : '',
+            },
+          });
+          if (!result.ok || !result.data.payment_session_id || result.data.order_id !== reference) {
+            console.error('Cashfree order request failed', result.status);
+            return response(502, { error: 'Could not create payment order' }, origin);
+          }
+          return response(200, {
+            gateway,
+            cashfree_mode: settings.cashfreeMode,
+            payment_session_id: result.data.payment_session_id,
+            order_id: result.data.order_id,
+            amount: plan.price * 100,
+            currency: 'INR',
+            ref: reference,
+          }, origin);
+        }
         const result = await razorpayRequest(env, '/orders', 'POST', {
           amount: plan.price * 100,
           currency: 'INR',
@@ -819,6 +1047,7 @@ export default {
           return response(502, { error: 'Could not create payment order' }, origin);
         }
         return response(200, {
+          gateway,
           key_id: env.RAZORPAY_KEY_ID,
           order_id: result.data.id,
           amount: result.data.amount,
@@ -828,6 +1057,30 @@ export default {
       } catch (error) {
         console.error('Payment-order request failed', error);
         return response(502, { error: 'Could not create payment order' }, origin);
+      }
+    }
+
+    if (input.gateway === 'cashfree') {
+      if (!paymentGatewayConfigured(env, 'cashfree')) {
+        return response(503, { error: 'Cashfree is not configured' }, origin);
+      }
+      try {
+        const settings = await getPaymentSettings(env);
+        const orderId = String(input.order_id || '');
+        const verified = await verifiedCashfreeOrder(env, settings, orderId);
+        if (!verified) return response(409, { error: 'Cashfree payment is not confirmed as paid' }, origin);
+        return response(200, {
+          verified: true,
+          payment_id: verified.paymentId,
+          order_id: verified.orderId,
+          reference_id: verified.referenceId,
+          plan: verified.planId,
+          appointment_date: verified.appointmentDate,
+          appointment_time: verified.appointmentTime,
+        }, origin);
+      } catch (error) {
+        console.error('Cashfree payment verification failed', error);
+        return response(502, { error: 'Could not verify payment' }, origin);
       }
     }
 

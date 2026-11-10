@@ -336,9 +336,51 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   });
   $('month').setAttribute('aria-label','Birth month');
   var q=new URLSearchParams(location.search);
-  var paymentId=q.get('razorpay_payment_id')||'';
-  var paid=q.get('razorpay_payment_link_status')==='paid';
-  var ref=(q.get('razorpay_payment_link_reference_id')||'').split('_')[0];
+  var gateway=q.get('gateway')||'razorpay';
+  var cashfreeOrderId=q.get('order_id')||'';
+  var cashfreeVerified=null;
+  if(gateway==='cashfree'&&cashfreeOrderId){
+    try{
+      var savedCashfree=JSON.parse(sessionStorage.getItem('astrojak_cashfree_verified_'+cashfreeOrderId)||'null');
+      if(savedCashfree&&savedCashfree.order_id===cashfreeOrderId&&q.get('payment_status')==='paid'){
+        cashfreeVerified=savedCashfree;
+      }
+    }catch(err){console.error('Could not read Cashfree payment confirmation:',err)}
+    if(!cashfreeVerified){
+      $('status').textContent='Checking Cashfree payment status…';
+      fetch('https://api.astrojak.in/verify-payment',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({gateway:'cashfree',order_id:cashfreeOrderId})
+      }).then(function(res){
+        return res.json().catch(function(){return {}}).then(function(result){
+          if(!res.ok||!result.verified)throw new Error(result.error||'Payment is not confirmed yet');
+          var confirmed={
+            order_id:cashfreeOrderId,
+            payment_id:result.payment_id,
+            reference_id:result.reference_id,
+            plan:result.plan,
+            appointment_date:result.appointment_date||'',
+            appointment_time:result.appointment_time||''
+          };
+          sessionStorage.setItem('astrojak_cashfree_verified_'+cashfreeOrderId,JSON.stringify(confirmed));
+          q.set('payment_status','paid');
+          q.set('payment_id',confirmed.payment_id);
+          q.set('reference_id',confirmed.reference_id);
+          if(confirmed.appointment_date)q.set('appointment_date',confirmed.appointment_date);
+          if(confirmed.appointment_time)q.set('appointment_time',confirmed.appointment_time);
+          location.replace(location.pathname+'?'+q.toString());
+        });
+      }).catch(function(err){
+        console.error('Cashfree payment could not be verified:',err);
+        $('status').textContent='Your payment is not confirmed yet. If you completed payment, refresh this page in a moment or contact us before paying again.';
+      });
+    }
+  }
+  var paymentId=q.get('razorpay_payment_id')||(cashfreeVerified?cashfreeVerified.payment_id:q.get('payment_id')||'');
+  var referenceId=q.get('razorpay_payment_link_reference_id')||(cashfreeVerified?cashfreeVerified.reference_id:q.get('reference_id')||'');
+  var paid=q.get('razorpay_payment_link_status')==='paid'||Boolean(cashfreeVerified);
+  var ref=referenceId.split('_')[0];
   var plan=window.PRICING&&PRICING.plans[ref];
   var planName=plan?plan.name:'Consultation';
   var amount=plan?PRICING.symbol+plan.price:'';
@@ -364,7 +406,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   var calendarPayload=null;
   try{
     var pendingCalendar=JSON.parse(sessionStorage.getItem(calendarSyncKey)||'null');
-    if(pendingCalendar&&pendingCalendar.payment_id===paymentId&&pendingCalendar.reference_id===q.get('razorpay_payment_link_reference_id')
+    if(pendingCalendar&&pendingCalendar.payment_id===paymentId&&pendingCalendar.reference_id===referenceId
       &&pendingCalendar.appointment_date&&pendingCalendar.appointment_time){
       calendarPayload=pendingCalendar;
       date=String(pendingCalendar.appointment_date);
@@ -570,8 +612,9 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
+          gateway:gateway,
           payment_id:paymentId,
-          reference_id:q.get('razorpay_payment_link_reference_id')||'',
+          reference_id:referenceId,
           name:name,
           mobile:customerMobile,
           appointment_date:date,
@@ -604,8 +647,9 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
         console.error('Could not send customer details to Splitforms; Google Sheets already has the booking:',err);
       });
       calendarPayload={
+        gateway:gateway,
         payment_id:paymentId,
-        reference_id:q.get('razorpay_payment_link_reference_id')||'',
+        reference_id:referenceId,
         appointment_date:date,
         appointment_time:time,
         name:name,

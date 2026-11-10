@@ -1,7 +1,7 @@
 /* ASTROJAK shared payment + price code. Needs pricing.js loaded first.
    - fills every [data-price="plan-id"] with the price from pricing.js
    - any element with data-pay="plan-id" becomes a Pay button: it asks the server
-     for a Razorpay order and opens Checkout.js. */
+     for an order and opens the active gateway checkout. */
 (function () {
   var PR = window.PRICING; if (!PR) return;
   var API = 'https://api.astrojak.in';
@@ -218,28 +218,49 @@
       });
     });
   }
-  var checkoutScript;
-  function loadCheckout() {
-    if (window.Razorpay) return Promise.resolve();
-    if (checkoutScript) return checkoutScript;
-    checkoutScript = new Promise(function (resolve, reject) {
+  var checkoutScripts = {};
+  function loadCheckout(gateway) {
+    if (gateway === 'cashfree' && window.Cashfree) return Promise.resolve();
+    if (gateway === 'razorpay' && window.Razorpay) return Promise.resolve();
+    if (checkoutScripts[gateway]) return checkoutScripts[gateway];
+    checkoutScripts[gateway] = new Promise(function (resolve, reject) {
       var script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.src = gateway === 'cashfree'
+        ? 'https://sdk.cashfree.com/js/v3/cashfree.js'
+        : 'https://checkout.razorpay.com/v1/checkout.js';
       script.onload = function () {
-        if (window.Razorpay) resolve();
+        if ((gateway === 'cashfree' && window.Cashfree)
+          || (gateway === 'razorpay' && window.Razorpay)) resolve();
         else {
-          checkoutScript = null;
-          reject(new Error('Razorpay Checkout could not be initialized'));
+          checkoutScripts[gateway] = null;
+          reject(new Error(gateway === 'cashfree'
+            ? 'Cashfree Checkout could not be initialized'
+            : 'Razorpay Checkout could not be initialized'));
         }
       };
       script.onerror = function () {
-        checkoutScript = null;
-        reject(new Error('Razorpay Checkout could not be loaded'));
+        checkoutScripts[gateway] = null;
+        reject(new Error(gateway === 'cashfree'
+          ? 'Cashfree Checkout could not be loaded'
+          : 'Razorpay Checkout could not be loaded'));
       };
       document.head.appendChild(script);
     });
-    return checkoutScript;
+    return checkoutScripts[gateway];
   }
+  var paymentConfigPromise = fetch(API + '/payment-config', { cache: 'no-store' })
+    .then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (config) {
+        if (!res.ok || !['razorpay', 'cashfree'].includes(config.activeGateway)) {
+          throw new Error(config.error || 'Could not load payment settings');
+        }
+        return loadCheckout(config.activeGateway).then(function () { return config; });
+      });
+    })
+    .catch(function (err) {
+      console.error('Could not preload the active payment gateway:', err);
+      return null;
+    });
 
   function post(path, body) {
     return fetch(API + path, {
@@ -294,10 +315,30 @@
         if (hook.topics) body.topics = hook.topics();
       } catch (_) {}
       b.__busy = 1; b.__label = b.innerHTML; b.classList.add('busy'); b.textContent = 'Opening secure payment…';
-      loadCheckout()
-        .then(function () { return post('/create-order', body); })
+      paymentConfigPromise.then(function (config) {
+        if (!config) return post('/create-order', body).then(function (order) {
+          return loadCheckout(order.gateway).then(function () { return order; });
+        });
+        return Promise.all([
+          post('/create-order', body),
+          loadCheckout(config.activeGateway)
+        ]).then(function (results) {
+          return loadCheckout(results[0].gateway).then(function () { return results[0]; });
+        });
+      })
         .then(function (order) {
           try { if (hook.paymentOrderCreated) hook.paymentOrderCreated(id, order); } catch (err) { console.error('Could not update local slot estimate', err); }
+          if (order.gateway === 'cashfree') {
+            var cashfree = window.Cashfree({ mode: order.cashfree_mode });
+            return cashfree.checkout({
+              paymentSessionId: order.payment_session_id,
+              redirectTarget: '_self'
+            }).catch(function (err) {
+              reset(b);
+              console.error('Cashfree Checkout could not be opened:', err);
+              redirectToBookingWhatsApp();
+            });
+          }
           var checkout = new window.Razorpay({
             key: order.key_id,
             amount: order.amount,
@@ -338,7 +379,7 @@
         })
         .catch(function (err) {
           reset(b);
-          console.error('Razorpay checkout could not be opened:', err);
+          console.error('Payment checkout could not be opened:', err);
           redirectToBookingWhatsApp();
         });
     }

@@ -1,8 +1,9 @@
-# Razorpay payment API on Cloudflare Workers
+# Payment API on Cloudflare Workers
 
-The website is static on GitHub Pages. This Worker creates Razorpay orders and
-verifies captured payments without exposing Razorpay credentials to visitors or
-the GitHub Pages build. Checkout opens in Razorpay's on-page modal.
+The website is static on GitHub Pages. This Worker creates and verifies
+Razorpay or Cashfree payments without exposing gateway credentials to visitors
+or the GitHub Pages build. The active gateway is selected in
+`/payment-admin.html`; only one gateway handles new checkouts at a time.
 
 ## One-time setup
 
@@ -18,25 +19,42 @@ the GitHub Pages build. Checkout opens in Razorpay's on-page modal.
 3. In this GitHub repository, add Actions secrets:
    - `CLOUDFLARE_API_TOKEN`
    - `CLOUDFLARE_ACCOUNT_ID`
-4. Deploy the Worker using the `Deploy payment API` GitHub Actions workflow.
+4. Create a Cloudflare Workers KV namespace named `PAYMENT_SETTINGS` in the
+   Cloudflare dashboard (or with Wrangler). Replace
+   `REPLACE_WITH_KV_NAMESPACE_ID` in `wrangler.toml` with its namespace ID.
+   The namespace stores only the active gateway and Cashfree environment.
+   You can create it with `npx wrangler kv namespace create PAYMENT_SETTINGS`.
+   KV setting changes can take up to about a minute to propagate globally.
+5. Deploy the Worker using the `Deploy payment API` GitHub Actions workflow.
    The `api.astrojak.in` custom domain is declared in `wrangler.toml`.
-5. In Cloudflare, open **Workers & Pages → astrojak → Settings → Variables and
-   Secrets**. Add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` as encrypted
-   secrets. Use Razorpay Test Mode credentials until checkout is tested.
-   Saving secrets publishes a new Worker version; never add these Razorpay
-   values to GitHub, a workflow, or website files.
-6. Confirm `https://api.astrojak.in/create-order` and
+6. In Cloudflare, open **Workers & Pages → astrojak → Settings → Variables and
+   Secrets**. Add these as encrypted secrets (never commit or publish them):
+   - `RAZORPAY_KEY_ID`
+   - `RAZORPAY_KEY_SECRET`
+   - `CASHFREE_APP_ID`
+   - `CASHFREE_SECRET_KEY`
+   - `ADMIN_API_TOKEN` — generate a long, unique random token for
+     `/payment-admin.html`.
+   Set the Cashfree keys to match the Sandbox or Production mode selected in
+   the admin page. In the Cashfree dashboard, whitelist `www.astrojak.in` for
+   web checkout. Avoid changing Cashfree environments while payments are in
+   progress. Use test credentials until checkout is tested.
+7. Confirm `https://api.astrojak.in/payment-config`,
+   `https://api.astrojak.in/create-order`, and
    `https://api.astrojak.in/verify-payment` are live. The API hostname is
    configured in `pay.js`; if it differs, update that URL.
-7. With Razorpay Test Mode configured, complete a test payment and confirm the
-   Worker verifies/captures it and returns to
+8. Open `https://www.astrojak.in/payment-admin.html`, enter the admin token,
+   select a gateway whose credentials are configured, and save. Cashfree
+   credentials must match the selected environment. The page never accepts
+   gateway secrets; manage those only in Cloudflare Worker secrets.
+9. Complete a test payment and confirm the Worker verifies it and returns to
    `https://www.astrojak.in/thank-you.html`. Test keys are supported by checkout.
 
-The shared checkout script redirects to WhatsApp with “I have to book As soon
-as possible” if Razorpay Checkout cannot load/open or a payment fails. A
-customer who simply dismisses Checkout can retry normally. If payment
-verification fails after submission, the page keeps the existing warning not
-to pay again and asks the customer to contact support with the payment ID.
+The shared checkout script preloads the active gateway SDK for faster checkout.
+If a gateway checkout cannot load/open or a payment fails, it redirects to
+WhatsApp with “I have to book As soon as possible”. A customer who dismisses
+checkout can retry normally. Cashfree return pages verify the order directly
+with Cashfree on the Worker before showing a successful payment.
 
 The `astrojak` Worker owns the `api.astrojak.in` custom domain and is the
 deployment target in `wrangler.toml`. Keep any older Worker deployment until
@@ -44,30 +62,34 @@ the new deployment is healthy, the custom domain is still attached to `astrojak`
 and the API has passed a test checkout. Then remove only the unused old Worker
 from **Workers & Pages** if desired.
 
+Cashfree follows its hosted web checkout flow: [create an order on the
+server, open the payment session with the JavaScript SDK, then verify the
+order server-side](https://www.cashfree.com/docs/payments/online/web/redirect).
+
 ## Meta Pixel purchase tracking
 
 The website initializes Meta Pixel `2057261584904971` and sends a browser
 `Purchase` event from `thank-you.html` only after the checkout flow receives a
-successful captured-payment verification from this Worker. The event includes
-the plan value in INR, plan name and ID, and the Razorpay payment ID as its
-event ID. The browser stores a per-payment marker so refreshing the thank-you
+successful payment verification from this Worker. The event includes
+the plan value in INR, plan name and ID, and the payment ID (the Cashfree order
+ID for Cashfree transactions). The browser stores a per-payment marker so refreshing the thank-you
 page does not send the same Purchase event again in that browser.
 
 This is Pixel browser tracking, not a direct Razorpay-to-Meta integration or a
 server-side Conversions API feed. Browser privacy settings, ad blockers, or
 consent restrictions can prevent Pixel events from reaching Meta.
 
-To test it, use a Razorpay Test Mode payment and open **Events Manager → Data
+To test it, use a payment in the selected gateway's test environment and open **Events Manager → Data
 Sources → your Pixel → Test events** while completing checkout. Confirm a
 `Purchase` arrives with the expected INR value and plan, and that its event ID
-matches the Razorpay payment ID. A page refresh should not send a second
+matches the payment identifier. A page refresh should not send a second
 Purchase event from the same browser.
 
 ## Lead and paid booking events from the website to Meta
 
 When a visitor submits a mobile number to start checkout, the Worker sends a
 `Lead` event. If the person later completes payment and submits the thank-you
-form, the Worker verifies the captured Razorpay payment, saves (or finds) the
+form, the Worker verifies the payment with the selected provider, saves (or finds) the
 row in **Customers Bookings**, and sends a `Purchase` event. Meta can then
 compare leads that progressed to paid bookings with leads that did not. No
 separate "not converted" event is sent; non-conversion is represented by a
@@ -84,8 +106,8 @@ best-effort and does not block the Sheets write or checkout.
    - Variable `META_CAPI_GRAPH_VERSION` — a currently supported Graph API
      version in the format `vNN.0`.
    - Optional variable `META_CAPI_TEST_EVENT_CODE` — only while testing.
-3. Configure both the Worker and Razorpay Checkout with Razorpay Test Mode
-   credentials. Keep `META_CAPI_TEST_EVENT_CODE` set to the code shown in
+3. Configure the Worker with test credentials and select the test gateway in
+   `/payment-admin.html`. Keep `META_CAPI_TEST_EVENT_CODE` set to the code shown in
    **Events Manager → Test Events**, submit the checkout mobile form and
    complete a test payment. Confirm `Lead` and then `Purchase` appear in Test
    Events; the Purchase should show the INR value and plan name.
@@ -100,15 +122,16 @@ best-effort and does not block the Sheets write or checkout.
    type and a diagnostic without including the access token or unhashed phone.
 
 The website Lead event uses `action_source: website` and the page URL where
-checkout began. The Purchase uses `action_source: website`, the thank-you page,
-and Razorpay's payment timestamp. A Meta Instant Form `lead_id` is not
+checkout began. The Purchase uses `action_source: website` and the thank-you page. Razorpay
+uses the captured payment timestamp; Cashfree reports the booking verification
+time because its order lookup does not expose a payment timestamp. A Meta Instant Form `lead_id` is not
 available for website leads, so the Worker does not invent one. The booking
 form does not collect email; the customer's phone is hashed and sent.
 
 ## Google Calendar appointments
 
 The thank-you form sends completed customer details to Splitforms. After that
-submission succeeds, the Worker verifies the captured Razorpay payment and
+submission succeeds, the Worker verifies the payment with its provider and
 creates one event in the configured calendar. The event includes the customer
 name, mobile number, plan, selected analysis, discussion topics, and payment
 reference. The event also includes the birth date, birth time (when provided),
@@ -124,7 +147,7 @@ and birth place submitted on the thank-you form.
 4. Deploy the Worker and website changes. The Worker uses a short-lived Google
    access token and a payment-derived event ID, so retrying the Calendar sync
    does not create duplicate events.
-5. Test using a captured Razorpay payment and a dedicated test calendar. Check
+5. Test using a captured test payment and a dedicated test calendar. Check
    that the event has the correct date, 3-hour slot, and India Standard Time.
 
 If Calendar is unavailable after the customer details are accepted, the
@@ -165,7 +188,7 @@ access to each spreadsheet.
    spreadsheet IDs and worksheet names are configured in the Worker code; no
    `GOOGLE_SHEETS_SPREADSHEET_ID` secret is used.
 5. Deploy the Worker and website. A pre-checkout Sheets request is best-effort
-   and does not delay or prevent Razorpay from opening. The thank-you form
+   and does not delay or prevent the payment gateway from opening. The thank-you form
    requires the booking row to be saved before it reports success; if saving
    fails, the customer can retry. Splitforms notification is best-effort after
    the Sheets save, so an unavailable Splitforms service does not block a
@@ -179,27 +202,35 @@ access to each spreadsheet.
   amount and currency against that plan. It does not accept a client-supplied
   amount. A change to `pricing.js` triggers both the static-site and Worker
   deployments.
-- Checkout signatures are checked with the Razorpay secret. The Worker then
-  confirms the payment belongs to the order and captures authorized payments
-  before reporting success.
+- Razorpay checkout signatures are checked with the Razorpay secret. The
+  Worker confirms the payment belongs to the order and captures authorized
+  payments before reporting success. Cashfree completion is verified by
+  retrieving the order server-side and requiring the `PAID` status, expected
+  plan, amount, and INR currency.
 - Only the listed website origins and the local development origin are allowed
   by CORS. CORS is not authentication; the server-side plan/amount validation
   is still required.
-- The Worker returns the public key ID, order ID, amount, and reference; it
-  never returns or logs credentials. Razorpay failure details are deliberately
-  not exposed.
+- The Worker returns only public checkout data (Razorpay key ID or Cashfree
+  payment-session ID, order ID, amount, and reference); it never returns or
+  logs credentials. Gateway failure details are deliberately not exposed.
+- `/admin/payment-settings` requires the encrypted `ADMIN_API_TOKEN`; the
+  admin page stores it only in the current browser session. Payment settings
+  are stored in the dedicated KV namespace, not in the website or source tree.
 - Google service-account credentials are stored only as Cloudflare encrypted
   secrets. Calendar event creation rechecks the payment and uses the
   `calendar.events` scope; Sheets writes use the `spreadsheets` scope.
-- Rotate/revoke any Razorpay key that has ever been committed or shared.
+- Rotate/revoke any gateway key or admin token that has ever been committed or
+  shared.
 - Configure a Cloudflare rate-limiting rule for
   `api.astrojak.in/create-order`, `api.astrojak.in/verify-payment`, and
   `api.astrojak.in/create-calendar-event`, `api.astrojak.in/append-checkout-lead`,
-  `api.astrojak.in/append-customer-details`
+  `api.astrojak.in/append-customer-details`, and
+  `api.astrojak.in/admin/payment-settings`
   before enabling live payments.
 
 ## Local checks
 
 ```sh
 node --check cloudflare/worker.mjs
+node --check pay.js
 ```

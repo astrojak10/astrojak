@@ -58,13 +58,22 @@
           <input id="cashfree" type="radio" name="gateway" value="cashfree">
           <label for="cashfree">Cashfree<small id="cashfreeStatus">Checking credentials…</small></label>
         </div>
+        <div class="choice">
+          <input id="payu" type="radio" name="gateway" value="payu">
+          <label for="payu">PayU<small id="payuStatus">Checking credentials…</small></label>
+        </div>
       </fieldset>
       <label for="cashfreeMode">Cashfree environment</label>
       <select id="cashfreeMode">
         <option value="sandbox">Sandbox / test</option>
         <option value="production">Production / live</option>
       </select>
-      <p class="note">Store Razorpay and Cashfree API keys as encrypted Cloudflare Worker secrets. Cashfree credentials must match the selected environment. Never enter API keys on this page.</p>
+      <label for="payuMode">PayU environment</label>
+      <select id="payuMode">
+        <option value="sandbox">Sandbox / test</option>
+        <option value="production">Production / live</option>
+      </select>
+      <p class="note">Store gateway credentials as encrypted Cloudflare Worker secrets. Cashfree credentials must match its selected environment. PayU uses its merchant Key and Salt. Never enter API keys or secrets on this page.</p>
       <button id="save" type="submit">Save payment settings</button>
       </form>
     </section>
@@ -106,10 +115,13 @@
           signedIn(true);
           document.getElementById('razorpay').disabled=!settings.credentials.razorpay;
           document.getElementById('cashfree').disabled=!settings.credentials.cashfree;
+          document.getElementById('payu').disabled=!settings.credentials.payu;
           document.getElementById('razorpayStatus').textContent=settings.credentials.razorpay?'Credentials configured':'Add Razorpay Worker secrets first';
           document.getElementById('cashfreeStatus').textContent=settings.credentials.cashfree?'Credentials configured':'Add Cashfree Worker secrets first';
+          document.getElementById('payuStatus').textContent=settings.credentials.payu?'Credentials configured':'Add PayU Worker secrets first';
           document.getElementById(settings.activeGateway).checked=true;
           document.getElementById('cashfreeMode').value=settings.cashfreeMode;
+          document.getElementById('payuMode').value=settings.payuMode;
           setStatus('Settings loaded.',false);
         }).catch(function(error){
           signedIn(false);
@@ -147,7 +159,8 @@
         setStatus('Saving…',false);
         request('/admin/payment-settings','PUT',{
           activeGateway:activeGateway,
-          cashfreeMode:document.getElementById('cashfreeMode').value
+          cashfreeMode:document.getElementById('cashfreeMode').value,
+          payuMode:document.getElementById('payuMode').value
         }).then(function(){
           setStatus('Payment settings saved.',false);
         }).catch(function(error){

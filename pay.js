@@ -40,6 +40,7 @@
     + '.pm h3{font-size:21px;margin-bottom:4px}.pm p{font-size:14px;color:#5C5C5C;margin-bottom:6px}'
     + '.pm label{display:block;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#7A5A12;margin:12px 0 6px}.pm label span{text-transform:none;font-weight:500;letter-spacing:0}'
     + '.pm-phone{display:flex;align-items:stretch;border:1.5px solid #F2E4C4;border-radius:12px;background:#FFFDF7;color:#1A1A1A;overflow:hidden}.pm-phone:focus-within{border-color:#F8B700;box-shadow:0 0 0 3px rgba(248,183,0,.18)}.pm-prefix{display:flex;flex:0 0 66px;align-items:center;justify-content:center;min-height:50px;padding:0 8px;border-right:1px solid #E4D8BE;font:inherit;font-size:16px;font-weight:700;color:#5C5C5C;white-space:nowrap}.pm-phone input{flex:1;min-width:0;width:100%;height:50px;margin:0;padding:0 14px;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#1A1A1A;font:inherit;font-size:16px;outline:0!important;appearance:none;-webkit-appearance:none}.pm-phone input::placeholder{color:#8A8170;opacity:1}'
+    + '.pm-email{width:100%;height:50px;padding:0 14px;border:1.5px solid #F2E4C4;border-radius:12px;background:#FFFDF7;color:#1A1A1A;font:inherit;font-size:16px}.pm-email:focus{border-color:#F8B700;outline:0;box-shadow:0 0 0 3px rgba(248,183,0,.18)}'
     + '.pm-err{color:#C62828!important;font-weight:600;margin-top:8px!important}'
     + '.pm .paybtn{margin-top:16px;padding-left:28px;padding-right:28px}.pm-x{display:block;width:100%;margin-top:8px;padding:12px;border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:#6b6b6b;cursor:pointer}'
     + '@media(max-width:380px){.pm .paybtn{white-space:normal;flex-wrap:wrap;font-size:15px;padding:14px 24px}}'
@@ -47,7 +48,8 @@
     + '.cf-modal{display:flex;flex-direction:column;width:min(100%,480px);height:min(82dvh,720px);overflow:hidden;border-radius:18px 18px 0 0;background:#fff;box-shadow:0 -12px 40px rgba(0,0,0,.25)}'
     + '.cf-head{display:flex;flex:0 0 50px;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #eee;color:#292318;font:600 15px/1.2 system-ui,sans-serif}'
     + '.cf-close{width:36px;height:36px;border:0;border-radius:50%;background:#f5f5f5;color:#292318;font:24px/1 system-ui,sans-serif;cursor:pointer}'
-    + '.cf-frame{flex:1;min-height:0;width:100%;overflow:hidden}'
+    + '.cf-frame{display:block;flex:1;min-height:0;width:100%;border:0;background:#fff;overflow:hidden}'
+    + '.cf-open{flex:0 0 auto;margin:8px 14px 12px;padding:10px 12px;border:1px solid #e6dece;border-radius:9px;background:#fff;color:#5c4a24;font:600 13px system-ui,sans-serif;cursor:pointer}'
     + '@media(min-width:600px){.cf-ov{align-items:center;padding:16px}.cf-modal{height:min(85dvh,740px);border-radius:18px}}'
     + '@media (prefers-reduced-motion:reduce){.paybtn::after{animation:none;display:none}}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
@@ -80,9 +82,9 @@
   function words() {
     var lang = window.ASTROJAK_LANGUAGE || 'en';
     var copy = {
-      en: ['Enter your mobile number', 'We will use this number for your booking and WhatsApp updates.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Please enter a valid 10-digit mobile number.', 'Pay', 'Cancel'],
-      hing: ['Apna mobile number darj karein', 'Booking aur WhatsApp updates ke liye is number ka use hoga.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Sahi 10-digit mobile number darj karein.', 'Pay karein', 'Cancel'],
-      hi: ['अपना मोबाइल नंबर दर्ज करें', 'बुकिंग और WhatsApp अपडेट के लिए इस नंबर का उपयोग होगा।', 'मोबाइल / WhatsApp नंबर', '10 अंकों का मोबाइल नंबर', 'कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें।', 'भुगतान', 'रद्द करें']
+      en: ['Enter your mobile number', 'We will use this number for your booking and WhatsApp updates.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Please enter a valid 10-digit mobile number.', 'Pay', 'Cancel', 'Please enter a valid email address.', 'Email address'],
+      hing: ['Apna mobile number darj karein', 'Booking aur WhatsApp updates ke liye is number ka use hoga.', 'Mobile / WhatsApp number', '10-digit mobile number', 'Sahi 10-digit mobile number darj karein.', 'Pay karein', 'Cancel', 'Sahi email address darj karein.', 'Email address'],
+      hi: ['अपना मोबाइल नंबर दर्ज करें', 'बुकिंग और WhatsApp अपडेट के लिए इस नंबर का उपयोग होगा।', 'मोबाइल / WhatsApp नंबर', '10 अंकों का मोबाइल नंबर', 'कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें।', 'भुगतान', 'रद्द करें', 'कृपया सही ईमेल पता दर्ज करें।', 'ईमेल पता']
     };
     return copy[lang] || copy.en;
   }
@@ -105,11 +107,12 @@
     ov.style.setProperty('--pm-vheight', height + 'px');
     ov.style.setProperty('--pm-max-height', Math.max(160, height - 12) + 'px');
   }
-  function openModal(id, p, pre, done, button) {
+  function openModal(id, p, pre, done, button, needsEmail) {
     var s = saved(), w = words();
     ov = document.createElement('div'); ov.className = 'pm-ov';
     ov.innerHTML = '<div class="pm" role="dialog" aria-modal="true" aria-label="' + w[0] + '"><h3>' + w[0] + '</h3><p>' + w[1] + '</p>'
       + '<label for="pmP">' + w[2] + '</label><div class="pm-phone"><span class="pm-prefix" aria-hidden="true">+91</span><input id="pmP" type="tel" inputmode="numeric" autocomplete="tel" maxlength="15" pattern="[6-9][0-9]{9}" aria-label="' + w[3] + '" placeholder="XXXXXXXXXX"></div>'
+      + (needsEmail ? '<label for="pmEmail">' + w[8] + '</label><input id="pmEmail" class="pm-email" type="email" inputmode="email" autocomplete="email" maxlength="254" placeholder="you@example.com" required>' : '')
       + '<p class="pm-err" id="pmX" hidden></p>'
       + '<button type="button" class="paybtn" id="pmGo">' + w[5] + ' ' + money(id) + ' →</button>'
       + '<button type="button" class="pm-x" id="pmC">' + w[6] + '</button></div>';
@@ -133,8 +136,13 @@
     g('pmGo').onclick = async function () {
       var ph = g('pmP').value, x = g('pmX'); x.hidden = true;
       if (!validPhone(ph)) { x.textContent = w[4]; x.hidden = false; return; }
+      var email = needsEmail ? g('pmEmail').value.trim() : '';
+      if (needsEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        x.textContent = w[7]; x.hidden = false; return;
+      }
       try { localStorage.setItem('astrojak_cust', JSON.stringify({ phone: digits10(ph) })); } catch (_) {}
       var customer = { contact: digits10(ph) };
+      if (needsEmail) customer.email = email;
       var booking = window.PAY_HOOK || {};
       var appointment = booking.appointment ? booking.appointment() : null;
       var selectedPlan = booking.selectedPlan ? booking.selectedPlan() : p.name;
@@ -226,6 +234,7 @@
   }
   var checkoutScripts = {};
   function loadCheckout(gateway) {
+    if (gateway === 'payu') return Promise.resolve();
     if (gateway === 'cashfree' && window.Cashfree) return Promise.resolve();
     if (gateway === 'razorpay' && window.Razorpay) return Promise.resolve();
     if (checkoutScripts[gateway]) return checkoutScripts[gateway];
@@ -257,7 +266,7 @@
   var paymentConfigPromise = fetch(API + '/payment-config', { cache: 'no-store' })
     .then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (config) {
-        if (!res.ok || !['razorpay', 'cashfree'].includes(config.activeGateway)) {
+        if (!res.ok || !['razorpay', 'cashfree', 'payu'].includes(config.activeGateway)) {
           throw new Error(config.error || 'Could not load payment settings');
         }
         return loadCheckout(config.activeGateway).then(function () { return config; });
@@ -401,6 +410,147 @@
     });
   }
 
+  function openPayuCheckout(order, button, checkoutData) {
+    var overlay = document.createElement('div');
+    overlay.className = 'cf-ov';
+    var modal = document.createElement('div');
+    modal.className = 'cf-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Secure PayU checkout');
+    var header = document.createElement('div');
+    header.className = 'cf-head';
+    var title = document.createElement('span');
+    title.textContent = 'Secure PayU checkout';
+    var close = document.createElement('button');
+    close.className = 'cf-close';
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Close checkout');
+    close.textContent = '×';
+    var frame = document.createElement('iframe');
+    frame.className = 'cf-frame';
+    frame.title = 'PayU secure payment';
+    frame.name = 'payuCheckout' + Date.now();
+    var openInTab = document.createElement('button');
+    openInTab.className = 'cf-open';
+    openInTab.type = 'button';
+    openInTab.textContent = 'Open checkout in a new tab';
+    header.appendChild(title);
+    header.appendChild(close);
+    modal.appendChild(header);
+    modal.appendChild(frame);
+    modal.appendChild(openInTab);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.hidden = true;
+    var activeOrder = order;
+    function setFormOrder(nextOrder, target) {
+      activeOrder = nextOrder;
+      form.action = nextOrder.action_url;
+      form.target = target;
+      while (form.firstChild) form.removeChild(form.firstChild);
+      Object.keys(nextOrder.fields || {}).forEach(function (name) {
+        var field = document.createElement('input');
+        field.type = 'hidden';
+        field.name = name;
+        field.value = String(nextOrder.fields[name]);
+        form.appendChild(field);
+      });
+    }
+    setFormOrder(order, frame.name);
+    document.body.appendChild(form);
+
+    var closed = false;
+    var previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    function dismiss() {
+      if (closed) return;
+      closed = true;
+      document.removeEventListener('keydown', onKeydown);
+      window.removeEventListener('message', onMessage);
+      document.body.style.overflow = previousBodyOverflow;
+      form.remove();
+      overlay.remove();
+      reset(button);
+    }
+    function onKeydown(event) {
+      if (event.key === 'Escape') dismiss();
+    }
+    function onMessage(event) {
+      if (event.origin !== API || !event.data || event.data.type !== 'payu-result'
+        || event.data.txnid !== activeOrder.txnid || closed) return;
+      if (event.data.status !== 'success') {
+        dismiss();
+        alert('PayU did not confirm a successful payment. You can try again.');
+        return;
+      }
+      button.textContent = 'Verifying payment…';
+      title.textContent = 'Verifying payment…';
+      verifyPayment({ gateway: 'payu', txnid: activeOrder.txnid }).then(function (verified) {
+        try {
+          sessionStorage.setItem('astrojak_payu_verified_' + activeOrder.txnid, JSON.stringify({
+            payment_id: verified.payment_id,
+            reference_id: verified.reference_id,
+            plan: verified.plan,
+            appointment_date: verified.appointment_date || '',
+            appointment_time: verified.appointment_time || ''
+          }));
+        } catch (err) {
+          console.error('Could not save PayU payment confirmation:', err);
+        }
+        var query = new URLSearchParams({
+          gateway: 'payu',
+          txnid: activeOrder.txnid,
+          payment_status: 'paid',
+          payment_id: verified.payment_id,
+          reference_id: verified.reference_id,
+          plan: verified.plan
+        });
+        if (verified.appointment_date) query.set('appointment_date', verified.appointment_date);
+        if (verified.appointment_time) query.set('appointment_time', verified.appointment_time);
+        dismiss();
+        location.href = '/thank-you.html?' + query.toString();
+      }).catch(function (err) {
+        dismiss();
+        console.error('PayU payment could not be verified:', err);
+        alert('Your payment was submitted, but we could not confirm it yet. Please do not pay again. Contact us and share transaction ID ' + activeOrder.txnid + '.');
+      });
+    }
+    close.addEventListener('click', dismiss);
+    overlay.addEventListener('click', function (event) {
+      if (event.target === overlay) dismiss();
+    });
+    document.addEventListener('keydown', onKeydown);
+    window.addEventListener('message', onMessage);
+    openInTab.addEventListener('click', function () {
+      var fallbackTarget = 'payuFallback' + Date.now();
+      var fallbackWindow = window.open('about:blank', fallbackTarget);
+      if (!fallbackWindow) {
+        alert('Please allow pop-ups to open the secure PayU checkout in a new tab.');
+        return;
+      }
+      openInTab.disabled = true;
+      openInTab.textContent = 'Preparing secure checkout…';
+      frame.src = 'about:blank';
+      title.textContent = 'Complete payment in the new tab';
+      post('/create-order', checkoutData).then(function (fallbackOrder) {
+        setFormOrder(fallbackOrder, fallbackTarget);
+        form.submit();
+      }).catch(function (err) {
+        fallbackWindow.close();
+        openInTab.disabled = false;
+        openInTab.textContent = 'Open checkout in a new tab';
+        title.textContent = 'Secure PayU checkout';
+        console.error('PayU fallback checkout could not be created:', err);
+        alert('Secure checkout could not be opened. Please try again.');
+      });
+    });
+    form.submit();
+  }
+
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-pay]'); if (!b) return;
     e.preventDefault();
@@ -440,6 +590,9 @@
           if (order.gateway === 'cashfree') {
             return openCashfreeCheckout(order, b);
           }
+          if (order.gateway === 'payu') {
+            return openPayuCheckout(order, b, body);
+          }
           var checkout = new window.Razorpay({
             key: order.key_id,
             amount: order.amount,
@@ -458,7 +611,8 @@
                   var query = new URLSearchParams({
                     razorpay_payment_link_status: 'paid',
                     razorpay_payment_link_reference_id: verified.reference_id,
-                    razorpay_payment_id: verified.payment_id
+                    razorpay_payment_id: verified.payment_id,
+                    plan: verified.plan
                   });
                   if (verified.appointment_date) query.set('appointment_date', verified.appointment_date);
                   if (verified.appointment_time) query.set('appointment_time', verified.appointment_time);
@@ -484,6 +638,8 @@
           redirectToBookingWhatsApp();
         });
     }
-    openModal(id, p, cust, go, b);
+    paymentConfigPromise.then(function (config) {
+      openModal(id, p, cust, go, b, !config || config.activeGateway === 'payu');
+    });
   });
 })();

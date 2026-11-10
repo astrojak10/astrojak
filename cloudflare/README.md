@@ -1,7 +1,7 @@
 # Payment API on Cloudflare Workers
 
 The website is static on GitHub Pages. This Worker creates and verifies
-Razorpay or Cashfree payments without exposing gateway credentials to visitors
+Razorpay, Cashfree, or PayU payments without exposing gateway credentials to visitors
 or the GitHub Pages build. The active gateway is selected in
 `/payment-admin.html`; only one gateway handles new checkouts at a time.
 
@@ -22,7 +22,7 @@ or the GitHub Pages build. The active gateway is selected in
 4. Create a Cloudflare Workers KV namespace named `PAYMENT_SETTINGS` in the
    Cloudflare dashboard (or with Wrangler). Replace
    `REPLACE_WITH_KV_NAMESPACE_ID` in `wrangler.toml` with its namespace ID.
-   The namespace stores only the active gateway and Cashfree environment.
+   The namespace stores only the active gateway and gateway environment settings.
    You can create it with `npx wrangler kv namespace create PAYMENT_SETTINGS`.
    KV setting changes can take up to about a minute to propagate globally.
 5. Deploy the Worker using the `Deploy payment API` GitHub Actions workflow.
@@ -33,6 +33,8 @@ or the GitHub Pages build. The active gateway is selected in
    - `RAZORPAY_KEY_SECRET`
    - `CASHFREE_APP_ID`
    - `CASHFREE_SECRET_KEY`
+   - `PAYU_MERCHANT_KEY`
+   - `PAYU_MERCHANT_SALT`
    - `ADMIN_USERNAME` — the username you will use to sign in.
    - `ADMIN_PASSWORD` — a unique password of at least 12 characters.
    - `ADMIN_SESSION_SECRET` — a separate random value of at least 32
@@ -46,10 +48,11 @@ or the GitHub Pages build. The active gateway is selected in
      Save the output privately, then paste it as the secret value in Cloudflare.
    Remove the old `ADMIN_API_TOKEN` secret if you configured it previously; the
    username/password login replaces it.
-   Set the Cashfree keys to match the Sandbox or Production mode selected in
-   the admin page. In the Cashfree dashboard, whitelist `www.astrojak.in` for
-   web checkout. Avoid changing Cashfree environments while payments are in
-   progress. Use test credentials until checkout is tested.
+   Set Cashfree and PayU credentials to match the environments selected in
+   the admin page. PayU Hosted Checkout uses the merchant Key and Salt (not
+   OAuth Client ID/Client Secret). In the Cashfree dashboard, whitelist
+   `www.astrojak.in` for web checkout. Avoid changing gateway environments
+   while payments are in progress. Use test credentials until checkout is tested.
 7. Confirm `https://api.astrojak.in/payment-config`,
    `https://api.astrojak.in/create-order`, and
    `https://api.astrojak.in/verify-payment` are live. The API hostname is
@@ -57,7 +60,8 @@ or the GitHub Pages build. The active gateway is selected in
 8. Open `https://www.astrojak.in/payment-admin.html` and sign in with
    `ADMIN_USERNAME` and `ADMIN_PASSWORD`. Select a gateway whose credentials
    are configured and save. Sessions use an HttpOnly, Secure cookie and expire
-   after eight hours. Cashfree credentials must match the selected environment.
+   after eight hours. Cashfree and PayU credentials must match their selected
+   environments.
    The page never accepts gateway secrets; manage those only in Cloudflare
    Worker secrets.
 9. Complete a test payment and confirm the Worker verifies it and returns to
@@ -72,6 +76,14 @@ After a Cashfree payment attempt, the Worker verifies the order directly with
 Cashfree before navigating to the thank-you page. Cashfree's documented
 embedded checkout can still request its redirect fallback in unsupported
 in-app browsers.
+
+PayU Hosted Checkout is created with a server-generated SHA-512 hash and
+displayed in a responsive partial-screen modal. Its callback is routed through
+the Worker, and the Worker verifies each transaction with PayU's
+`verify_payment` API before marking the booking paid. If a browser cannot
+embed the PayU page, the modal offers a new-tab fallback. See the [PayU API
+reference](https://docs.payu.in/reference/introduction-api-reference) and
+[Hosted Checkout integration guide](https://docs.payu.in/docs/prebuilt-checkout-page-integration).
 
 The `astrojak` Worker owns the `api.astrojak.in` custom domain and is the
 deployment target in `wrangler.toml`. Keep any older Worker deployment until
@@ -88,8 +100,8 @@ order server-side](https://www.cashfree.com/docs/payments/online/web/redirect).
 The website initializes Meta Pixel `2057261584904971` and sends a browser
 `Purchase` event from `thank-you.html` only after the checkout flow receives a
 successful payment verification from this Worker. The event includes
-the plan value in INR, plan name and ID, and the payment ID (the Cashfree order
-ID for Cashfree transactions). The browser stores a per-payment marker so refreshing the thank-you
+the plan value in INR, plan name and ID, and the gateway payment ID (the
+Cashfree order ID or PayU `mihpayid` for those transactions). The browser stores a per-payment marker so refreshing the thank-you
 page does not send the same Purchase event again in that browser.
 
 This is Pixel browser tracking, not a direct Razorpay-to-Meta integration or a
@@ -223,13 +235,16 @@ access to each spreadsheet.
   Worker confirms the payment belongs to the order and captures authorized
   payments before reporting success. Cashfree completion is verified by
   retrieving the order server-side and requiring the `PAID` status, expected
-  plan, amount, and INR currency.
+  plan, amount, and INR currency. PayU success is reconciled with
+  `verify_payment`; the Worker checks transaction status, plan, amount,
+  product, and appointment before reporting success.
 - Only the listed website origins and the local development origin are allowed
   by CORS. CORS is not authentication; the server-side plan/amount validation
   is still required.
-- The Worker returns only public checkout data (Razorpay key ID or Cashfree
-  payment-session ID, order ID, amount, and reference); it never returns or
-  logs credentials. Gateway failure details are deliberately not exposed.
+- The Worker returns only public checkout data (Razorpay key ID, Cashfree
+  payment-session ID, or PayU merchant key and signed checkout fields); it
+  never returns or logs private keys, salts, or API secrets. Gateway failure
+  details are deliberately not exposed.
 - `/admin/payment-settings` requires a valid, signed eight-hour admin session.
   Login credentials and the session signing key are Cloudflare encrypted
   secrets; the session cookie is Secure, HttpOnly, and scoped to the admin API.

@@ -35,7 +35,17 @@ function response(status, body, origin, extraHeaders = {}) {
 
 const ADMIN_SESSION_COOKIE = 'astrojak_admin_session';
 const ADMIN_SESSION_SECONDS = 8 * 60 * 60;
-const DEFAULT_PAYMENT_SETTINGS = { activeGateway: 'razorpay', cashfreeMode: 'sandbox' };
+const DEFAULT_PAYMENT_SETTINGS = {
+  activeGateway: 'razorpay',
+  cashfreeMode: 'sandbox',
+  payuMode: 'sandbox',
+};
+const PAYU_PLAN_PREFIXES = {
+  reserve: 'res',
+  kundali: 'kun',
+  'detailed-kundali': 'det',
+  matchmaking: 'mat',
+};
 
 function constantTimeEqual(left, right) {
   const encoder = new TextEncoder();
@@ -107,17 +117,19 @@ async function getPaymentSettings(env) {
   if (!env.PAYMENT_SETTINGS) throw new Error('Payment settings storage is not configured');
   const saved = await env.PAYMENT_SETTINGS.get('gateway-settings', 'json');
   if (!saved) return { ...DEFAULT_PAYMENT_SETTINGS };
-  if (!['razorpay', 'cashfree'].includes(saved.activeGateway)
-    || !['sandbox', 'production'].includes(saved.cashfreeMode)) {
+  const settings = { ...DEFAULT_PAYMENT_SETTINGS, ...saved };
+  if (!['razorpay', 'cashfree', 'payu'].includes(settings.activeGateway)
+    || !['sandbox', 'production'].includes(settings.cashfreeMode)
+    || !['sandbox', 'production'].includes(settings.payuMode)) {
     throw new Error('Saved payment settings are invalid');
   }
-  return saved;
+  return settings;
 }
 
 function paymentGatewayConfigured(env, gateway) {
-  return gateway === 'cashfree'
-    ? Boolean(env.CASHFREE_APP_ID && env.CASHFREE_SECRET_KEY)
-    : Boolean(env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET);
+  if (gateway === 'cashfree') return Boolean(env.CASHFREE_APP_ID && env.CASHFREE_SECRET_KEY);
+  if (gateway === 'payu') return Boolean(env.PAYU_MERCHANT_KEY && env.PAYU_MERCHANT_SALT);
+  return Boolean(env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET);
 }
 
 async function cashfreeRequest(env, settings, path, method, body) {
@@ -164,6 +176,96 @@ async function verifiedCashfreeOrder(env, settings, orderId) {
     appointmentDate: String(order.order_tags?.appointment_date || ''),
     appointmentTime: String(order.order_tags?.appointment_time || ''),
   };
+}
+
+function payuBaseUrl(settings) {
+  return settings.payuMode === 'sandbox' ? 'https://test.payu.in' : 'https://secure.payu.in';
+}
+
+async function sha512(value) {
+  const digest = await crypto.subtle.digest('SHA-512', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function payuRequest(settings, fields) {
+  const endpoint = settings.payuMode === 'sandbox'
+    ? 'https://test.payu.in/merchant/postservice.php?form=2'
+    : 'https://info.payu.in/merchant/postservice.php?form=2';
+  const result = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(fields),
+  });
+  const data = await result.json().catch(() => ({}));
+  return { ok: result.ok, status: result.status, data };
+}
+
+async function verifiedPayuTransaction(env, settings, transactionId) {
+  if (!/^[A-Za-z0-9]{1,25}$/.test(transactionId)) return null;
+  const key = env.PAYU_MERCHANT_KEY;
+  const salt = env.PAYU_MERCHANT_SALT;
+  const hash = await sha512(`${key}|verify_payment|${transactionId}|${salt}`);
+  const result = await payuRequest(settings, {
+    key,
+    command: 'verify_payment',
+    var1: transactionId,
+    hash,
+  });
+  if (!result.ok || Number(result.data.status) !== 1) return null;
+
+  const transaction = result.data.transaction_details?.[transactionId];
+  if (!transaction || transaction.txnid !== transactionId
+    || String(transaction.status || '').toLowerCase() !== 'success') return null;
+  const planId = String(transaction.udf1 || '');
+  const plan = Object.prototype.hasOwnProperty.call(PLANS, planId) ? PLANS[planId] : null;
+  const amount = Math.round(Number(transaction.amt) * 100);
+  const appointmentDate = String(transaction.udf2 || '');
+  const appointmentTime = String(transaction.udf3 || '');
+  if (!plan || !transactionId.startsWith(PAYU_PLAN_PREFIXES[planId])
+    || !/^\d{1,20}$/.test(String(transaction.mihpayid || ''))
+    || !Number.isFinite(amount) || amount !== plan.price * 100
+    || transaction.productinfo !== `ASTROJAK ${plan.name}`
+    || ((appointmentDate || appointmentTime)
+      && !isValidAppointment({ date: appointmentDate, time: appointmentTime }))
+    || (!appointmentDate && !appointmentTime && planId !== 'reserve')) return null;
+
+  const addedOn = Date.parse(`${String(transaction.addedon || '').replace(' ', 'T')}+05:30`);
+  return {
+    paymentId: String(transaction.mihpayid || ''),
+    orderId: transactionId,
+    referenceId: transactionId,
+    planId,
+    amount,
+    currency: 'INR',
+    appointmentDate,
+    appointmentTime,
+    createdAt: Number.isFinite(addedOn) ? Math.floor(addedOn / 1000) : Math.floor(Date.now() / 1000),
+  };
+}
+
+function payuCallbackPage(origin, transactionId, status) {
+  const payload = JSON.stringify({
+    type: 'payu-result',
+    txnid: transactionId,
+    status,
+  }).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  const allowedOrigins = [...ALLOWED_ORIGINS].join(' ');
+  const html = `<!doctype html><meta charset="utf-8"><title>Payment result</title><script>
+    var result=${payload};
+    var targetOrigin=${JSON.stringify(origin)};
+    if(window.parent!==window)window.parent.postMessage(result,targetOrigin);
+    if(window.opener)window.opener.postMessage(result,targetOrigin);
+    if(window.parent===window&&!window.opener)location.replace('https://www.astrojak.in/thank-you.html?gateway=payu&txnid='+encodeURIComponent(result.txnid));
+  </script>`;
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Cache-Control': 'no-store',
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Security-Policy': `default-src 'none'; script-src 'unsafe-inline'; frame-ancestors ${allowedOrigins}`,
+      'X-Content-Type-Options': 'nosniff',
+    },
+  });
 }
 
 function normalizedContact(customer) {
@@ -591,11 +693,33 @@ export default {
         return response(200, {
           activeGateway: settings.activeGateway,
           cashfreeMode: settings.cashfreeMode,
+          payuMode: settings.payuMode,
         }, origin);
       } catch (error) {
         console.error('Could not read payment settings', error);
         return response(503, { error: 'Payment settings are unavailable' }, origin);
       }
+    }
+
+    if (url.pathname === '/payu-callback') {
+      if (request.method !== 'POST') return new Response('Use POST', { status: 405 });
+      const callbackOrigin = url.searchParams.get('origin') || '';
+      if (!ALLOWED_ORIGINS.has(callbackOrigin)) {
+        return new Response('Origin not allowed', { status: 403 });
+      }
+      let form;
+      try {
+        form = await request.formData();
+      } catch {
+        return new Response('Invalid payment response', { status: 400 });
+      }
+      const transactionId = String(form.get('txnid') || '');
+      const status = String(form.get('status') || '').toLowerCase();
+      if (!/^[A-Za-z0-9]{1,25}$/.test(transactionId)
+        || !/^[a-z]{1,20}$/.test(status)) {
+        return new Response('Invalid payment response', { status: 400 });
+      }
+      return payuCallbackPage(callbackOrigin, transactionId, status);
     }
 
     if (url.pathname === '/admin/payment-settings') {
@@ -620,12 +744,14 @@ export default {
             credentials: {
               razorpay: paymentGatewayConfigured(env, 'razorpay'),
               cashfree: paymentGatewayConfigured(env, 'cashfree'),
+              payu: paymentGatewayConfigured(env, 'payu'),
             },
           }, origin);
         }
         const input = await parseInput(request);
-        if (!input || !['razorpay', 'cashfree'].includes(input.activeGateway)
-          || !['sandbox', 'production'].includes(input.cashfreeMode)) {
+        if (!input || !['razorpay', 'cashfree', 'payu'].includes(input.activeGateway)
+          || !['sandbox', 'production'].includes(input.cashfreeMode)
+          || !['sandbox', 'production'].includes(input.payuMode)) {
           return response(400, { error: 'Invalid payment settings' }, origin);
         }
         if (!paymentGatewayConfigured(env, input.activeGateway)) {
@@ -634,6 +760,7 @@ export default {
         const settings = {
           activeGateway: input.activeGateway,
           cashfreeMode: input.cashfreeMode,
+          payuMode: input.payuMode,
         };
         await env.PAYMENT_SETTINGS.put('gateway-settings', JSON.stringify(settings));
         return response(200, { saved: true, ...settings }, origin);
@@ -721,7 +848,7 @@ export default {
         return response(503, { error: 'Google Sheets is not configured' }, origin);
       }
       const gateway = String(input.gateway || 'razorpay');
-      if (!['razorpay', 'cashfree'].includes(gateway)) {
+      if (!['razorpay', 'cashfree', 'payu'].includes(gateway)) {
         return response(400, { error: 'Unknown payment gateway' }, origin);
       }
       const paymentId = String(input.payment_id || '');
@@ -737,7 +864,9 @@ export default {
       };
       if (!(gateway === 'cashfree'
         ? /^[A-Za-z0-9_-]{1,45}$/.test(paymentId)
-        : /^pay_[A-Za-z0-9]+$/.test(paymentId))
+        : gateway === 'payu'
+          ? /^\d{1,20}$/.test(paymentId)
+          : /^pay_[A-Za-z0-9]+$/.test(paymentId))
         || !referenceId || !name || !contact
         || !birthDate || !birthPlace
         || Boolean(appointment.date) !== Boolean(appointment.time)
@@ -760,6 +889,29 @@ export default {
             currency: verified.currency,
             status: 'captured',
             created_at: Math.floor(Date.now() / 1000),
+          };
+          order = {
+            id: verified.orderId,
+            receipt: verified.referenceId,
+            currency: verified.currency,
+            amount: verified.amount,
+            notes: {
+              plan: verified.planId,
+              appointment_date: verified.appointmentDate,
+              appointment_time: verified.appointmentTime,
+            },
+          };
+        } else if (gateway === 'payu') {
+          const settings = await getPaymentSettings(env);
+          const verified = await verifiedPayuTransaction(env, settings, referenceId);
+          if (!verified || verified.paymentId !== paymentId) {
+            return response(400, { error: 'A successful PayU transaction is required' }, origin);
+          }
+          payment = {
+            amount: verified.amount,
+            currency: verified.currency,
+            status: 'captured',
+            created_at: verified.createdAt,
           };
           order = {
             id: verified.orderId,
@@ -807,7 +959,7 @@ export default {
         };
         const orderHasAppointment = Boolean(orderAppointment.date || orderAppointment.time);
         if (!plan || order.id !== orderId || order.receipt !== referenceId
-          || !referenceId.startsWith(`${planId}_`)
+          || (gateway !== 'payu' && !referenceId.startsWith(`${planId}_`))
           || payment.currency !== 'INR' || payment.amount !== plan.price * 100
           || order.currency !== 'INR' || order.amount !== payment.amount
           || (!orderHasAppointment && planId !== 'reserve')
@@ -902,7 +1054,7 @@ export default {
       }
 
       const gateway = String(input.gateway || 'razorpay');
-      if (!['razorpay', 'cashfree'].includes(gateway)) {
+      if (!['razorpay', 'cashfree', 'payu'].includes(gateway)) {
         return response(400, { error: 'Unknown payment gateway' }, origin);
       }
       const paymentId = String(input.payment_id || '');
@@ -915,7 +1067,9 @@ export default {
       const contact = normalizedContact({ contact: input.mobile });
       if (!(gateway === 'cashfree'
         ? /^[A-Za-z0-9_-]{1,45}$/.test(paymentId)
-        : /^pay_[A-Za-z0-9]+$/.test(paymentId))
+        : gateway === 'payu'
+          ? /^\d{1,20}$/.test(paymentId)
+          : /^pay_[A-Za-z0-9]+$/.test(paymentId))
         || !name || !contact
         || !referenceId || !isValidAppointment(appointment)) {
         return response(400, { error: 'Valid payment, customer, and appointment details are required' }, origin);
@@ -930,6 +1084,24 @@ export default {
           const verified = await verifiedCashfreeOrder(env, settings, paymentId);
           if (!verified || verified.referenceId !== referenceId) {
             return response(400, { error: 'A paid Cashfree order is required' }, origin);
+          }
+          payment = { amount: verified.amount, currency: verified.currency };
+          order = {
+            id: verified.orderId,
+            receipt: verified.referenceId,
+            currency: verified.currency,
+            amount: verified.amount,
+            notes: {
+              plan: verified.planId,
+              appointment_date: verified.appointmentDate,
+              appointment_time: verified.appointmentTime,
+            },
+          };
+        } else if (gateway === 'payu') {
+          const settings = await getPaymentSettings(env);
+          const verified = await verifiedPayuTransaction(env, settings, referenceId);
+          if (!verified || verified.paymentId !== paymentId) {
+            return response(400, { error: 'A successful PayU transaction is required' }, origin);
           }
           payment = { amount: verified.amount, currency: verified.currency };
           order = {
@@ -975,7 +1147,7 @@ export default {
         const orderDate = String(order.notes?.appointment_date || '');
         const orderTime = String(order.notes?.appointment_time || '');
         if (!plan || order.id !== orderId || order.receipt !== referenceId
-          || !referenceId.startsWith(`${planId}_`)
+          || (gateway !== 'payu' && !referenceId.startsWith(`${planId}_`))
           || payment.currency !== 'INR' || payment.amount !== plan.price * 100
           || order.currency !== 'INR' || order.amount !== payment.amount
           || ((orderDate || orderTime) && (appointment.date !== orderDate || appointment.time !== orderTime))) {
@@ -1110,6 +1282,59 @@ export default {
         return response(503, { error: 'Selected payment gateway is not configured' }, origin);
       }
       try {
+        if (gateway === 'payu') {
+          const email = String(input.customer?.email || '').trim().slice(0, 254);
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return response(400, { error: 'A valid email address is required for PayU checkout' }, origin);
+          }
+          const txnid = `${PAYU_PLAN_PREFIXES[planId]}${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
+          const amount = plan.price.toFixed(2);
+          const productinfo = `ASTROJAK ${plan.name}`;
+          const firstname = String(input.customer?.name || 'ASTROJAK Customer').trim().slice(0, 60) || 'Customer';
+          const udf1 = planId;
+          const udf2 = isValidAppointment(appointment) ? String(appointment.date) : '';
+          const udf3 = isValidAppointment(appointment) ? String(appointment.time) : '';
+          const callbackUrl = `https://api.astrojak.in/payu-callback?origin=${encodeURIComponent(origin)}`;
+          const fields = {
+            key: env.PAYU_MERCHANT_KEY,
+            txnid,
+            amount,
+            productinfo,
+            firstname,
+            email,
+            phone: contact.slice(-10),
+            surl: callbackUrl,
+            furl: callbackUrl,
+            udf1,
+            udf2,
+            udf3,
+          };
+          fields.hash = await sha512([
+            fields.key,
+            fields.txnid,
+            fields.amount,
+            fields.productinfo,
+            fields.firstname,
+            fields.email,
+            fields.udf1,
+            fields.udf2,
+            fields.udf3,
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            env.PAYU_MERCHANT_SALT,
+          ].join('|'));
+          return response(200, {
+            gateway,
+            txnid,
+            action_url: `${payuBaseUrl(settings)}/_payment`,
+            fields,
+          }, origin);
+        }
         if (gateway === 'cashfree') {
           const result = await cashfreeRequest(env, settings, '/orders', 'POST', {
             order_id: reference,
@@ -1188,6 +1413,30 @@ export default {
         }, origin);
       } catch (error) {
         console.error('Cashfree payment verification failed', error);
+        return response(502, { error: 'Could not verify payment' }, origin);
+      }
+    }
+
+    if (input.gateway === 'payu') {
+      if (!paymentGatewayConfigured(env, 'payu')) {
+        return response(503, { error: 'PayU is not configured' }, origin);
+      }
+      try {
+        const settings = await getPaymentSettings(env);
+        const transactionId = String(input.txnid || '');
+        const verified = await verifiedPayuTransaction(env, settings, transactionId);
+        if (!verified) return response(409, { error: 'PayU payment is not confirmed as successful' }, origin);
+        return response(200, {
+          verified: true,
+          payment_id: verified.paymentId,
+          order_id: verified.orderId,
+          reference_id: verified.referenceId,
+          plan: verified.planId,
+          appointment_date: verified.appointmentDate,
+          appointment_time: verified.appointmentTime,
+        }, origin);
+      } catch (error) {
+        console.error('PayU payment verification failed', error);
         return response(502, { error: 'Could not verify payment' }, origin);
       }
     }

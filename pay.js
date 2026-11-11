@@ -51,6 +51,12 @@
     + '.cf-frame{display:block;flex:1;min-height:0;width:100%;border:0;background:#fff;overflow:hidden}'
     + '.cf-open{flex:0 0 auto;margin:8px 14px 12px;padding:10px 12px;border:1px solid #e6dece;border-radius:9px;background:#fff;color:#5c4a24;font:600 13px system-ui,sans-serif;cursor:pointer}'
     + '@media(min-width:600px){.cf-ov{align-items:center;padding:16px}.cf-modal{height:min(85dvh,740px);border-radius:18px}}'
+    + '.ptm-ov{position:fixed;inset:0;z-index:10001;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,14,0,.58)}'
+    + '.ptm-modal{display:flex;flex-direction:column;width:min(100%,480px);height:min(82dvh,720px);overflow:hidden;border-radius:18px 18px 0 0;background:#fff;box-shadow:0 -12px 40px rgba(0,0,0,.25)}'
+    + '.ptm-head{display:flex;flex:0 0 50px;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #eee;color:#292318;font:600 15px/1.2 system-ui,sans-serif}'
+    + '.ptm-root{position:relative;flex:1;min-height:240px;overflow:auto;background:#fff}'
+    + '.ptm-root iframe{max-width:100%;border:0}'
+    + '@media(min-width:600px){.ptm-ov{align-items:center;padding:16px}.ptm-modal{height:min(85dvh,740px);border-radius:18px}}'
     + '@media (prefers-reduced-motion:reduce){.paybtn::after{animation:none;display:none}}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -233,50 +239,71 @@
     });
   }
   var checkoutScripts = {};
-  function loadCheckout(gateway) {
+  var paytmScriptKeyLoaded = '';
+  function loadCheckout(gateway, order) {
     if (gateway === 'payu') return Promise.resolve();
     if (gateway === 'cashfree' && window.Cashfree) return Promise.resolve();
     if (gateway === 'razorpay' && window.Razorpay) return Promise.resolve();
     if (gateway === 'easebuzz' && window.EasebuzzCheckout) return Promise.resolve();
-    if (checkoutScripts[gateway]) return checkoutScripts[gateway];
-    checkoutScripts[gateway] = new Promise(function (resolve, reject) {
+    if (gateway === 'paytm' && !order) return Promise.resolve();
+    var scriptKey = gateway === 'paytm'
+      ? 'paytm:' + order.paytm_mode + ':' + order.mid
+      : gateway;
+    if (gateway === 'paytm' && window.Paytm && window.Paytm.CheckoutJS
+      && paytmScriptKeyLoaded === scriptKey) return Promise.resolve();
+    if (checkoutScripts[scriptKey]) return checkoutScripts[scriptKey];
+    checkoutScripts[scriptKey] = new Promise(function (resolve, reject) {
       var script = document.createElement('script');
       script.src = gateway === 'cashfree'
         ? 'https://sdk.cashfree.com/js/v3/cashfree.js'
         : gateway === 'easebuzz'
           ? 'https://ebz-static.s3.ap-south-1.amazonaws.com/easecheckout/v2.0.0/easebuzz-checkout-v2.min.js'
+          : gateway === 'paytm'
+            ? (order.paytm_mode === 'sandbox'
+              ? 'https://securestage.paytmpayments.com'
+              : 'https://secure.paytmpayments.com') + '/merchantpgpui/checkoutjs/merchants/' + encodeURIComponent(order.mid) + '.js'
           : 'https://checkout.razorpay.com/v1/checkout.js';
       script.onload = function () {
+        if (gateway === 'paytm' && window.Paytm && window.Paytm.CheckoutJS) {
+          paytmScriptKeyLoaded = scriptKey;
+          checkoutScripts[scriptKey] = null;
+        }
         if ((gateway === 'cashfree' && window.Cashfree)
           || (gateway === 'easebuzz' && window.EasebuzzCheckout)
+          || (gateway === 'paytm' && window.Paytm && window.Paytm.CheckoutJS)
           || (gateway === 'razorpay' && window.Razorpay)) resolve();
         else {
-          checkoutScripts[gateway] = null;
+          checkoutScripts[scriptKey] = null;
           reject(new Error(gateway === 'cashfree'
             ? 'Cashfree Checkout could not be initialized'
             : gateway === 'easebuzz'
               ? 'Easebuzz Checkout could not be initialized'
-            : 'Razorpay Checkout could not be initialized'));
+              : gateway === 'paytm'
+                ? 'Paytm Checkout could not be initialized'
+                : 'Razorpay Checkout could not be initialized'));
         }
       };
       script.onerror = function () {
-        checkoutScripts[gateway] = null;
+        checkoutScripts[scriptKey] = null;
         reject(new Error(gateway === 'cashfree'
           ? 'Cashfree Checkout could not be loaded'
           : gateway === 'easebuzz'
             ? 'Easebuzz Checkout could not be loaded'
-          : 'Razorpay Checkout could not be loaded'));
+            : gateway === 'paytm'
+              ? 'Paytm Checkout could not be loaded'
+              : 'Razorpay Checkout could not be loaded'));
       };
       document.head.appendChild(script);
     });
-    return checkoutScripts[gateway];
+    return checkoutScripts[scriptKey];
   }
   var paymentConfigPromise = fetch(API + '/payment-config', { cache: 'no-store' })
     .then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (config) {
-        if (!res.ok || !['razorpay', 'cashfree', 'payu', 'easebuzz'].includes(config.activeGateway)) {
+        if (!res.ok || !['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm'].includes(config.activeGateway)) {
           throw new Error(config.error || 'Could not load payment settings');
         }
+        if (config.activeGateway === 'paytm') return config;
         return loadCheckout(config.activeGateway).then(function () { return config; });
       });
     })
@@ -657,6 +684,127 @@
     }
   }
 
+  function openPaytmCheckout(order, button) {
+    var overlay = document.createElement('div');
+    overlay.className = 'ptm-ov';
+    var modal = document.createElement('div');
+    modal.className = 'ptm-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Secure Paytm checkout');
+    var header = document.createElement('div');
+    header.className = 'ptm-head';
+    var title = document.createElement('span');
+    title.textContent = 'Secure Paytm checkout';
+    var close = document.createElement('button');
+    close.className = 'cf-close';
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Close checkout');
+    close.textContent = '×';
+    var root = document.createElement('div');
+    root.className = 'ptm-root';
+    root.id = 'paytm-checkout-root-' + Date.now();
+    header.appendChild(title);
+    header.appendChild(close);
+    modal.appendChild(header);
+    modal.appendChild(root);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    var closed = false;
+    var verifying = false;
+    var previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    function dismiss() {
+      if (closed) return;
+      closed = true;
+      document.removeEventListener('keydown', onKeydown);
+      document.body.style.overflow = previousBodyOverflow;
+      overlay.remove();
+      reset(button);
+    }
+    function confirmPayment() {
+      if (closed || verifying) return;
+      verifying = true;
+      title.textContent = 'Verifying payment…';
+      close.disabled = true;
+      verifyPayment({ gateway: 'paytm', order_id: order.order_id }).then(function (verified) {
+        var confirmed = {
+          order_id: verified.order_id,
+          payment_id: verified.payment_id,
+          reference_id: verified.reference_id,
+          plan: verified.plan,
+          appointment_date: verified.appointment_date || '',
+          appointment_time: verified.appointment_time || ''
+        };
+        try {
+          sessionStorage.setItem('astrojak_paytm_verified_' + order.order_id, JSON.stringify(confirmed));
+        } catch (err) {
+          console.error('Could not save Paytm payment confirmation:', err);
+        }
+        var query = new URLSearchParams({
+          gateway: 'paytm',
+          order_id: confirmed.order_id,
+          payment_status: 'paid',
+          payment_id: confirmed.payment_id,
+          reference_id: confirmed.reference_id,
+          plan: confirmed.plan
+        });
+        if (confirmed.appointment_date) query.set('appointment_date', confirmed.appointment_date);
+        if (confirmed.appointment_time) query.set('appointment_time', confirmed.appointment_time);
+        dismiss();
+        location.href = '/thank-you.html?' + query.toString();
+      }).catch(function (err) {
+        dismiss();
+        console.error('Paytm payment could not be verified:', err);
+        alert('Paytm has not confirmed this payment yet. If you completed payment, do not pay again; contact us and share order ID ' + order.order_id + '.');
+      });
+    }
+    function onKeydown(event) {
+      if (event.key === 'Escape' && !verifying) dismiss();
+    }
+    close.addEventListener('click', function () {
+      if (!verifying) dismiss();
+    });
+    overlay.addEventListener('click', function (event) {
+      if (event.target === overlay && !verifying) dismiss();
+    });
+    document.addEventListener('keydown', onKeydown);
+
+    try {
+      window.Paytm.CheckoutJS.onLoad(function () {
+        if (closed) return;
+        window.Paytm.CheckoutJS.init({
+          root: '#' + root.id,
+          flow: 'DEFAULT',
+          data: {
+            orderId: order.order_id,
+            token: order.txn_token,
+            tokenType: 'TXN_TOKEN',
+            amount: order.amount
+          },
+          handler: {
+            notifyMerchant: function (eventName) {
+              if (['APP_CLOSED', 'PAYMENT_SUCCESS', 'TRANSACTION_COMPLETE'].includes(String(eventName).toUpperCase())) {
+                confirmPayment();
+              }
+            }
+          }
+        }).then(function () {
+          if (!closed) window.Paytm.CheckoutJS.invoke();
+        }).catch(function (error) {
+          dismiss();
+          console.error('Paytm Checkout could not be initialized:', error);
+          alert('Secure checkout could not be opened. Please try again.');
+        });
+      });
+    } catch (error) {
+      dismiss();
+      console.error('Paytm Checkout could not be opened:', error);
+      alert('Secure checkout could not be opened. Please try again.');
+    }
+  }
+
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-pay]'); if (!b) return;
     e.preventDefault();
@@ -682,13 +830,13 @@
       b.__busy = 1; b.__label = b.innerHTML; b.classList.add('busy'); b.textContent = 'Opening secure payment…';
       paymentConfigPromise.then(function (config) {
         if (!config) return post('/create-order', body).then(function (order) {
-          return loadCheckout(order.gateway).then(function () { return order; });
+          return loadCheckout(order.gateway, order).then(function () { return order; });
         });
         return Promise.all([
           post('/create-order', body),
           loadCheckout(config.activeGateway)
         ]).then(function (results) {
-          return loadCheckout(results[0].gateway).then(function () { return results[0]; });
+          return loadCheckout(results[0].gateway, results[0]).then(function () { return results[0]; });
         });
       })
         .then(function (order) {
@@ -701,6 +849,9 @@
           }
           if (order.gateway === 'easebuzz') {
             return openEasebuzzCheckout(order, b);
+          }
+          if (order.gateway === 'paytm') {
+            return openPaytmCheckout(order, b);
           }
           var checkout = new window.Razorpay({
             key: order.key_id,
@@ -748,8 +899,16 @@
         });
     }
     paymentConfigPromise.then(function (config) {
-      openModal(id, p, cust, go, b, !config || config.activeGateway === 'payu'
-        || config.activeGateway === 'easebuzz');
+      if (!config) {
+        reset(b);
+        alert('Payment settings could not be loaded. Please try again later.');
+        return;
+      }
+      openModal(id, p, cust, go, b, Boolean(config && config.requiresEmail));
+    }).catch(function (err) {
+      reset(b);
+      console.error('Payment settings could not be loaded:', err);
+      alert('Payment settings could not be loaded. Please try again later.');
     });
   });
 })();

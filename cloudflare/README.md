@@ -1,7 +1,7 @@
 # Payment API on Cloudflare Workers
 
 The website is static on GitHub Pages. This Worker creates and verifies
-Razorpay, Cashfree, PayU, or Easebuzz payments without exposing gateway credentials to visitors
+Razorpay, Cashfree, PayU, Easebuzz, or Paytm PG payments without exposing gateway credentials to visitors
 or the GitHub Pages build. The active gateway is selected in
 `/payment-admin.html`; only one gateway handles new checkouts at a time.
 
@@ -22,7 +22,8 @@ or the GitHub Pages build. The active gateway is selected in
 4. Create a Cloudflare Workers KV namespace named `PAYMENT_SETTINGS` in the
    Cloudflare dashboard (or with Wrangler). Replace
    `REPLACE_WITH_KV_NAMESPACE_ID` in `wrangler.toml` with its namespace ID.
-   The namespace stores only the active gateway and gateway environment settings.
+   The namespace stores active gateway/environment settings and expiring Paytm
+   order metadata used to verify payments and recover booking details.
    You can create it with `npx wrangler kv namespace create PAYMENT_SETTINGS`.
    KV setting changes can take up to about a minute to propagate globally.
 5. Deploy the Worker using the `Deploy payment API` GitHub Actions workflow.
@@ -37,6 +38,10 @@ or the GitHub Pages build. The active gateway is selected in
    - `PAYU_MERCHANT_SALT`
    - `EASEBUZZ_KEY`
    - `EASEBUZZ_SALT`
+   - `PAYTM_STAGING_MID`
+   - `PAYTM_STAGING_MERCHANT_KEY`
+   - `PAYTM_PRODUCTION_MID`
+   - `PAYTM_PRODUCTION_MERCHANT_KEY`
    - `ADMIN_USERNAME` — the username you will use to sign in.
    - `ADMIN_PASSWORD` — a unique password of at least 12 characters.
    - `ADMIN_SESSION_SECRET` — a separate random value of at least 32
@@ -50,19 +55,22 @@ or the GitHub Pages build. The active gateway is selected in
      Save the output privately, then paste it as the secret value in Cloudflare.
    Remove the old `ADMIN_API_TOKEN` secret if you configured it previously; the
    username/password login replaces it.
-   Set Cashfree, PayU, and Easebuzz credentials to match the environments selected in
+   Set Cashfree, PayU, Easebuzz, and Paytm credentials to match the environments selected in
    the admin page. PayU and Easebuzz use the merchant Key and Salt (not
-   OAuth Client ID/Client Secret). In the Cashfree dashboard, whitelist
+   OAuth Client ID/Client Secret). Paytm staging and production MID/Key pairs
+   are separate; add each pair for the environment you plan to use. The Paytm
+   Merchant Key must be 16 characters. In the Cashfree dashboard, whitelist
    `www.astrojak.in` for web checkout. Avoid changing gateway environments
    while payments are in progress. Use test credentials until checkout is tested.
 7. Confirm `https://api.astrojak.in/payment-config`,
    `https://api.astrojak.in/create-order`, and
    `https://api.astrojak.in/verify-payment` are live. The API hostname is
    configured in `pay.js`; if it differs, update that URL.
-8. Open `https://www.astrojak.in/payment-admin.html` and sign in with
+8. Open `https://www.astrojak.in/admin` (or
+   `https://www.astrojak.in/payment-admin.html`) and sign in with
    `ADMIN_USERNAME` and `ADMIN_PASSWORD`. Select a gateway whose credentials
    are configured and save. Sessions use an HttpOnly, Secure cookie and expire
-   after eight hours. Cashfree, PayU, and Easebuzz credentials must match their selected
+   after eight hours. Cashfree, PayU, Easebuzz, and Paytm credentials must match their selected
    environments.
    The page never accepts gateway secrets; manage those only in Cloudflare
    Worker secrets.
@@ -71,7 +79,7 @@ or the GitHub Pages build. The active gateway is selected in
 
 If the admin page says the payment API is outdated, redeploy the
 **Deploy payment API** workflow from the `main` branch. Confirm
-`/payment-config` includes `payuMode` and `easebuzzMode`, and a GET to
+`/payment-config` includes `payuMode`, `easebuzzMode`, and `paytmMode`, and a GET to
 `/payu-callback` returns 405 before trying to enable either gateway again. If those checks still show the old
 Worker after a successful deployment, check that `api.astrojak.in` is routed
 to the `astrojak` Worker in the same Cloudflare account used by GitHub Actions.
@@ -85,6 +93,23 @@ After a Cashfree payment attempt, the Worker verifies the order directly with
 Cashfree before navigating to the thank-you page. Cashfree's documented
 embedded checkout can still request its redirect fallback in unsupported
 in-app browsers.
+
+Paytm PG uses the server-side Initiate Transaction API and the Paytm JS Checkout
+SDK. The SDK is mounted into a responsive partial-screen modal; after it closes,
+the Worker checks the signed Transaction Status API response before marking the
+order paid. The customer checkout collects only a mobile number for Paytm; an
+email field is shown only when the enabled gateway requires it (PayU or
+Easebuzz). Choose staging or production in the admin page to select the matching
+Paytm MID and Merchant Key. See [Paytm API
+documentation](https://www.paytmpayments.com/docs), [Initiate Transaction
+API](https://www.paytmpayments.com/docs/api/initiate-transaction-api),
+[JS Checkout](https://www.paytmpayments.com/docs/jscheckout-invoke-payment),
+[Transaction Status API](https://www.paytmpayments.com/docs/api/v3/transaction-status-api),
+and [Checksum implementation](https://www.paytmpayments.com/docs/checksum-implementation).
+
+GitHub Pages does not process the `_redirects` file, so `/admin` is provided
+by the static `admin/index.html` redirect page as well as the existing
+`/payment-admin.html` page.
 
 PayU Hosted Checkout is created with a server-generated SHA-512 hash and
 displayed in a responsive partial-screen modal. Its callback is routed through
@@ -120,7 +145,7 @@ The website initializes Meta Pixel `2057261584904971` and sends a browser
 `Purchase` event from `thank-you.html` only after the checkout flow receives a
 successful payment verification from this Worker. The event includes
 the plan value in INR, plan name and ID, and the gateway payment ID (the
-Cashfree order ID, PayU `mihpayid`, or Easebuzz `easepayid` for those transactions). The browser stores a per-payment marker so refreshing the thank-you
+Cashfree order ID, PayU `mihpayid`, Easebuzz `easepayid`, or Paytm `txnId` for those transactions). The browser stores a per-payment marker so refreshing the thank-you
 page does not send the same Purchase event again in that browser.
 
 This is Pixel browser tracking, not a direct Razorpay-to-Meta integration or a
@@ -256,14 +281,15 @@ access to each spreadsheet.
   payments before reporting success. Cashfree completion is verified by
   retrieving the order server-side and requiring the `PAID` status, expected
   plan, amount, and INR currency. PayU success is reconciled with
-  `verify_payment`; Easebuzz success is reconciled with Transaction API V2.1.
+  `verify_payment`; Easebuzz success is reconciled with Transaction API V2.1;
+  Paytm success is reconciled with the signed Transaction Status API response.
   The Worker checks transaction status, plan, amount, product, and appointment
   before reporting success.
 - Only the listed website origins and the local development origin are allowed
   by CORS. CORS is not authentication; the server-side plan/amount validation
   is still required.
 - The Worker returns only public checkout data (Razorpay key ID, Cashfree
-  payment-session ID, or PayU/Easebuzz merchant key and signed checkout fields); it
+  payment-session ID, or PayU/Easebuzz/Paytm checkout tokens and public merchant IDs); it
   never returns or logs private keys, salts, or API secrets. Gateway failure
   details are deliberately not exposed.
 - `/admin/payment-settings` requires a valid, signed eight-hour admin session.

@@ -377,6 +377,47 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       });
     }
   }
+  var paytmOrderId=q.get('order_id')||'';
+  var paytmVerified=null;
+  if(gateway==='paytm'&&paytmOrderId){
+    try{
+      var savedPaytm=JSON.parse(sessionStorage.getItem('astrojak_paytm_verified_'+paytmOrderId)||'null');
+      if(savedPaytm&&savedPaytm.order_id===paytmOrderId&&q.get('payment_status')==='paid'){
+        paytmVerified=savedPaytm;
+      }
+    }catch(err){console.error('Could not read Paytm payment confirmation:',err)}
+    if(!paytmVerified){
+      $('status').textContent='Checking Paytm payment status…';
+      fetch('https://api.astrojak.in/verify-payment',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({gateway:'paytm',order_id:paytmOrderId})
+      }).then(function(res){
+        return res.json().catch(function(){return {}}).then(function(result){
+          if(!res.ok||!result.verified)throw new Error(result.error||'Payment is not confirmed yet');
+          var confirmed={
+            order_id:paytmOrderId,
+            payment_id:result.payment_id,
+            reference_id:result.reference_id,
+            plan:result.plan,
+            appointment_date:result.appointment_date||'',
+            appointment_time:result.appointment_time||''
+          };
+          sessionStorage.setItem('astrojak_paytm_verified_'+paytmOrderId,JSON.stringify(confirmed));
+          q.set('payment_status','paid');
+          q.set('payment_id',confirmed.payment_id);
+          q.set('reference_id',confirmed.reference_id);
+          q.set('plan',confirmed.plan);
+          if(confirmed.appointment_date)q.set('appointment_date',confirmed.appointment_date);
+          if(confirmed.appointment_time)q.set('appointment_time',confirmed.appointment_time);
+          location.replace(location.pathname+'?'+q.toString());
+        });
+      }).catch(function(err){
+        console.error('Paytm payment could not be verified:',err);
+        $('status').textContent='Your payment is not confirmed yet. If you completed payment, refresh this page in a moment or contact us before paying again.';
+      });
+    }
+  }
   var payuTransactionId=q.get('txnid')||'';
   var payuVerified=null;
   if(gateway==='payu'&&payuTransactionId){
@@ -457,9 +498,9 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       });
     }
   }
-  var paymentId=q.get('razorpay_payment_id')||(cashfreeVerified?cashfreeVerified.payment_id:payuVerified?payuVerified.payment_id:easebuzzVerified?easebuzzVerified.payment_id:q.get('payment_id')||'');
-  var referenceId=q.get('razorpay_payment_link_reference_id')||(cashfreeVerified?cashfreeVerified.reference_id:payuVerified?payuVerified.reference_id:easebuzzVerified?easebuzzVerified.reference_id:q.get('reference_id')||'');
-  var paid=q.get('razorpay_payment_link_status')==='paid'||Boolean(cashfreeVerified)||Boolean(payuVerified)||Boolean(easebuzzVerified);
+  var paymentId=q.get('razorpay_payment_id')||(cashfreeVerified?cashfreeVerified.payment_id:paytmVerified?paytmVerified.payment_id:payuVerified?payuVerified.payment_id:easebuzzVerified?easebuzzVerified.payment_id:q.get('payment_id')||'');
+  var referenceId=q.get('razorpay_payment_link_reference_id')||(cashfreeVerified?cashfreeVerified.reference_id:paytmVerified?paytmVerified.reference_id:payuVerified?payuVerified.reference_id:easebuzzVerified?easebuzzVerified.reference_id:q.get('reference_id')||'');
+  var paid=q.get('razorpay_payment_link_status')==='paid'||Boolean(cashfreeVerified)||Boolean(paytmVerified)||Boolean(payuVerified)||Boolean(easebuzzVerified);
   var ref=q.get('plan')||referenceId.split('_')[0];
   var plan=window.PRICING&&PRICING.plans[ref];
   var planName=plan?plan.name:'Consultation';
@@ -615,7 +656,8 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       $('doneCard').hidden=false;
       syncCalendar();
     }
-    if(paymentId&&((gateway==='payu'&&/^\d{1,20}$/.test(paymentId))
+    if(paymentId&&((gateway==='paytm'&&/^[A-Za-z0-9]{1,50}$/.test(paymentId))
+      ||(gateway==='payu'&&/^\d{1,20}$/.test(paymentId))
       ||(gateway==='easebuzz'&&/^[A-Za-z0-9]{1,40}$/.test(paymentId))
       ||/^pay_[A-Za-z0-9]+$/.test(paymentId))&&plan){
       try{

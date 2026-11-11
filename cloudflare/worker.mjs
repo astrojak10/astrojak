@@ -40,6 +40,7 @@ const DEFAULT_PAYMENT_SETTINGS = {
   cashfreeMode: 'sandbox',
   payuMode: 'sandbox',
   easebuzzMode: 'sandbox',
+  paytmMode: 'sandbox',
 };
 const PAYU_PLAN_PREFIXES = {
   reserve: 'res',
@@ -119,20 +120,153 @@ async function getPaymentSettings(env) {
   const saved = await env.PAYMENT_SETTINGS.get('gateway-settings', 'json');
   if (!saved) return { ...DEFAULT_PAYMENT_SETTINGS };
   const settings = { ...DEFAULT_PAYMENT_SETTINGS, ...saved };
-  if (!['razorpay', 'cashfree', 'payu', 'easebuzz'].includes(settings.activeGateway)
+  if (!['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm'].includes(settings.activeGateway)
     || !['sandbox', 'production'].includes(settings.cashfreeMode)
     || !['sandbox', 'production'].includes(settings.payuMode)
-    || !['sandbox', 'production'].includes(settings.easebuzzMode)) {
+    || !['sandbox', 'production'].includes(settings.easebuzzMode)
+    || !['sandbox', 'production'].includes(settings.paytmMode)) {
     throw new Error('Saved payment settings are invalid');
   }
   return settings;
 }
 
-function paymentGatewayConfigured(env, gateway) {
+function paytmCredentials(env, mode) {
+  const production = mode === 'production';
+  return {
+    mid: production ? env.PAYTM_PRODUCTION_MID : env.PAYTM_STAGING_MID,
+    merchantKey: production ? env.PAYTM_PRODUCTION_MERCHANT_KEY : env.PAYTM_STAGING_MERCHANT_KEY,
+  };
+}
+
+function paymentGatewayConfigured(env, gateway, settings) {
   if (gateway === 'cashfree') return Boolean(env.CASHFREE_APP_ID && env.CASHFREE_SECRET_KEY);
   if (gateway === 'payu') return Boolean(env.PAYU_MERCHANT_KEY && env.PAYU_MERCHANT_SALT);
   if (gateway === 'easebuzz') return Boolean(env.EASEBUZZ_KEY && env.EASEBUZZ_SALT);
+  if (gateway === 'paytm') {
+    const credentials = paytmCredentials(env, settings?.paytmMode || 'sandbox');
+    return Boolean(credentials.mid && credentials.merchantKey && credentials.merchantKey.length === 16);
+  }
   return Boolean(env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET);
+}
+
+function paytmBaseUrl(mode) {
+  return mode === 'sandbox'
+    ? 'https://securestage.paytmpayments.com'
+    : 'https://secure.paytmpayments.com';
+}
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+  return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  return Uint8Array.from(atob(value), character => character.charCodeAt(0));
+}
+
+async function paytmChecksum(body, merchantKey) {
+  const salt = bytesToBase64(crypto.getRandomValues(new Uint8Array(3)));
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`${body}|${salt}`),
+  );
+  const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('') + salt;
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(merchantKey),
+    { name: 'AES-CBC' },
+    false,
+    ['encrypt'],
+  );
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-CBC', iv: new TextEncoder().encode('@@@@&&&&####$$$$') },
+    key,
+    new TextEncoder().encode(hash),
+  );
+  return bytesToBase64(new Uint8Array(encrypted));
+}
+
+async function paytmVerifyChecksum(body, merchantKey, signature) {
+  try {
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(merchantKey),
+      { name: 'AES-CBC' },
+      false,
+      ['decrypt'],
+    );
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-CBC', iv: new TextEncoder().encode('@@@@&&&&####$$$$') },
+      key,
+      base64ToBytes(signature),
+    );
+    const hash = new TextDecoder().decode(decrypted);
+    const salt = hash.slice(-4);
+    const expectedDigest = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(`${body}|${salt}`),
+    );
+    const expected = Array.from(new Uint8Array(expectedDigest), byte => byte.toString(16).padStart(2, '0')).join('') + salt;
+    return constantTimeEqual(hash, expected);
+  } catch {
+    return false;
+  }
+}
+
+async function paytmRequest(baseUrl, path, body, merchantKey) {
+  const bodyJson = JSON.stringify(body);
+  const signature = await paytmChecksum(bodyJson, merchantKey);
+  const result = await fetch(`${baseUrl}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ body, head: { signature } }),
+  });
+  const data = await result.json().catch(() => ({}));
+  const responseSignature = data.head?.signature;
+  const validSignature = typeof responseSignature === 'string'
+    && data.body
+    && await paytmVerifyChecksum(JSON.stringify(data.body), merchantKey, responseSignature);
+  return { ok: result.ok && validSignature, status: result.status, data };
+}
+
+async function verifiedPaytmOrder(env, orderId) {
+  if (!/^[A-Za-z0-9]{1,50}$/.test(orderId) || !env.PAYMENT_SETTINGS) return null;
+  const order = await env.PAYMENT_SETTINGS.get(`paytm-order:${orderId}`, 'json');
+  if (!order || !['sandbox', 'production'].includes(order.mode)) return null;
+  const credentials = paytmCredentials(env, order.mode);
+  if (!credentials.mid || !credentials.merchantKey || credentials.merchantKey.length !== 16
+    || credentials.mid !== order.mid) return null;
+
+  const result = await paytmRequest(
+    paytmBaseUrl(order.mode),
+    '/v3/order/status',
+    { mid: credentials.mid, orderId },
+    credentials.merchantKey,
+  );
+  const transaction = result.data.body;
+  const plan = Object.prototype.hasOwnProperty.call(PLANS, order.planId) ? PLANS[order.planId] : null;
+  const amount = Math.round(Number(transaction?.txnAmount) * 100);
+  if (!result.ok || !plan || transaction?.resultInfo?.resultStatus !== 'TXN_SUCCESS'
+    || transaction.mid !== credentials.mid || transaction.orderId !== orderId
+    || !/^[A-Za-z0-9]{1,50}$/.test(String(transaction.txnId || ''))
+    || !Number.isFinite(amount) || amount !== plan.price * 100
+    || amount !== order.amount || (transaction.txnType && transaction.txnType !== 'SALE')
+    || ((order.appointmentDate || order.appointmentTime)
+      && !isValidAppointment({ date: order.appointmentDate, time: order.appointmentTime }))
+    || (!order.appointmentDate && !order.appointmentTime && order.planId !== 'reserve')) return null;
+
+  return {
+    paymentId: String(transaction.txnId),
+    orderId,
+    referenceId: orderId,
+    planId: order.planId,
+    amount,
+    currency: 'INR',
+    appointmentDate: order.appointmentDate,
+    appointmentTime: order.appointmentTime,
+    createdAt: Math.floor(Date.now() / 1000),
+  };
 }
 
 async function cashfreeRequest(env, settings, path, method, body) {
@@ -767,6 +901,8 @@ export default {
           cashfreeMode: settings.cashfreeMode,
           payuMode: settings.payuMode,
           easebuzzMode: settings.easebuzzMode,
+          paytmMode: settings.paytmMode,
+          requiresEmail: settings.activeGateway === 'payu' || settings.activeGateway === 'easebuzz',
         }, origin);
       } catch (error) {
         console.error('Could not read payment settings', error);
@@ -819,17 +955,20 @@ export default {
               cashfree: paymentGatewayConfigured(env, 'cashfree'),
               payu: paymentGatewayConfigured(env, 'payu'),
               easebuzz: paymentGatewayConfigured(env, 'easebuzz'),
+              paytmSandbox: paymentGatewayConfigured(env, 'paytm', { paytmMode: 'sandbox' }),
+              paytmProduction: paymentGatewayConfigured(env, 'paytm', { paytmMode: 'production' }),
             },
           }, origin);
         }
         const input = await parseInput(request);
-        if (!input || !['razorpay', 'cashfree', 'payu', 'easebuzz'].includes(input.activeGateway)
+        if (!input || !['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm'].includes(input.activeGateway)
           || !['sandbox', 'production'].includes(input.cashfreeMode)
           || !['sandbox', 'production'].includes(input.payuMode)
-          || !['sandbox', 'production'].includes(input.easebuzzMode)) {
+          || !['sandbox', 'production'].includes(input.easebuzzMode)
+          || !['sandbox', 'production'].includes(input.paytmMode)) {
           return response(400, { error: 'Invalid payment settings' }, origin);
         }
-        if (!paymentGatewayConfigured(env, input.activeGateway)) {
+        if (!paymentGatewayConfigured(env, input.activeGateway, input)) {
           return response(400, { error: 'Add the selected gateway credentials before enabling it' }, origin);
         }
         const settings = {
@@ -837,6 +976,7 @@ export default {
           cashfreeMode: input.cashfreeMode,
           payuMode: input.payuMode,
           easebuzzMode: input.easebuzzMode,
+          paytmMode: input.paytmMode,
         };
         await env.PAYMENT_SETTINGS.put('gateway-settings', JSON.stringify(settings));
         return response(200, { saved: true, ...settings }, origin);
@@ -924,7 +1064,7 @@ export default {
         return response(503, { error: 'Google Sheets is not configured' }, origin);
       }
       const gateway = String(input.gateway || 'razorpay');
-      if (!['razorpay', 'cashfree', 'payu', 'easebuzz'].includes(gateway)) {
+      if (!['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm'].includes(gateway)) {
         return response(400, { error: 'Unknown payment gateway' }, origin);
       }
       const paymentId = String(input.payment_id || '');
@@ -944,7 +1084,9 @@ export default {
           ? /^\d{1,20}$/.test(paymentId)
           : gateway === 'easebuzz'
             ? /^[A-Za-z0-9]{1,40}$/.test(paymentId)
-            : /^pay_[A-Za-z0-9]+$/.test(paymentId))
+            : gateway === 'paytm'
+              ? /^[A-Za-z0-9]{1,50}$/.test(paymentId)
+              : /^pay_[A-Za-z0-9]+$/.test(paymentId))
         || !referenceId || !name || !contact
         || !birthDate || !birthPlace
         || Boolean(appointment.date) !== Boolean(appointment.time)
@@ -1025,6 +1167,23 @@ export default {
               appointment_time: verified.appointmentTime,
             },
           };
+        } else if (gateway === 'paytm') {
+          const verified = await verifiedPaytmOrder(env, referenceId);
+          if (!verified || verified.paymentId !== paymentId) {
+            return response(400, { error: 'A successful Paytm transaction is required' }, origin);
+          }
+          payment = { amount: verified.amount, currency: verified.currency };
+          order = {
+            id: verified.orderId,
+            receipt: verified.referenceId,
+            currency: verified.currency,
+            amount: verified.amount,
+            notes: {
+              plan: verified.planId,
+              appointment_date: verified.appointmentDate,
+              appointment_time: verified.appointmentTime,
+            },
+          };
         } else {
           const paymentResult = await razorpayRequest(
             env,
@@ -1060,7 +1219,7 @@ export default {
         };
         const orderHasAppointment = Boolean(orderAppointment.date || orderAppointment.time);
         if (!plan || order.id !== orderId || order.receipt !== referenceId
-          || (!['payu', 'easebuzz'].includes(gateway)
+          || (!['payu', 'easebuzz', 'paytm'].includes(gateway)
             && !referenceId.startsWith(`${planId}_`))
           || payment.currency !== 'INR' || payment.amount !== plan.price * 100
           || order.currency !== 'INR' || order.amount !== payment.amount
@@ -1156,7 +1315,7 @@ export default {
       }
 
       const gateway = String(input.gateway || 'razorpay');
-      if (!['razorpay', 'cashfree', 'payu', 'easebuzz'].includes(gateway)) {
+      if (!['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm'].includes(gateway)) {
         return response(400, { error: 'Unknown payment gateway' }, origin);
       }
       const paymentId = String(input.payment_id || '');
@@ -1173,7 +1332,9 @@ export default {
           ? /^\d{1,20}$/.test(paymentId)
           : gateway === 'easebuzz'
             ? /^[A-Za-z0-9]{1,40}$/.test(paymentId)
-            : /^pay_[A-Za-z0-9]+$/.test(paymentId))
+            : gateway === 'paytm'
+              ? /^[A-Za-z0-9]{1,50}$/.test(paymentId)
+              : /^pay_[A-Za-z0-9]+$/.test(paymentId))
         || !name || !contact
         || !referenceId || !isValidAppointment(appointment)) {
         return response(400, { error: 'Valid payment, customer, and appointment details are required' }, origin);
@@ -1237,6 +1398,28 @@ export default {
               appointment_time: verified.appointmentTime,
             },
           };
+        } else if (gateway === 'paytm') {
+          const verified = await verifiedPaytmOrder(env, referenceId);
+          if (!verified || verified.paymentId !== paymentId) {
+            return response(400, { error: 'A successful Paytm transaction is required' }, origin);
+          }
+          payment = {
+            amount: verified.amount,
+            currency: verified.currency,
+            status: 'captured',
+            created_at: verified.createdAt,
+          };
+          order = {
+            id: verified.orderId,
+            receipt: verified.referenceId,
+            currency: verified.currency,
+            amount: verified.amount,
+            notes: {
+              plan: verified.planId,
+              appointment_date: verified.appointmentDate,
+              appointment_time: verified.appointmentTime,
+            },
+          };
         } else {
           const paymentResult = await razorpayRequest(
             env,
@@ -1269,7 +1452,7 @@ export default {
         const orderDate = String(order.notes?.appointment_date || '');
         const orderTime = String(order.notes?.appointment_time || '');
         if (!plan || order.id !== orderId || order.receipt !== referenceId
-          || (!['payu', 'easebuzz'].includes(gateway)
+          || (!['payu', 'easebuzz', 'paytm'].includes(gateway)
             && !referenceId.startsWith(`${planId}_`))
           || payment.currency !== 'INR' || payment.amount !== plan.price * 100
           || order.currency !== 'INR' || order.amount !== payment.amount
@@ -1401,10 +1584,58 @@ export default {
         return response(503, { error: 'Payment settings are unavailable' }, origin);
       }
       const gateway = settings.activeGateway;
-      if (!paymentGatewayConfigured(env, gateway)) {
+      if (!paymentGatewayConfigured(env, gateway, settings)) {
         return response(503, { error: 'Selected payment gateway is not configured' }, origin);
       }
       try {
+        if (gateway === 'paytm') {
+          const credentials = paytmCredentials(env, settings.paytmMode);
+          const orderId = `PTM${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+          const orderMetadata = {
+            mode: settings.paytmMode,
+            mid: credentials.mid,
+            planId,
+            amount: plan.price * 100,
+            appointmentDate: isValidAppointment(appointment) ? String(appointment.date) : '',
+            appointmentTime: isValidAppointment(appointment) ? String(appointment.time) : '',
+          };
+          await env.PAYMENT_SETTINGS.put(
+            `paytm-order:${orderId}`,
+            JSON.stringify(orderMetadata),
+            { expirationTtl: 60 * 60 * 24 * 90 },
+          );
+          const requestBody = {
+            requestType: 'Payment',
+            mid: credentials.mid,
+            websiteName: settings.paytmMode === 'sandbox' ? 'WEBSTAGING' : 'DEFAULT',
+            orderId,
+            txnAmount: { value: plan.price.toFixed(2), currency: 'INR' },
+            userInfo: {
+              custId: `C${contact.slice(-10)}`,
+              mobile: contact.slice(-10),
+            },
+          };
+          const result = await paytmRequest(
+            paytmBaseUrl(settings.paytmMode),
+            `/theia/api/v1/initiateTransaction?mid=${encodeURIComponent(credentials.mid)}&orderId=${encodeURIComponent(orderId)}`,
+            requestBody,
+            credentials.merchantKey,
+          );
+          const token = result.data.body?.txnToken;
+          if (!result.ok || typeof token !== 'string' || !token) {
+            await env.PAYMENT_SETTINGS.delete(`paytm-order:${orderId}`);
+            console.error('Paytm payment initiation failed', result.status);
+            return response(502, { error: 'Could not create payment order' }, origin);
+          }
+          return response(200, {
+            gateway,
+            order_id: orderId,
+            txn_token: token,
+            mid: credentials.mid,
+            amount: plan.price.toFixed(2),
+            paytm_mode: settings.paytmMode,
+          }, origin);
+        }
         if (gateway === 'payu') {
           const email = String(input.customer?.email || '').trim().slice(0, 254);
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -1652,6 +1883,26 @@ export default {
         }, origin);
       } catch (error) {
         console.error('Easebuzz payment verification failed', error);
+        return response(502, { error: 'Could not verify payment' }, origin);
+      }
+    }
+
+    if (input.gateway === 'paytm') {
+      try {
+        const orderId = String(input.order_id || '');
+        const verified = await verifiedPaytmOrder(env, orderId);
+        if (!verified) return response(409, { error: 'Paytm payment is not confirmed as successful' }, origin);
+        return response(200, {
+          verified: true,
+          payment_id: verified.paymentId,
+          order_id: verified.orderId,
+          reference_id: verified.referenceId,
+          plan: verified.planId,
+          appointment_date: verified.appointmentDate,
+          appointment_time: verified.appointmentTime,
+        }, origin);
+      } catch (error) {
+        console.error('Paytm payment verification failed', error);
         return response(502, { error: 'Could not verify payment' }, origin);
       }
     }

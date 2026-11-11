@@ -66,6 +66,10 @@
           <input id="easebuzz" type="radio" name="gateway" value="easebuzz">
           <label for="easebuzz">Easebuzz<small id="easebuzzStatus">Checking credentials…</small></label>
         </div>
+        <div class="choice">
+          <input id="paytm" type="radio" name="gateway" value="paytm">
+          <label for="paytm">Paytm PG<small id="paytmStatus">Checking credentials…</small></label>
+        </div>
       </fieldset>
       <label for="cashfreeMode">Cashfree environment</label>
       <select id="cashfreeMode">
@@ -82,7 +86,12 @@
         <option value="sandbox">Sandbox / test</option>
         <option value="production">Production / live</option>
       </select>
-      <p class="note">Store gateway credentials as encrypted Cloudflare Worker secrets. Cashfree, PayU, and Easebuzz credentials must match their selected environments. PayU and Easebuzz use their merchant Key and Salt. Never enter API keys or secrets on this page.</p>
+      <label for="paytmMode">Paytm PG environment</label>
+      <select id="paytmMode">
+        <option value="sandbox">Staging / test</option>
+        <option value="production">Production / live</option>
+      </select>
+      <p class="note">Store gateway credentials as encrypted Cloudflare Worker secrets. Cashfree, PayU, Easebuzz, and Paytm credentials must match their selected environments. PayU and Easebuzz use their merchant Key and Salt. Paytm collects only the customer's mobile number; PayU and Easebuzz require email. Never enter API keys or secrets on this page.</p>
       <button id="save" type="submit">Save payment settings</button>
       </form>
     </section>
@@ -127,10 +136,25 @@
             &&typeof settings.payuMode==='string';
           var hasEasebuzzSupport=typeof credentials.easebuzz==='boolean'
             &&typeof settings.easebuzzMode==='string';
+          var hasPaytmSupport=typeof credentials.paytmSandbox==='boolean'
+            &&typeof credentials.paytmProduction==='boolean'
+            &&typeof settings.paytmMode==='string';
           document.getElementById('razorpay').disabled=!credentials.razorpay;
           document.getElementById('cashfree').disabled=!credentials.cashfree;
           document.getElementById('payu').disabled=!hasPayuSupport||!credentials.payu;
           document.getElementById('easebuzz').disabled=!hasEasebuzzSupport||!credentials.easebuzz;
+          document.getElementById('paytmMode').value=hasPaytmSupport?settings.paytmMode:'sandbox';
+          function updatePaytmStatus(){
+            var mode=document.getElementById('paytmMode').value;
+            var configured=hasPaytmSupport&&credentials[mode==='sandbox'?'paytmSandbox':'paytmProduction'];
+            document.getElementById('paytm').disabled=!configured;
+            document.getElementById('paytmStatus').textContent=!hasPaytmSupport
+              ?'Payment API is outdated; deploy the latest Worker'
+              :configured?'Credentials configured for '+(mode==='sandbox'?'staging':'production')
+                :'Add the Paytm '+(mode==='sandbox'?'staging':'production')+' MID and 16-character Merchant Key Worker secrets';
+          }
+          document.getElementById('paytmMode').addEventListener('change',updatePaytmStatus);
+          updatePaytmStatus();
           document.getElementById('razorpayStatus').textContent=credentials.razorpay?'Credentials configured':'Add Razorpay Worker secrets first';
           document.getElementById('cashfreeStatus').textContent=credentials.cashfree?'Credentials configured':'Add Cashfree Worker secrets first';
           document.getElementById('payuStatus').textContent=!hasPayuSupport
@@ -145,7 +169,9 @@
           document.getElementById('easebuzzMode').value=hasEasebuzzSupport?settings.easebuzzMode:'sandbox';
           var currentGatewaySupported=settings.activeGateway!=='payu'||hasPayuSupport;
           currentGatewaySupported=currentGatewaySupported
-            &&(settings.activeGateway!=='easebuzz'||hasEasebuzzSupport);
+            &&(settings.activeGateway!=='easebuzz'||hasEasebuzzSupport)
+            &&(settings.activeGateway!=='paytm'
+              ||(hasPaytmSupport&&credentials[settings.paytmMode==='production'?'paytmProduction':'paytmSandbox']));
           setStatus(currentGatewaySupported?'Settings loaded.':'Deploy the latest Cloudflare Worker before enabling this gateway.',!currentGatewaySupported);
         }).catch(function(error){
           signedIn(false);
@@ -185,7 +211,8 @@
           activeGateway:activeGateway,
           cashfreeMode:document.getElementById('cashfreeMode').value,
           payuMode:document.getElementById('payuMode').value,
-          easebuzzMode:document.getElementById('easebuzzMode').value
+          easebuzzMode:document.getElementById('easebuzzMode').value,
+          paytmMode:document.getElementById('paytmMode').value
         }).then(function(){
           setStatus('Payment settings saved.',false);
         }).catch(function(error){

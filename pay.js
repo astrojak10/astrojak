@@ -68,7 +68,7 @@
   var CHECKOUT_CONTEXT = 'astrojak_pending_checkout';
   var ov = null;
   function redirectToBookingWhatsApp() {
-    var message = 'I have to book As soon as possible';
+    var message = 'I need to book astrology consultation.';
     location.href = 'https://wa.me/917827673637?text=' + encodeURIComponent(message);
   }
   function digits10(v) {
@@ -319,7 +319,11 @@
       body: JSON.stringify(body)
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
-        if (!r.ok) throw new Error(j.error || 'Payment request failed');
+        if (!r.ok) {
+          var error = new Error(j.error || 'Payment request failed');
+          error.code = j.code || '';
+          throw error;
+        }
         return j;
       });
     });
@@ -894,8 +898,8 @@
         })
         .catch(function (err) {
           reset(b);
-          console.error('Payment checkout could not be opened:', err);
-          redirectToBookingWhatsApp();
+          console.error('Payment checkout could not be opened:', err.code || '', err);
+          alert(err.message || 'Secure checkout could not be opened. Please try again.');
         });
     }
     paymentConfigPromise.then(function (config) {

@@ -227,7 +227,13 @@ async function paytmRequest(baseUrl, path, body, merchantKey) {
   const validSignature = typeof responseSignature === 'string'
     && data.body
     && await paytmVerifyChecksum(JSON.stringify(data.body), merchantKey, responseSignature);
-  return { ok: result.ok && validSignature, status: result.status, data };
+  return {
+    ok: result.ok && validSignature,
+    httpOk: result.ok,
+    signatureValid: Boolean(validSignature),
+    status: result.status,
+    data,
+  };
 }
 
 async function verifiedPaytmOrder(env, orderId) {
@@ -1624,8 +1630,21 @@ export default {
           const token = result.data.body?.txnToken;
           if (!result.ok || typeof token !== 'string' || !token) {
             await env.PAYMENT_SETTINGS.delete(`paytm-order:${orderId}`);
-            console.error('Paytm payment initiation failed', result.status);
-            return response(502, { error: 'Could not create payment order' }, origin);
+            const code = !result.httpOk
+              ? 'PAYTM_HTTP_ERROR'
+              : !result.signatureValid
+                ? 'PAYTM_RESPONSE_SIGNATURE_INVALID'
+                : 'PAYTM_TOKEN_MISSING';
+            console.error('Paytm payment initiation failed', {
+              status: result.status,
+              code,
+              resultCode: String(result.data.body?.resultInfo?.resultCode || '').slice(0, 64),
+              resultStatus: String(result.data.body?.resultInfo?.resultStatus || '').slice(0, 32),
+            });
+            return response(502, {
+              error: `Paytm ${settings.paytmMode === 'sandbox' ? 'staging' : 'production'} checkout could not start. Check that the selected environment matches your MID and Merchant Key.`,
+              code,
+            }, origin);
           }
           return response(200, {
             gateway,

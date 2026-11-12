@@ -8,7 +8,10 @@
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="author" content="ASTROJAK">
 <link rel="canonical" href="https://www.astrojak.in/">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F8B700'/%3E%3Ccircle cx='32' cy='32' r='11' fill='none' stroke='white' stroke-width='5'/%3E%3C/svg%3E">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <meta name="theme-color" content="#F8B700">
 <link rel="preload" as="image" href="/pandit.webp" type="image/webp" fetchpriority="high">
 
@@ -591,13 +594,13 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
   <select id="plan" hidden aria-hidden="true"></select>
 
   <div class="paywrap">
-    <button type="button" class="paybtn" id="viewPlan"><span>View plan details</span> · <span id="payAmt">₹1499</span> →</button>
-    <p class="paynote">Choose a plan to see its details and continue to secure checkout.</p>
+    <button type="button" class="paybtn" id="viewPlan" data-pay="selected" data-pos="index-page-1499pay"><span data-i18n="pay-now">Pay Now</span> · <span id="payAmt">₹1499</span> →</button>
+    <p class="paynote">Choose a plan and continue to secure checkout without leaving this page.</p>
   </div>
 </div>
 
 <p class="intro" data-i18n="intro">A consultation with Acharya Narender Ji is a 1:1 audio call with our astrologer and a personal reading of your Kundli. Pick the analysis that suits your need, pay once, and get honest Vedic guidance with a clear upay.</p>
-<a class="wa" id="wa" data-i18n="book-whatsapp" href="https://wa.me/917827673637?text=Hi!%20I%20want%20to%20book%20astrology%20consultation." target="_blank" rel="noopener noreferrer">Book on WhatsApp</a>
+<a class="wa" id="wa" href="https://wa.me/917827673637?text=Hello%2C%20I%20would%20like%20to%20book%20a%20consultation%20with%20AstroJak." target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a>
 
 <h2 data-i18n="what-you-get">What You Get</h2>
 <p class="sub" data-i18n="compare-plans">Compare the three plans</p>
@@ -667,7 +670,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" fill="currentColor"></circle></svg>
         <span>Follow @astrojakk on Instagram</span>
       </a>
-      <a href="https://wa.me/917827673637?text=Hi!%20I%20want%20to%20book%20astrology%20consultation." class="footer-whatsapp" target="_blank" rel="noopener noreferrer">
+      <a href="https://wa.me/917827673637?text=Hello%2C%20I%20would%20like%20to%20book%20a%20consultation%20with%20AstroJak." class="footer-whatsapp" target="_blank" rel="noopener noreferrer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
         <span>Chat on WhatsApp</span>
       </a>
@@ -680,7 +683,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:34px
       <a href="/home#contact">Contact Us</a>
       <a href="/home#feedback">Feedback</a>
       <a href="/home#terms">Terms of Service</a>
-      <a href="/home#refund-policy">Refund Policy</a>
+      <a href="/home#refund-policy">Cancellation &amp; Refund Policy</a>
       <a href="/home#privacy-policy">Privacy Policy</a>
     </div>
     <p class="footer-copyright">© 2026 ASTROJAK. All astrological consultations are strictly confidential and grounded in Vedic scriptures.</p>
@@ -768,31 +771,20 @@ function opt(id,v,t){var o=document.createElement('option');o.value=v;o.textCont
 function show(){
  var k=$('plan').value,d=P[k],name=d.displayName||d.n;
  $('payAmt').textContent=d.p;
+ $('viewPlan').setAttribute('data-pos','index-page-'+d.price+'pay');
  [].forEach.call(document.querySelectorAll('.pc'),function(c){var on=c.getAttribute('data-k')===k;c.classList.toggle('on',on);c.setAttribute('aria-checked',on)});
 }
 var NOTE={'kundali':['⭐','Clear reading of your birth chart'],'detailed-kundali':['💫','Dasha, timing & upay'],'matchmaking':['💍','Kundli Milan for two people']};
-function goToPlan(k){
- if(!P[k])return;
- try{
-  sessionStorage.setItem('astrojak_plan_selection',JSON.stringify({
-   plan:k,
-   topics:selectedTopics(),
-   appointment:appointment()
-  }));
- }catch(err){console.error('Could not save booking selections for the plan page:',err)}
- location.href='/plan?plan='+encodeURIComponent(k);
-}
 Object.keys(P).forEach(function(k){
  opt('plan',k,P[k].n+' — '+P[k].p);
  var c=document.createElement('button');c.type='button';c.className='pc';c.setAttribute('role','radio');c.setAttribute('data-k',k);
  var off=Math.round((P[k].listPrice-P[k].price)/P[k].listPrice*100);
  c.innerHTML=(k==='detailed-kundali'?'<em class="pop">Most Popular</em>':'')+'<i>'+NOTE[k][0]+'</i><div class="tx"><b>'+P[k].n+'</b><small>'+NOTE[k][1]+'</small></div><span class="pp price-stack"><span><del>'+PRICING.symbol+P[k].listPrice+'</del>'+P[k].p+'</span><small>'+off+tr('discount-label')+'</small></span>';
- c.addEventListener('click',function(){goToPlan(k)});
+ c.addEventListener('click',function(){$('plan').value=k;show()});
  $('pcards').appendChild(c);
 });
 $('plan').value='detailed-kundali';
 $('plan').addEventListener('change',show);
-$('viewPlan').addEventListener('click',function(){goToPlan($('plan').value)});
 try{var q=new URLSearchParams(location.search).get('plan');if(P[q])$('plan').value=q}catch(e){}
 show();
 var SLOT_LABELS=['09:00 AM – 12:00 PM','12:00 PM – 03:00 PM','03:00 PM – 06:00 PM','06:00 PM – 09:00 PM'];
@@ -925,14 +917,9 @@ window.PAY_HOOK={
   renderSlots();
  }
 };
-// Update the topic count and WhatsApp message as the customer changes selections.
+// Update the topic count and other-topic field as the customer changes selections.
 function msg(){
- var L=[],k=$('plan').value,d=P[k];
- L.push('Hi! I want to book '+d.n+' ('+d.p+').');
- var t=selectedTopics(),a=appointment();
- if(t.length)L.push('On my mind: '+t.join(', '));
- if(a)L.push('Preferred appointment: '+a.date+' · '+a.time+' IST');
- $('wa').href='https://wa.me/917827673637?text='+encodeURIComponent(L.join('\n'));
+ var t=selectedTopics();
  var n=t.length;$('cnt').textContent=n?n+' selected':'';
  $('otherTxt').hidden=!$('otherChk').checked;
 }

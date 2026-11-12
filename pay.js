@@ -240,6 +240,7 @@
   }
   var checkoutScripts = {};
   var paytmScriptKeyLoaded = '';
+  var paymentGateways = ['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm'];
   function loadCheckout(gateway, order) {
     if (gateway === 'payu') return Promise.resolve();
     if (gateway === 'cashfree' && window.Cashfree) return Promise.resolve();
@@ -297,20 +298,17 @@
     });
     return checkoutScripts[scriptKey];
   }
-  var paymentConfigPromise = fetch(API + '/payment-config', { cache: 'no-store' })
-    .then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (config) {
-        if (!res.ok || !['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm'].includes(config.activeGateway)) {
-          throw new Error(config.error || 'Could not load payment settings');
-        }
-        if (config.activeGateway === 'paytm') return config;
-        return loadCheckout(config.activeGateway).then(function () { return config; });
+  function getPaymentConfig() {
+    return fetch(API + '/payment-config', { cache: 'no-store' })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (config) {
+          if (!res.ok || !paymentGateways.includes(config.activeGateway)) {
+            throw new Error(config.error || 'Could not load payment settings');
+          }
+          return config;
+        });
       });
-    })
-    .catch(function (err) {
-      console.error('Could not preload the active payment gateway:', err);
-      return null;
-    });
+  }
 
   function post(path, body) {
     return fetch(API + path, {
@@ -832,15 +830,12 @@
         if (hook.topics) body.topics = hook.topics();
       } catch (_) {}
       b.__busy = 1; b.__label = b.innerHTML; b.classList.add('busy'); b.textContent = 'Opening secure payment…';
-      paymentConfigPromise.then(function (config) {
-        if (!config) return post('/create-order', body).then(function (order) {
-          return loadCheckout(order.gateway, order).then(function () { return order; });
-        });
-        return Promise.all([
-          post('/create-order', body),
-          loadCheckout(config.activeGateway)
-        ]).then(function (results) {
-          return loadCheckout(results[0].gateway, results[0]).then(function () { return results[0]; });
+      post('/create-order', body).then(function (order) {
+        if (!paymentGateways.includes(order.gateway)) {
+          throw new Error('The server returned an unsupported payment gateway');
+        }
+        return loadCheckout(order.gateway, order).then(function () {
+          return order;
         });
       })
         .then(function (order) {
@@ -902,12 +897,7 @@
           alert(err.message || 'Secure checkout could not be opened. Please try again.');
         });
     }
-    paymentConfigPromise.then(function (config) {
-      if (!config) {
-        reset(b);
-        alert('Payment settings could not be loaded. Please try again later.');
-        return;
-      }
+    getPaymentConfig().then(function (config) {
       openModal(id, p, cust, go, b, Boolean(config && config.requiresEmail));
     }).catch(function (err) {
       reset(b);

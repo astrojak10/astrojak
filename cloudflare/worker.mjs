@@ -333,19 +333,26 @@ function paymentOrderFailure(gateway, status, data, origin) {
 
 async function verifiedCashfreeOrder(env, settings, orderId) {
   if (!/^[A-Za-z0-9_-]{1,45}$/.test(orderId)) return null;
+  const savedOrder = env.PAYMENT_SETTINGS
+    ? await env.PAYMENT_SETTINGS.get(`cashfree-order:${orderId}`, 'json')
+    : null;
+  const orderSettings = savedOrder && ['sandbox', 'production'].includes(savedOrder.mode)
+    ? { ...settings, cashfreeMode: savedOrder.mode }
+    : settings;
   const result = await cashfreeRequest(
     env,
-    settings,
+    orderSettings,
     `/orders/${encodeURIComponent(orderId)}`,
     'GET',
   );
   if (!result.ok || result.data.order_status !== 'PAID') return null;
   const order = result.data;
-  const planId = String(order.order_tags?.plan || '');
+  const planId = String(savedOrder?.planId || order.order_tags?.plan || '');
   const plan = Object.prototype.hasOwnProperty.call(PLANS, planId) ? PLANS[planId] : null;
   if (!plan || !orderId.startsWith(`${planId}_`)
     || order.order_id !== orderId || order.order_currency !== 'INR'
-    || Number(order.order_amount) !== plan.price) return null;
+    || Number(order.order_amount) !== plan.price
+    || (savedOrder && Number(savedOrder.amount) !== plan.price)) return null;
   return {
     paymentId: orderId,
     orderId,
@@ -353,8 +360,8 @@ async function verifiedCashfreeOrder(env, settings, orderId) {
     planId,
     amount: Math.round(Number(order.order_amount) * 100),
     currency: order.order_currency,
-    appointmentDate: String(order.order_tags?.appointment_date || ''),
-    appointmentTime: String(order.order_tags?.appointment_time || ''),
+    appointmentDate: String(savedOrder?.appointmentDate || order.order_tags?.appointment_date || ''),
+    appointmentTime: String(savedOrder?.appointmentTime || order.order_tags?.appointment_time || ''),
   };
 }
 
@@ -1813,6 +1820,18 @@ export default {
           }, origin);
         }
         if (gateway === 'cashfree') {
+          const cashfreeOrder = {
+            mode: settings.cashfreeMode,
+            planId,
+            amount: plan.price,
+            appointmentDate: validAppointment ? String(appointment.date) : '',
+            appointmentTime: validAppointment ? String(appointment.time) : '',
+          };
+          await env.PAYMENT_SETTINGS.put(
+            `cashfree-order:${reference}`,
+            JSON.stringify(cashfreeOrder),
+            { expirationTtl: 60 * 60 * 24 * 90 },
+          );
           const result = await cashfreeRequest(env, settings, '/orders', 'POST', {
             order_id: reference,
             order_amount: plan.price,
@@ -1826,11 +1845,6 @@ export default {
               return_url: `https://www.astrojak.in/thank-you.html?gateway=cashfree&order_id=${encodeURIComponent(reference)}`,
             },
             order_note: `ASTROJAK ${plan.name}`,
-            order_tags: {
-              plan: planId,
-              appointment_date: isValidAppointment(appointment) ? String(appointment.date) : '',
-              appointment_time: isValidAppointment(appointment) ? String(appointment.time) : '',
-            },
           });
           if (!result.ok || !result.data.payment_session_id || result.data.order_id !== reference) {
             return paymentOrderFailure('Cashfree', result.status, result.data, origin);

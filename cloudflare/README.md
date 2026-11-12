@@ -22,8 +22,9 @@ or the GitHub Pages build. The active gateway is selected in
 4. Create a Cloudflare Workers KV namespace named `PAYMENT_SETTINGS` in the
    Cloudflare dashboard (or with Wrangler). Replace
    `REPLACE_WITH_KV_NAMESPACE_ID` in `wrangler.toml` with its namespace ID.
-   The namespace stores active gateway/environment settings and expiring Paytm
-   order metadata used to verify payments and recover booking details.
+   The namespace stores active gateway/environment settings and expiring
+   Cashfree and Paytm order metadata used to verify payments and recover
+   booking details.
    You can create it with `npx wrangler kv namespace create PAYMENT_SETTINGS`.
    KV setting changes can take up to about a minute to propagate globally.
 5. Deploy the Worker using the `Deploy payment API` GitHub Actions workflow.
@@ -107,9 +108,9 @@ API](https://www.paytmpayments.com/docs/api/initiate-transaction-api),
 [Transaction Status API](https://www.paytmpayments.com/docs/api/v3/transaction-status-api),
 and [Checksum implementation](https://www.paytmpayments.com/docs/checksum-implementation).
 
-GitHub Pages does not process the `_redirects` file, so `/admin` is provided
-by the static `admin/index.html` redirect page as well as the existing
-`/payment-admin.html` page.
+GitHub Pages does not process the `_redirects` file. The static
+`admin/index.html` page renders the payment settings portal directly for
+`/admin/`; `/payment-admin.html` remains available as a direct link.
 
 PayU Hosted Checkout is created with a server-generated SHA-512 hash and
 displayed in a responsive partial-screen modal. Its callback is routed through

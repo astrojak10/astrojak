@@ -294,6 +294,43 @@ async function cashfreeRequest(env, settings, path, method, body) {
   return { ok: result.ok, status: result.status, data };
 }
 
+function paymentOrderFailure(gateway, status, data, origin) {
+  const rawCode = data?.code
+    || data?.error?.code
+    || data?.error_code
+    || data?.status_code
+    || '';
+  const providerCode = /^[A-Za-z0-9_.-]{1,64}$/.test(String(rawCode))
+    ? String(rawCode)
+    : '';
+  const rawMessage = data?.message
+    || data?.error?.description
+    || data?.error?.message
+    || data?.error_desc
+    || data?.msg
+    || '';
+  const providerMessage = typeof rawMessage === 'string'
+    ? rawMessage.replace(/[\r\n\t]+/g, ' ')
+      .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[email]')
+      .replace(/(?:\+?91[\s-]?)?[6-9]\d{9}\b/g, '[mobile]')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 180)
+    : '';
+  const diagnostic = `${gateway} rejected the order (HTTP ${status}${providerCode ? `, ${providerCode}` : ''})${providerMessage ? `: ${providerMessage}` : '.'}`;
+  console.error('Payment gateway rejected order', {
+    gateway,
+    status,
+    providerCode: providerCode || 'unknown',
+    providerMessage,
+  });
+  return response(502, {
+    error: 'Could not create payment order',
+    code: `${gateway.toUpperCase()}_ORDER_REJECTED`,
+    diagnostic,
+  }, origin);
+}
+
 async function verifiedCashfreeOrder(env, settings, orderId) {
   if (!/^[A-Za-z0-9_-]{1,45}$/.test(orderId)) return null;
   const result = await cashfreeRequest(
@@ -1765,8 +1802,7 @@ export default {
           );
           if (!result.ok || result.data.status !== 1 || typeof result.data.data !== 'string'
             || !/^[A-Za-z0-9_-]{1,100}$/.test(result.data.data)) {
-            console.error('Easebuzz payment initiation failed', result.status);
-            return response(502, { error: 'Could not create payment order' }, origin);
+            return paymentOrderFailure('Easebuzz', result.status, result.data, origin);
           }
           return response(200, {
             gateway,
@@ -1797,8 +1833,7 @@ export default {
             },
           });
           if (!result.ok || !result.data.payment_session_id || result.data.order_id !== reference) {
-            console.error('Cashfree order request failed', result.status);
-            return response(502, { error: 'Could not create payment order' }, origin);
+            return paymentOrderFailure('Cashfree', result.status, result.data, origin);
           }
           return response(200, {
             gateway,
@@ -1817,8 +1852,7 @@ export default {
           notes: orderNotes(input, planId, contact, appointment),
         });
         if (!result.ok || !result.data.id) {
-          console.error('Razorpay order request failed', result.status);
-          return response(502, { error: 'Could not create payment order' }, origin);
+          return paymentOrderFailure('Razorpay', result.status, result.data, origin);
         }
         return response(200, {
           gateway,
@@ -1829,8 +1863,15 @@ export default {
           ref: reference,
         }, origin);
       } catch (error) {
-        console.error('Payment-order request failed', error);
-        return response(502, { error: 'Could not create payment order' }, origin);
+        console.error('Payment-order request failed', {
+          gateway,
+          errorName: error instanceof Error ? error.name : 'UnknownError',
+        });
+        return response(502, {
+          error: 'Could not create payment order',
+          code: 'PAYMENT_GATEWAY_REQUEST_FAILED',
+          diagnostic: `The ${gateway} order request could not be completed. Please retry.`,
+        }, origin);
       }
     }
 

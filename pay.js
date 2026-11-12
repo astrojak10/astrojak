@@ -318,7 +318,7 @@
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
         if (!r.ok) {
-          var error = new Error(j.error || 'Payment request failed');
+          var error = new Error(j.diagnostic || j.error || 'Payment request failed');
           error.code = j.code || '';
           throw error;
         }

@@ -74,6 +74,10 @@
           <input id="paytm" type="radio" name="gateway" value="paytm">
           <label for="paytm">Paytm PG<small id="paytmStatus">Checking credentials…</small></label>
         </div>
+        <div class="choice">
+          <input id="pinelabs" type="radio" name="gateway" value="pinelabs">
+          <label for="pinelabs">Pine Labs<small id="pinelabsStatus">Checking credentials…</small></label>
+        </div>
       </fieldset>
       <label for="cashfreeMode">Cashfree environment</label>
       <select id="cashfreeMode">
@@ -95,7 +99,12 @@
         <option value="sandbox">Staging / test</option>
         <option value="production">Production / live</option>
       </select>
-      <p class="note">Store gateway credentials as encrypted Cloudflare Worker secrets. Cashfree, PayU, Easebuzz, and Paytm credentials must match their selected environments. PayU and Easebuzz use their merchant Key and Salt. Paytm collects only the customer's mobile number; PayU and Easebuzz require email. Never enter API keys or secrets on this page.</p>
+      <label for="pinelabsMode">Pine Labs environment</label>
+      <select id="pinelabsMode">
+        <option value="sandbox">UAT / test</option>
+        <option value="production">Production / live</option>
+      </select>
+      <p class="note">Store gateway credentials as encrypted Cloudflare Worker secrets. Cashfree, PayU, Easebuzz, Paytm, and Pine Labs credentials must match their selected environments. PayU and Easebuzz use their merchant Key and Salt and require email; other gateways use mobile-only pre-checkout. Never enter API keys or secrets on this page.</p>
       <button id="save" type="submit">Save payment settings</button>
       </form>
     </section>
@@ -143,10 +152,14 @@
           var hasPaytmSupport=typeof credentials.paytmSandbox==='boolean'
             &&typeof credentials.paytmProduction==='boolean'
             &&typeof settings.paytmMode==='string';
+          var hasPineLabsSupport=typeof credentials.pinelabs==='boolean'
+            &&typeof settings.pinelabsMode==='string';
           document.getElementById('razorpay').disabled=!credentials.razorpay;
           document.getElementById('cashfree').disabled=!credentials.cashfree;
           document.getElementById('payu').disabled=!hasPayuSupport||!credentials.payu;
           document.getElementById('easebuzz').disabled=!hasEasebuzzSupport||!credentials.easebuzz;
+          document.getElementById('pinelabsMode').value=hasPineLabsSupport?settings.pinelabsMode:'sandbox';
+          document.getElementById('pinelabs').disabled=!hasPineLabsSupport||!credentials.pinelabs;
           document.getElementById('paytmMode').value=hasPaytmSupport?settings.paytmMode:'sandbox';
           function updatePaytmStatus(){
             var mode=document.getElementById('paytmMode').value;
@@ -167,6 +180,11 @@
           document.getElementById('easebuzzStatus').textContent=!hasEasebuzzSupport
             ?'Payment API is outdated; deploy the latest Worker'
             :credentials.easebuzz?'Credentials configured':'Add EASEBUZZ_KEY and EASEBUZZ_SALT Worker secrets';
+          document.getElementById('pinelabsStatus').textContent=!hasPineLabsSupport
+            ?'Payment API is outdated; deploy the latest Worker'
+            :credentials.pinelabs
+              ?'Credentials configured'
+              :'Add PINELABS_CLIENT_ID and PINELABS_CLIENT_SECRET Worker secrets';
           document.getElementById(settings.activeGateway).checked=true;
           document.getElementById('cashfreeMode').value=settings.cashfreeMode;
           document.getElementById('payuMode').value=hasPayuSupport?settings.payuMode:'sandbox';
@@ -175,7 +193,8 @@
           currentGatewaySupported=currentGatewaySupported
             &&(settings.activeGateway!=='easebuzz'||hasEasebuzzSupport)
             &&(settings.activeGateway!=='paytm'
-              ||(hasPaytmSupport&&credentials[settings.paytmMode==='production'?'paytmProduction':'paytmSandbox']));
+              ||(hasPaytmSupport&&credentials[settings.paytmMode==='production'?'paytmProduction':'paytmSandbox']))
+            &&(settings.activeGateway!=='pinelabs'||(hasPineLabsSupport&&credentials.pinelabs));
           setStatus(currentGatewaySupported?'Settings loaded.':'Deploy the latest Cloudflare Worker before enabling this gateway.',!currentGatewaySupported);
         }).catch(function(error){
           signedIn(false);
@@ -216,7 +235,8 @@
           cashfreeMode:document.getElementById('cashfreeMode').value,
           payuMode:document.getElementById('payuMode').value,
           easebuzzMode:document.getElementById('easebuzzMode').value,
-          paytmMode:document.getElementById('paytmMode').value
+          paytmMode:document.getElementById('paytmMode').value,
+          pinelabsMode:document.getElementById('pinelabsMode').value
         }).then(function(){
           setStatus('Payment settings saved.',false);
         }).catch(function(error){

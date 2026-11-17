@@ -1,7 +1,7 @@
 # Payment API on Cloudflare Workers
 
 The website is static on GitHub Pages. This Worker creates and verifies
-Razorpay, Cashfree, PayU, Easebuzz, or Paytm PG payments without exposing gateway credentials to visitors
+Razorpay, Cashfree, PayU, Easebuzz, Paytm PG, or Pine Labs payments without exposing gateway credentials to visitors
 or the GitHub Pages build. The active gateway is selected in
 `/payment-admin.html`; only one gateway handles new checkouts at a time.
 
@@ -23,7 +23,7 @@ or the GitHub Pages build. The active gateway is selected in
    Cloudflare dashboard (or with Wrangler). Replace
    `REPLACE_WITH_KV_NAMESPACE_ID` in `wrangler.toml` with its namespace ID.
    The namespace stores active gateway/environment settings and expiring
-   Cashfree and Paytm order metadata used to verify payments and recover
+   Cashfree, Paytm, and Pine Labs order metadata used to verify payments and recover
    booking details.
    You can create it with `npx wrangler kv namespace create PAYMENT_SETTINGS`.
    KV setting changes can take up to about a minute to propagate globally.
@@ -43,6 +43,8 @@ or the GitHub Pages build. The active gateway is selected in
    - `PAYTM_STAGING_MERCHANT_KEY`
    - `PAYTM_PRODUCTION_MID`
    - `PAYTM_PRODUCTION_MERCHANT_KEY`
+   - `PINELABS_CLIENT_ID`
+   - `PINELABS_CLIENT_SECRET`
    - `ADMIN_USERNAME` — the username you will use to sign in.
    - `ADMIN_PASSWORD` — a unique password of at least 12 characters.
    - `ADMIN_SESSION_SECRET` — a separate random value of at least 32
@@ -71,8 +73,8 @@ or the GitHub Pages build. The active gateway is selected in
    `https://www.astrojak.in/payment-admin.html`) and sign in with
    `ADMIN_USERNAME` and `ADMIN_PASSWORD`. Select a gateway whose credentials
    are configured and save. Sessions use an HttpOnly, Secure cookie and expire
-   after eight hours. Cashfree, PayU, Easebuzz, and Paytm credentials must match their selected
-   environments.
+   after eight hours. Cashfree, PayU, Easebuzz, Paytm, and Pine Labs credentials must match their selected
+   environments. Use Pine Labs UAT credentials with UAT/test mode and production credentials with production mode; the Worker reads the Pine Labs client ID and secret from the two secrets above.
    The page never accepts gateway secrets; manage those only in Cloudflare
    Worker secrets.
 9. Complete a test payment and confirm the Worker verifies it and returns to
@@ -80,7 +82,7 @@ or the GitHub Pages build. The active gateway is selected in
 
 If the admin page says the payment API is outdated, redeploy the
 **Deploy payment API** workflow from the `main` branch. Confirm
-`/payment-config` includes `payuMode`, `easebuzzMode`, and `paytmMode`, and a GET to
+`/payment-config` includes `payuMode`, `easebuzzMode`, `paytmMode`, and `pinelabsMode`, and a GET to
 `/payu-callback` returns 405 before trying to enable either gateway again. If those checks still show the old
 Worker after a successful deployment, check that `api.astrojak.in` is routed
 to the `astrojak` Worker in the same Cloudflare account used by GitHub Actions.
@@ -107,6 +109,21 @@ API](https://www.paytmpayments.com/docs/api/initiate-transaction-api),
 [JS Checkout](https://www.paytmpayments.com/docs/jscheckout-invoke-payment),
 [Transaction Status API](https://www.paytmpayments.com/docs/api/v3/transaction-status-api),
 and [Checksum implementation](https://www.paytmpayments.com/docs/checksum-implementation).
+
+Pine Labs uses its OAuth client-credentials API and the Generate Checkout Link
+API in `IFRAME` mode. The returned hosted checkout URL is displayed in a
+responsive partial-screen iframe modal. The callback page only signals the
+parent checkout; the Worker independently checks the Pine Labs Get Order API
+and accepts `PROCESSED` orders whose reference, INR amount, and plan match the
+saved order metadata. The shared pre-checkout collects only the customer's
+mobile number. Set UAT/test or production in the admin portal to select the
+matching Pine Labs API host and credentials. See Pine Labs'
+[overview](https://www.pinelabs.com/docs/online-payments/overview),
+[authentication](https://www.pinelabs.com/docs/online-payments/api/authentication/generate-token),
+[Generate Checkout Link API](https://www.pinelabs.com/docs/online-payments/api/checkout/generate-checkout-link),
+[iFrame Checkout](https://www.pinelabs.com/docs/online-payments/iframe-checkout),
+[Get Order by ID](https://www.pinelabs.com/docs/online-payments/api/orders/get-order-by-order-id),
+and [UAT/production API hosts](https://www.pinelabs.com/docs/online-payments/api/downloads/openapi-spec).
 
 GitHub Pages does not process the `_redirects` file. The static
 `admin/index.html` page renders the payment settings portal directly for

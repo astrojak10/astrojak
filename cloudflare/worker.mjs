@@ -41,6 +41,7 @@ const DEFAULT_PAYMENT_SETTINGS = {
   payuMode: 'sandbox',
   easebuzzMode: 'sandbox',
   paytmMode: 'sandbox',
+  pinelabsMode: 'sandbox',
 };
 const PAYU_PLAN_PREFIXES = {
   reserve: 'res',
@@ -120,11 +121,12 @@ async function getPaymentSettings(env) {
   const saved = await env.PAYMENT_SETTINGS.get('gateway-settings', 'json');
   if (!saved) return { ...DEFAULT_PAYMENT_SETTINGS };
   const settings = { ...DEFAULT_PAYMENT_SETTINGS, ...saved };
-  if (!['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm'].includes(settings.activeGateway)
+  if (!['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm', 'pinelabs'].includes(settings.activeGateway)
     || !['sandbox', 'production'].includes(settings.cashfreeMode)
     || !['sandbox', 'production'].includes(settings.payuMode)
     || !['sandbox', 'production'].includes(settings.easebuzzMode)
-    || !['sandbox', 'production'].includes(settings.paytmMode)) {
+    || !['sandbox', 'production'].includes(settings.paytmMode)
+    || !['sandbox', 'production'].includes(settings.pinelabsMode)) {
     throw new Error('Saved payment settings are invalid');
   }
   return settings;
@@ -142,6 +144,7 @@ function paymentGatewayConfigured(env, gateway, settings) {
   if (gateway === 'cashfree') return Boolean(env.CASHFREE_APP_ID && env.CASHFREE_SECRET_KEY);
   if (gateway === 'payu') return Boolean(env.PAYU_MERCHANT_KEY && env.PAYU_MERCHANT_SALT);
   if (gateway === 'easebuzz') return Boolean(env.EASEBUZZ_KEY && env.EASEBUZZ_SALT);
+  if (gateway === 'pinelabs') return Boolean(env.PINELABS_CLIENT_ID && env.PINELABS_CLIENT_SECRET);
   if (gateway === 'paytm') {
     const credentials = paytmCredentials(env, settings?.paytmMode || 'sandbox');
     return Boolean(credentials.mid && credentials.merchantKey && credentials.merchantKey.length === 16);
@@ -153,6 +156,101 @@ function paytmBaseUrl(mode) {
   return mode === 'sandbox'
     ? 'https://securestage.paytmpayments.com'
     : 'https://secure.paytmpayments.com';
+}
+
+function pinelabsBaseUrl(mode) {
+  return mode === 'sandbox'
+    ? 'https://pluraluat.v2.pinepg.in'
+    : 'https://api.pluralpay.in';
+}
+
+function pinelabsRequestId() {
+  return crypto.randomUUID();
+}
+
+async function pinelabsAccessToken(env, baseUrl) {
+  const result = await fetch(`${baseUrl}/api/auth/v1/token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Request-Timestamp': new Date().toISOString(),
+      'Request-ID': pinelabsRequestId(),
+    },
+    body: JSON.stringify({
+      client_id: env.PINELABS_CLIENT_ID,
+      client_secret: env.PINELABS_CLIENT_SECRET,
+      grant_type: 'client_credentials',
+    }),
+  });
+  const data = await result.json().catch(() => ({}));
+  const tokenData = data.data || data;
+  if (!result.ok || typeof tokenData.access_token !== 'string' || !tokenData.access_token) {
+    return { ok: false, status: result.status, data };
+  }
+  return { ok: true, status: result.status, token: tokenData.access_token, data };
+}
+
+async function pinelabsRequest(env, settings, path, method, body) {
+  const baseUrl = pinelabsBaseUrl(settings.pinelabsMode);
+  const auth = await pinelabsAccessToken(env, baseUrl);
+  if (!auth.ok) return { ok: false, status: auth.status, data: auth.data };
+  const result = await fetch(`${baseUrl}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'Request-Timestamp': new Date().toISOString(),
+      'Request-ID': pinelabsRequestId(),
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const data = await result.json().catch(() => ({}));
+  return { ok: result.ok, status: result.status, data };
+}
+
+async function verifiedPineLabsOrder(env, orderId) {
+  if (!/^[A-Za-z0-9_-]{1,100}$/.test(orderId) || !env.PAYMENT_SETTINGS) return null;
+  const savedOrder = await env.PAYMENT_SETTINGS.get(`pinelabs-order:${orderId}`, 'json');
+  if (!savedOrder || !['sandbox', 'production'].includes(savedOrder.mode)) return null;
+  const settings = { ...DEFAULT_PAYMENT_SETTINGS, pinelabsMode: savedOrder.mode };
+  const result = await pinelabsRequest(
+    env,
+    settings,
+    `/api/pay/v1/orders/${encodeURIComponent(orderId)}`,
+    'GET',
+  );
+  const order = result.data?.data || result.data?.order || result.data;
+  const orderAmount = order?.order_amount || order?.amount || {};
+  const amount = Number(orderAmount.value);
+  const plan = Object.prototype.hasOwnProperty.call(PLANS, savedOrder.planId)
+    ? PLANS[savedOrder.planId]
+    : null;
+  if (!result.ok || !plan || order?.order_id !== orderId
+    || order.merchant_order_reference !== savedOrder.merchantOrderReference
+    || String(order.status || '').toUpperCase() !== 'PROCESSED'
+    || String(orderAmount.currency || '').toUpperCase() !== 'INR'
+    || !Number.isInteger(amount) || amount !== plan.price * 100
+    || amount !== savedOrder.amount
+    || ((savedOrder.appointmentDate || savedOrder.appointmentTime)
+      && !isValidAppointment({
+        date: savedOrder.appointmentDate,
+        time: savedOrder.appointmentTime,
+      }))
+    || (!savedOrder.appointmentDate && !savedOrder.appointmentTime && savedOrder.planId !== 'reserve')) {
+    return null;
+  }
+  return {
+    paymentId: orderId,
+    orderId,
+    referenceId: savedOrder.merchantOrderReference,
+    planId: savedOrder.planId,
+    amount,
+    currency: 'INR',
+    appointmentDate: savedOrder.appointmentDate,
+    appointmentTime: savedOrder.appointmentTime,
+    createdAt: Math.floor(Date.now() / 1000),
+  };
 }
 
 function bytesToBase64(bytes) {
@@ -298,6 +396,7 @@ function paymentOrderFailure(gateway, status, data, origin) {
   const rawCode = data?.code
     || data?.error?.code
     || data?.error_code
+    || data?.response_code
     || data?.status_code
     || '';
   const providerCode = /^[A-Za-z0-9_.-]{1,64}$/.test(String(rawCode))
@@ -306,6 +405,7 @@ function paymentOrderFailure(gateway, status, data, origin) {
   const rawMessage = data?.message
     || data?.error?.description
     || data?.error?.message
+    || data?.response_message
     || data?.error_desc
     || data?.msg
     || '';
@@ -952,6 +1052,7 @@ export default {
           payuMode: settings.payuMode,
           easebuzzMode: settings.easebuzzMode,
           paytmMode: settings.paytmMode,
+          pinelabsMode: settings.pinelabsMode,
           requiresEmail: settings.activeGateway === 'payu' || settings.activeGateway === 'easebuzz',
         }, origin);
       } catch (error) {
@@ -1007,15 +1108,18 @@ export default {
               easebuzz: paymentGatewayConfigured(env, 'easebuzz'),
               paytmSandbox: paymentGatewayConfigured(env, 'paytm', { paytmMode: 'sandbox' }),
               paytmProduction: paymentGatewayConfigured(env, 'paytm', { paytmMode: 'production' }),
+              pinelabs: paymentGatewayConfigured(env, 'pinelabs'),
             },
           }, origin);
         }
         const input = await parseInput(request);
-        if (!input || !['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm'].includes(input.activeGateway)
+        if (!input || !['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm', 'pinelabs'].includes(input.activeGateway)
           || !['sandbox', 'production'].includes(input.cashfreeMode)
           || !['sandbox', 'production'].includes(input.payuMode)
           || !['sandbox', 'production'].includes(input.easebuzzMode)
-          || !['sandbox', 'production'].includes(input.paytmMode)) {
+          || !['sandbox', 'production'].includes(input.paytmMode)
+          || (input.pinelabsMode !== undefined
+            && !['sandbox', 'production'].includes(input.pinelabsMode))) {
           return response(400, { error: 'Invalid payment settings' }, origin);
         }
         if (!paymentGatewayConfigured(env, input.activeGateway, input)) {
@@ -1027,6 +1131,7 @@ export default {
           payuMode: input.payuMode,
           easebuzzMode: input.easebuzzMode,
           paytmMode: input.paytmMode,
+          pinelabsMode: input.pinelabsMode || 'sandbox',
         };
         await env.PAYMENT_SETTINGS.put('gateway-settings', JSON.stringify(settings));
         return response(200, { saved: true, ...settings }, origin);
@@ -1114,7 +1219,7 @@ export default {
         return response(503, { error: 'Google Sheets is not configured' }, origin);
       }
       const gateway = String(input.gateway || 'razorpay');
-      if (!['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm'].includes(gateway)) {
+      if (!['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm', 'pinelabs'].includes(gateway)) {
         return response(400, { error: 'Unknown payment gateway' }, origin);
       }
       const paymentId = String(input.payment_id || '');
@@ -1136,7 +1241,9 @@ export default {
             ? /^[A-Za-z0-9]{1,40}$/.test(paymentId)
             : gateway === 'paytm'
               ? /^[A-Za-z0-9]{1,50}$/.test(paymentId)
-              : /^pay_[A-Za-z0-9]+$/.test(paymentId))
+              : gateway === 'pinelabs'
+                ? /^[A-Za-z0-9_-]{1,100}$/.test(paymentId)
+                : /^pay_[A-Za-z0-9]+$/.test(paymentId))
         || !referenceId || !name || !contact
         || !birthDate || !birthPlace
         || Boolean(appointment.date) !== Boolean(appointment.time)
@@ -1234,6 +1341,28 @@ export default {
               appointment_time: verified.appointmentTime,
             },
           };
+        } else if (gateway === 'pinelabs') {
+          const verified = await verifiedPineLabsOrder(env, paymentId);
+          if (!verified || verified.referenceId !== referenceId) {
+            return response(400, { error: 'A successful Pine Labs transaction is required' }, origin);
+          }
+          payment = {
+            amount: verified.amount,
+            currency: verified.currency,
+            status: 'captured',
+            created_at: verified.createdAt,
+          };
+          order = {
+            id: verified.orderId,
+            receipt: verified.referenceId,
+            currency: verified.currency,
+            amount: verified.amount,
+            notes: {
+              plan: verified.planId,
+              appointment_date: verified.appointmentDate,
+              appointment_time: verified.appointmentTime,
+            },
+          };
         } else {
           const paymentResult = await razorpayRequest(
             env,
@@ -1269,7 +1398,7 @@ export default {
         };
         const orderHasAppointment = Boolean(orderAppointment.date || orderAppointment.time);
         if (!plan || order.id !== orderId || order.receipt !== referenceId
-          || (!['payu', 'easebuzz', 'paytm'].includes(gateway)
+          || (!['payu', 'easebuzz', 'paytm', 'pinelabs'].includes(gateway)
             && !referenceId.startsWith(`${planId}_`))
           || payment.currency !== 'INR' || payment.amount !== plan.price * 100
           || order.currency !== 'INR' || order.amount !== payment.amount
@@ -1365,7 +1494,7 @@ export default {
       }
 
       const gateway = String(input.gateway || 'razorpay');
-      if (!['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm'].includes(gateway)) {
+      if (!['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm', 'pinelabs'].includes(gateway)) {
         return response(400, { error: 'Unknown payment gateway' }, origin);
       }
       const paymentId = String(input.payment_id || '');
@@ -1384,6 +1513,8 @@ export default {
             ? /^[A-Za-z0-9]{1,40}$/.test(paymentId)
             : gateway === 'paytm'
               ? /^[A-Za-z0-9]{1,50}$/.test(paymentId)
+              : gateway === 'pinelabs'
+                ? /^[A-Za-z0-9_-]{1,100}$/.test(paymentId)
               : /^pay_[A-Za-z0-9]+$/.test(paymentId))
         || !name || !contact
         || !referenceId || !isValidAppointment(appointment)) {
@@ -1470,6 +1601,28 @@ export default {
               appointment_time: verified.appointmentTime,
             },
           };
+        } else if (gateway === 'pinelabs') {
+          const verified = await verifiedPineLabsOrder(env, paymentId);
+          if (!verified || verified.referenceId !== referenceId) {
+            return response(400, { error: 'A successful Pine Labs transaction is required' }, origin);
+          }
+          payment = {
+            amount: verified.amount,
+            currency: verified.currency,
+            status: 'captured',
+            created_at: verified.createdAt,
+          };
+          order = {
+            id: verified.orderId,
+            receipt: verified.referenceId,
+            currency: verified.currency,
+            amount: verified.amount,
+            notes: {
+              plan: verified.planId,
+              appointment_date: verified.appointmentDate,
+              appointment_time: verified.appointmentTime,
+            },
+          };
         } else {
           const paymentResult = await razorpayRequest(
             env,
@@ -1502,7 +1655,7 @@ export default {
         const orderDate = String(order.notes?.appointment_date || '');
         const orderTime = String(order.notes?.appointment_time || '');
         if (!plan || order.id !== orderId || order.receipt !== referenceId
-          || (!['payu', 'easebuzz', 'paytm'].includes(gateway)
+          || (!['payu', 'easebuzz', 'paytm', 'pinelabs'].includes(gateway)
             && !referenceId.startsWith(`${planId}_`))
           || payment.currency !== 'INR' || payment.amount !== plan.price * 100
           || order.currency !== 'INR' || order.amount !== payment.amount
@@ -1638,6 +1791,52 @@ export default {
         return response(503, { error: 'Selected payment gateway is not configured' }, origin);
       }
       try {
+        if (gateway === 'pinelabs') {
+          const merchantOrderReference = `AJ${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+          const callbackUrl = `${origin}/pinelabs-callback.html?reference=${encodeURIComponent(merchantOrderReference)}`;
+          const result = await pinelabsRequest(env, settings, '/api/checkout/v1/orders', 'POST', {
+            merchant_order_reference: merchantOrderReference,
+            order_amount: { value: plan.price * 100, currency: 'INR' },
+            integration_mode: 'IFRAME',
+            callback_url: callbackUrl,
+            notes: `ASTROJAK ${plan.name}`,
+          });
+          const checkoutData = result.data?.data || result.data;
+          const redirectUrl = String(checkoutData?.redirect_url || '');
+          let validRedirect = false;
+          try {
+            validRedirect = new URL(redirectUrl).protocol === 'https:';
+          } catch {
+            validRedirect = false;
+          }
+          const orderId = String(checkoutData?.order_id || '');
+          if (!result.ok || !/^[A-Za-z0-9_-]{1,100}$/.test(orderId) || !validRedirect) {
+            return paymentOrderFailure('Pine Labs', result.status, result.data, origin);
+          }
+          const metadata = {
+            mode: settings.pinelabsMode,
+            orderId,
+            merchantOrderReference,
+            planId,
+            amount: plan.price * 100,
+            appointmentDate: validAppointment ? String(appointment.date) : '',
+            appointmentTime: validAppointment ? String(appointment.time) : '',
+          };
+          await env.PAYMENT_SETTINGS.put(
+            `pinelabs-order:${orderId}`,
+            JSON.stringify(metadata),
+            { expirationTtl: 60 * 60 * 24 * 90 },
+          );
+          return response(200, {
+            gateway,
+            order_id: orderId,
+            merchant_order_reference: merchantOrderReference,
+            redirect_url: redirectUrl,
+            amount: plan.price * 100,
+            currency: 'INR',
+            ref: merchantOrderReference,
+          }, origin);
+        }
         if (gateway === 'paytm') {
           const credentials = paytmCredentials(env, settings.paytmMode);
           const orderId = `PTM${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
@@ -1977,6 +2176,26 @@ export default {
         }, origin);
       } catch (error) {
         console.error('Paytm payment verification failed', error);
+        return response(502, { error: 'Could not verify payment' }, origin);
+      }
+    }
+
+    if (input.gateway === 'pinelabs') {
+      try {
+        const orderId = String(input.order_id || '');
+        const verified = await verifiedPineLabsOrder(env, orderId);
+        if (!verified) return response(409, { error: 'Pine Labs payment is not confirmed as successful' }, origin);
+        return response(200, {
+          verified: true,
+          payment_id: verified.paymentId,
+          order_id: verified.orderId,
+          reference_id: verified.referenceId,
+          plan: verified.planId,
+          appointment_date: verified.appointmentDate,
+          appointment_time: verified.appointmentTime,
+        }, origin);
+      } catch (error) {
+        console.error('Pine Labs payment verification failed', error);
         return response(502, { error: 'Could not verify payment' }, origin);
       }
     }

@@ -57,6 +57,14 @@
     + '.ptm-root{position:relative;flex:1;min-height:240px;overflow:auto;background:#fff}'
     + '.ptm-root iframe{max-width:100%;border:0}'
     + '@media(min-width:600px){.ptm-ov{align-items:center;padding:16px}.ptm-modal{height:min(85dvh,740px);border-radius:18px}}'
+    + '.pl-ov{position:fixed;inset:0;z-index:10001;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,14,0,.58)}'
+    + '.pl-modal{display:flex;flex-direction:column;width:min(100%,480px);height:min(82dvh,720px);overflow:hidden;border-radius:18px 18px 0 0;background:#fff;box-shadow:0 -12px 40px rgba(0,0,0,.25)}'
+    + '.pl-head{display:flex;flex:0 0 50px;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #eee;color:#292318;font:600 15px/1.2 system-ui,sans-serif}'
+    + '.pl-frame{display:block;flex:1;min-height:240px;width:100%;border:0;background:#fff}'
+    + '.pl-actions{display:flex;justify-content:center;gap:8px;padding:8px 12px 12px}'
+    + '.pl-action{padding:9px 12px;border:1px solid #e6dece;border-radius:9px;background:#fff;color:#5c4a24;font:600 13px system-ui,sans-serif;cursor:pointer}'
+    + '.pl-status{margin:0;padding:8px 14px;text-align:center;color:#8a4b00;font:500 13px/1.4 system-ui,sans-serif}'
+    + '@media(min-width:600px){.pl-ov{align-items:center;padding:16px}.pl-modal{height:min(85dvh,740px);border-radius:18px}}'
     + '@media (prefers-reduced-motion:reduce){.paybtn::after{animation:none;display:none}}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -240,9 +248,10 @@
   }
   var checkoutScripts = {};
   var paytmScriptKeyLoaded = '';
-  var paymentGateways = ['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm'];
+  var paymentGateways = ['razorpay', 'cashfree', 'payu', 'easebuzz', 'paytm', 'pinelabs'];
   function loadCheckout(gateway, order) {
     if (gateway === 'payu') return Promise.resolve();
+    if (gateway === 'pinelabs') return Promise.resolve();
     if (gateway === 'cashfree' && window.Cashfree) return Promise.resolve();
     if (gateway === 'razorpay' && window.Razorpay) return Promise.resolve();
     if (gateway === 'easebuzz' && window.EasebuzzCheckout) return Promise.resolve();
@@ -807,6 +816,139 @@
     }
   }
 
+  function openPineLabsCheckout(order, button) {
+    var overlay = document.createElement('div');
+    overlay.className = 'pl-ov';
+    var modal = document.createElement('div');
+    modal.className = 'pl-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Secure Pine Labs checkout');
+    var header = document.createElement('div');
+    header.className = 'pl-head';
+    var title = document.createElement('span');
+    title.textContent = 'Secure Pine Labs checkout';
+    var close = document.createElement('button');
+    close.className = 'cf-close';
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Close checkout');
+    close.textContent = '×';
+    var frame = document.createElement('iframe');
+    frame.className = 'pl-frame';
+    frame.title = 'Pine Labs secure payment';
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    frame.allow = 'payment';
+    var status = document.createElement('p');
+    status.className = 'pl-status';
+    status.hidden = true;
+    status.setAttribute('role', 'status');
+    var actions = document.createElement('div');
+    actions.className = 'pl-actions';
+    var retry = document.createElement('button');
+    retry.className = 'pl-action';
+    retry.type = 'button';
+    retry.textContent = 'Check payment status';
+    retry.hidden = true;
+    var openInTab = document.createElement('button');
+    openInTab.className = 'pl-action';
+    openInTab.type = 'button';
+    openInTab.textContent = 'Open checkout in a new tab';
+    header.appendChild(title);
+    header.appendChild(close);
+    actions.appendChild(retry);
+    actions.appendChild(openInTab);
+    modal.appendChild(header);
+    modal.appendChild(frame);
+    modal.appendChild(status);
+    modal.appendChild(actions);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    var closed = false;
+    var verifying = false;
+    var previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    function dismiss() {
+      if (closed) return;
+      closed = true;
+      window.removeEventListener('message', onMessage);
+      document.removeEventListener('keydown', onKeydown);
+      document.body.style.overflow = previousBodyOverflow;
+      overlay.remove();
+      reset(button);
+    }
+    function showPending() {
+      verifying = false;
+      title.textContent = 'Payment not confirmed yet';
+      status.textContent = 'If you completed payment, do not pay again. Check the status again or contact us with order ID ' + order.order_id + '.';
+      status.hidden = false;
+      retry.hidden = false;
+      close.disabled = false;
+    }
+    function confirmPayment() {
+      if (closed || verifying) return;
+      verifying = true;
+      title.textContent = 'Verifying payment…';
+      status.hidden = true;
+      retry.disabled = true;
+      close.disabled = true;
+      verifyPayment({ gateway: 'pinelabs', order_id: order.order_id }).then(function (verified) {
+        var confirmed = {
+          order_id: verified.order_id,
+          payment_id: verified.payment_id,
+          reference_id: verified.reference_id,
+          plan: verified.plan,
+          appointment_date: verified.appointment_date || '',
+          appointment_time: verified.appointment_time || ''
+        };
+        try {
+          sessionStorage.setItem('astrojak_pinelabs_verified_' + order.order_id, JSON.stringify(confirmed));
+        } catch (err) {
+          console.error('Could not save Pine Labs payment confirmation:', err);
+        }
+        var query = new URLSearchParams({
+          gateway: 'pinelabs',
+          order_id: confirmed.order_id,
+          payment_status: 'paid',
+          payment_id: confirmed.payment_id,
+          reference_id: confirmed.reference_id,
+          plan: confirmed.plan
+        });
+        if (confirmed.appointment_date) query.set('appointment_date', confirmed.appointment_date);
+        if (confirmed.appointment_time) query.set('appointment_time', confirmed.appointment_time);
+        dismiss();
+        location.href = '/thank-you.html?' + query.toString();
+      }).catch(function (error) {
+        console.error('Pine Labs payment could not be verified:', error);
+        showPending();
+      }).finally(function () {
+        retry.disabled = false;
+      });
+    }
+    function onMessage(event) {
+      if (event.origin !== location.origin || event.source !== frame.contentWindow
+        || !event.data || event.data.type !== 'pinelabs-checkout-return'
+        || event.data.reference !== order.merchant_order_reference) return;
+      confirmPayment();
+    }
+    function onKeydown(event) {
+      if (event.key === 'Escape' && !verifying) dismiss();
+    }
+    close.addEventListener('click', function () {
+      if (!verifying) dismiss();
+    });
+    overlay.addEventListener('click', function (event) {
+      if (event.target === overlay && !verifying) dismiss();
+    });
+    retry.addEventListener('click', confirmPayment);
+    openInTab.addEventListener('click', function () {
+      window.open(order.redirect_url, '_blank', 'noopener,noreferrer');
+    });
+    window.addEventListener('message', onMessage);
+    document.addEventListener('keydown', onKeydown);
+    frame.src = order.redirect_url;
+  }
+
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-pay]'); if (!b) return;
     e.preventDefault();
@@ -851,6 +993,9 @@
           }
           if (order.gateway === 'paytm') {
             return openPaytmCheckout(order, b);
+          }
+          if (order.gateway === 'pinelabs') {
+            return openPineLabsCheckout(order, b);
           }
           var checkout = new window.Razorpay({
             key: order.key_id,

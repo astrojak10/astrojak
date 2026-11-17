@@ -1824,7 +1824,7 @@ export default {
       try {
         if (gateway === 'pinelabs') {
           const merchantOrderReference = `AJ${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
-          const callbackUrl = `${origin}/pinelabs-callback.html?reference=${encodeURIComponent(merchantOrderReference)}`;
+          const callbackUrl = `${origin}/pinelabs-callback.html?reference=${encodeURIComponent(merchantOrderReference)}&v=20261117-redirect-2`;
           const result = await pinelabsRequest(env, settings, '/api/checkout/v1/orders', 'POST', {
             merchant_order_reference: merchantOrderReference,
             order_amount: { value: plan.price * 100, currency: 'INR' },

@@ -43,6 +43,14 @@
                   type: 'pinelabs-checkout-return',
                   reference: reference
                 }, location.origin);
+                try {
+                  window.top.location.replace(
+                    '/thank-you.html?gateway=pinelabs&order_id='
+                      + encodeURIComponent(data.order_id) + '&payment_status=paid',
+                  );
+                } catch (error) {
+                  console.warn('Pine Labs callback could not redirect the top-level page:', error);
+                }
               } else {
                 continueToThankYou(data.order_id, 'paid');
               }

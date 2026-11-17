@@ -886,8 +886,9 @@
       retry.hidden = false;
       close.disabled = false;
     }
-    function confirmPayment() {
+    function confirmPayment(attempt) {
       if (closed || verifying) return;
+      attempt = attempt || 0;
       verifying = true;
       title.textContent = 'Verifying payment…';
       status.hidden = true;

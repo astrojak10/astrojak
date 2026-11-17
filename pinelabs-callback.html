@@ -11,18 +11,77 @@
   <title>Payment return | ASTROJAK</title>
 </head>
 <body>
-  <p id="message">Returning to ASTROJAK checkout…</p>
+  <p id="message" role="status" aria-live="polite">Checking payment status with Pine Labs…</p>
+  <p id="fallback" hidden>
+    Payment confirmation is taking longer than usual.
+    <a id="continue" href="/plan">Continue to booking</a>
+  </p>
   <script>
-    (function(){
-      var reference=new URLSearchParams(location.search).get('reference')||'';
-      if(window.parent!==window&&/^[A-Za-z0-9_-]{1,50}$/.test(reference)){
-        window.parent.postMessage({
-          type:'pinelabs-checkout-return',
-          reference:reference
-        },location.origin);
+    (function () {
+      var reference = new URLSearchParams(location.search).get('reference') || '';
+      var message = document.getElementById('message');
+      var fallback = document.getElementById('fallback');
+      var continueLink = document.getElementById('continue');
+      var attempts = 0;
+      var maxAttempts = 20;
+
+      function continueToThankYou(orderId, status) {
+        var query = new URLSearchParams({ gateway: 'pinelabs', order_id: orderId });
+        if (status === 'paid') query.set('payment_status', 'paid');
+        location.replace('/thank-you.html?' + query.toString());
+      }
+
+      function checkStatus() {
+        attempts += 1;
+        fetch('https://api.astrojak.in/pinelabs-return?reference=' + encodeURIComponent(reference), {
+          cache: 'no-store'
+        }).then(function (response) {
+          return response.json().catch(function () { return {}; }).then(function (data) {
+            if (response.ok && data.verified && data.order_id) {
+              if (window.parent !== window) {
+                window.parent.postMessage({
+                  type: 'pinelabs-checkout-return',
+                  reference: reference
+                }, location.origin);
+              } else {
+                continueToThankYou(data.order_id, 'paid');
+              }
+              return true;
+            }
+            if (response.status === 202 && data.order_id) {
+              continueLink.href = '/thank-you.html?gateway=pinelabs&order_id=' + encodeURIComponent(data.order_id);
+            } else if (!response.ok && response.status !== 202) {
+              throw new Error(data.error || 'Could not check Pine Labs payment status');
+            }
+            return false;
+          });
+        }).then(function (complete) {
+          if (complete) return;
+          if (attempts < maxAttempts) {
+            message.textContent = 'Payment received. Confirming with Pine Labs…';
+            setTimeout(checkStatus, 1500);
+          } else {
+            message.textContent = 'Payment confirmation is taking longer than usual.';
+            fallback.hidden = false;
+          }
+        }).catch(function (error) {
+          console.error('Pine Labs callback status check failed:', error);
+          if (attempts < maxAttempts) {
+            setTimeout(checkStatus, 1500);
+          } else {
+            message.textContent = 'We could not confirm the payment automatically.';
+            fallback.hidden = false;
+          }
+        });
+      }
+
+      if (!/^[A-Za-z0-9_-]{1,50}$/.test(reference)) {
+        message.textContent = 'This payment return link is invalid. Return to the ASTROJAK booking page.';
+        fallback.hidden = false;
         return;
       }
-      document.getElementById('message').textContent='Return to the ASTROJAK page to check your payment status.';
+      continueLink.href = '/plan';
+      checkStatus();
     })();
   </script>
 </body>

@@ -734,8 +734,9 @@
       overlay.remove();
       reset(button);
     }
-    function confirmPayment() {
+    function confirmPayment(attempt) {
       if (closed || verifying) return;
+      attempt = attempt || 0;
       verifying = true;
       title.textContent = 'Verifying payment…';
       close.disabled = true;
@@ -919,8 +920,17 @@
         dismiss();
         location.href = '/thank-you.html?' + query.toString();
       }).catch(function (error) {
-        console.error('Pine Labs payment could not be verified:', error);
-        showPending();
+        if (attempt < 30 && !closed) {
+          verifying = false;
+          close.disabled = false;
+          title.textContent = 'Waiting for Pine Labs…';
+          status.textContent = 'We are checking your payment automatically. Please do not pay again.';
+          status.hidden = false;
+          setTimeout(function () { confirmPayment(attempt + 1); }, 2000);
+        } else {
+          console.error('Pine Labs payment could not be verified:', error);
+          showPending();
+        }
       }).finally(function () {
         retry.disabled = false;
       });
@@ -947,6 +957,7 @@
     window.addEventListener('message', onMessage);
     document.addEventListener('keydown', onKeydown);
     frame.src = order.redirect_url;
+    setTimeout(function () { confirmPayment(1); }, 2000);
   }
 
   document.addEventListener('click', function (e) {

@@ -1141,6 +1141,37 @@ export default {
       }
     }
 
+    if (url.pathname === '/pinelabs-return') {
+      if (request.method !== 'GET') return response(405, { error: 'Use GET' }, origin);
+      if (!ALLOWED_ORIGINS.has(origin)) return response(403, { error: 'Origin not allowed' }, '');
+      const merchantOrderReference = String(url.searchParams.get('reference') || '');
+      if (!/^[A-Za-z0-9_-]{1,50}$/.test(merchantOrderReference) || !env.PAYMENT_SETTINGS) {
+        return response(400, { error: 'Invalid Pine Labs order reference' }, origin);
+      }
+      try {
+        const orderId = await env.PAYMENT_SETTINGS.get(`pinelabs-reference:${merchantOrderReference}`);
+        if (!orderId || !/^[A-Za-z0-9_-]{1,100}$/.test(orderId)) {
+          return response(404, { error: 'Pine Labs order was not found' }, origin);
+        }
+        const verified = await verifiedPineLabsOrder(env, orderId);
+        if (!verified || verified.referenceId !== merchantOrderReference) {
+          return response(202, { verified: false, order_id: orderId }, origin);
+        }
+        return response(200, {
+          verified: true,
+          order_id: verified.orderId,
+          payment_id: verified.paymentId,
+          reference_id: verified.referenceId,
+          plan: verified.planId,
+          appointment_date: verified.appointmentDate,
+          appointment_time: verified.appointmentTime,
+        }, origin);
+      } catch (error) {
+        console.error('Pine Labs callback verification failed', error);
+        return response(502, { error: 'Could not verify Pine Labs payment' }, origin);
+      }
+    }
+
     const checkoutLeadRoute = url.pathname === '/append-checkout-lead';
     const supportedRoutes = [
       '/create-order',
@@ -1825,6 +1856,11 @@ export default {
           await env.PAYMENT_SETTINGS.put(
             `pinelabs-order:${orderId}`,
             JSON.stringify(metadata),
+            { expirationTtl: 60 * 60 * 24 * 90 },
+          );
+          await env.PAYMENT_SETTINGS.put(
+            `pinelabs-reference:${merchantOrderReference}`,
+            orderId,
             { expirationTtl: 60 * 60 * 24 * 90 },
           );
           return response(200, {

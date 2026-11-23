@@ -7,16 +7,17 @@
      1. every price on the website updates (home page, booking page,
         comparison table, buttons, thank-you page)
      2. the selected gateway order is created with the new amount
-   Only edit the numbers (and names if you want). Keep the plan ids
-   (reserve, kundali, detailed-kundali, matchmaking) exactly as they are.
+   Only edit the numbers (and names if you want). Keep existing plan ids
+   stable; new plan ids must also be added to the payment Worker.
    ===================================================================== */
 var PRICING = {
   symbol: '₹',
   plans: {
-    'reserve':          { name: 'Reserve Your Slot',             price: 101,  listPrice: 499  },
-    'kundali':          { name: 'Kundali Analysis',              price: 999,  listPrice: 4999 },
-    'detailed-kundali': { name: 'Detailed Kundali Analysis',     price: 1499, listPrice: 9999 },
-    'matchmaking':      { name: 'Marriage Matchmaking Analysis', price: 1499, listPrice: 9999 }
+    'reserve':          { name: 'Reserve Your Slot',             price: 299,  listPrice: 429  },
+    'kundali':          { name: 'Kundali Analysis',              price: 999,  listPrice: 1499 },
+    'detailed-kundali': { name: 'Detailed Kundali Analysis',     price: 1499, listPrice: 2299 },
+    'matchmaking':      { name: 'Marriage Matchmaking Analysis', price: 1999, listPrice: 2999 },
+    'five-year-roadmap':{ name: '5-Year Roadmap',                price: 2999, listPrice: 4499 }
   }
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = PRICING;

@@ -104,6 +104,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     <h2 data-i18n="completeDetails">Complete your consultation details</h2>
     <p class="hint" id="detailsHint">Your appointment date and time were selected before payment. Share your birth details for the consultation.</p>
     <div class="appointment" id="appointmentSummary" hidden><b id="appointmentWhen"></b><span data-i18n="appointmentIst">Appointment time · India Standard Time (IST)</span></div>
+    <p class="hint" id="planTerms" hidden></p>
     <form id="detailsForm">
       <input type="hidden" name="access_key" value="9d208e837cab446dbcaf6f562900f3e6">
       <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" style="display:none">
@@ -139,8 +140,8 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
           <p class="note" id="appointmentHint" data-i18n="appointmentHint">Choose a date today or later and an available 3-hour time slot.</p>
         </div>
         <fieldset class="field full topics" id="topicPicker">
-          <legend data-i18n="topicQuestion">Which problem would you like to discuss? (optional)</legend>
-          <p class="topic-hint" data-i18n="topicHint">Select all that apply.</p>
+          <legend id="topicQuestion" data-i18n="topicQuestion">Which problem would you like to discuss? (optional)</legend>
+          <p class="topic-hint" id="topicHint" data-i18n="topicHint">Select all that apply.</p>
           <div class="topic-options collapsed" id="topicOptions" role="group" aria-labelledby="topicQuestion"></div>
           <input id="otherTopic" class="topic-text" type="text" maxlength="120" data-i18n-placeholder="otherPlaceholder" placeholder="Tell us what you would like to discuss" hidden>
           <p class="topic-count" id="topicCount" aria-live="polite"></p>
@@ -264,6 +265,31 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   };
   var topics=[];
   var lang='en';
+  var isQuickClarityPlan=false;
+  var planNoticeKey='';
+  var PLAN_COPY={
+    en:{
+      question:'Choose one topic for your one-question Quick Clarity call.',
+      hint:'Choose one topic only.',
+      topicError:'Choose one topic. If you choose Other, enter your question too.',
+      matchFollowup:'Includes 2 follow-up consultations. Book one appointment only; follow-ups do not need separate appointments.',
+      roadmapFollowup:'Includes 2 follow-up calls. Book one appointment only; follow-ups do not need separate appointments.'
+    },
+    hi:{
+      question:'Quick Clarity कॉल के लिए अपनी पसंद का एक विषय चुनें।',
+      hint:'केवल एक विषय चुनें।',
+      topicError:'एक विषय चुनें। यदि अन्य चुनते हैं, तो अपना सवाल भी लिखें।',
+      matchFollowup:'इसमें 2 फॉलो-अप परामर्श शामिल हैं। केवल एक अपॉइंटमेंट बुक करें; फॉलो-अप के लिए अलग अपॉइंटमेंट नहीं चाहिए।',
+      roadmapFollowup:'इसमें 2 फॉलो-अप कॉल शामिल हैं। केवल एक अपॉइंटमेंट बुक करें; फॉलो-अप के लिए अलग अपॉइंटमेंट नहीं चाहिए।'
+    },
+    hing:{
+      question:'Quick Clarity call ke liye apni pasand ka ek topic chunein.',
+      hint:'Sirf ek topic chunein.',
+      topicError:'Ek topic chunein. Other chunein to apna sawaal bhi likhein.',
+      matchFollowup:'Ismein 2 follow-up consultations hain. Sirf ek appointment book karein; follow-ups ke liye alag appointment nahi chahiye.',
+      roadmapFollowup:'Ismein 2 follow-up calls hain. Sirf ek appointment book karein; follow-ups ke liye alag appointment nahi chahiye.'
+    }
+  };
   try{var savedLanguage=localStorage.getItem('lang');if(TEXT[savedLanguage])lang=savedLanguage}catch(err){console.error('Could not read the saved language:',err)}
   function t(key){return TEXT[lang][key]||TEXT.en[key]||key}
   function applyLanguage(){
@@ -278,6 +304,12 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     Array.prototype.forEach.call($('postPayTime').options,function(option,index){if(index)option.textContent=TEXT[lang].timeSlots[index-1]});
     Array.prototype.forEach.call($('topicOptions').querySelectorAll('[data-topic]'),function(label){label.querySelector('[data-topic-label]').textContent=(TEXT[lang].topics[label.getAttribute('data-topic')]||label.getAttribute('data-topic'))});
     $('hour').setAttribute('aria-label',t('birthHour'));$('minute').setAttribute('aria-label',t('birthMinute'));$('ampm').setAttribute('aria-label',t('birthAmPm'));
+    if(isQuickClarityPlan){
+      $('topicQuestion').textContent=PLAN_COPY[lang].question;
+      $('topicHint').textContent=PLAN_COPY[lang].hint;
+    }
+    $('planTerms').hidden=!planNoticeKey;
+    $('planTerms').textContent=planNoticeKey?PLAN_COPY[lang][planNoticeKey]:'';
     $('detailsHint').textContent=t(hasAppointment?'regularHint':'reserveHint');
     $('topicMore').textContent=t($('topicOptions').classList.contains('collapsed')?'moreTopics':'fewerTopics');
     updateTopicSummary();
@@ -330,7 +362,14 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     });
     $('topicsSummary').textContent=labels.length?labels.join(', '):t('noTopics');
   }
-  $('topicPicker').addEventListener('change',function(){topics=selectedTopics();updateTopicCount()});
+  $('topicPicker').addEventListener('change',function(){
+    if(isQuickClarityPlan&&!$('otherCheck').checked){
+      $('otherTopic').hidden=true;
+      $('otherTopic').value='';
+    }
+    topics=selectedTopics();
+    updateTopicCount();
+  });
   $('otherTopic').addEventListener('input',function(){topics=selectedTopics();updateTopicCount()});
   $('topicMore').addEventListener('click',function(){
     var collapsed=$('topicOptions').classList.toggle('collapsed');
@@ -549,6 +588,17 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
   var plan=window.PRICING&&PRICING.plans[ref];
   var planName=plan?plan.name:'Consultation';
   var amount=plan?PRICING.symbol+plan.price:'';
+  isQuickClarityPlan=ref==='reserve';
+  planNoticeKey=ref==='matchmaking'?'matchFollowup':ref==='five-year-roadmap'?'roadmapFollowup':'';
+  if(isQuickClarityPlan){
+    Array.prototype.forEach.call($('topicOptions').querySelectorAll('input'),function(input){
+      input.type='radio';
+      input.name='quick_clarity_topic';
+      input.checked=false;
+    });
+    $('otherCheck').type='radio';
+    $('otherCheck').name='quick_clarity_topic';
+  }
   var date=q.get('appointment_date')||'';
   var time=q.get('appointment_time')||'';
   var hasAppointment=false;
@@ -582,6 +632,12 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
     }
   }catch(err){
     console.error('Could not read pending Calendar sync details:',err);
+  }
+  if(isQuickClarityPlan){
+    topics=[];
+    Array.prototype.forEach.call($('topicOptions').querySelectorAll('input'),function(input){input.checked=false});
+    $('otherTopic').value='';
+    $('otherTopic').hidden=true;
   }
   var mobile=String(checkoutContext.mobile||'');
   if(!mobile){
@@ -654,6 +710,7 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       '*Payment plan:* '+planName+(amount?' ('+amount+')':'')+'\n'+
       '*Plan selected:* '+(selectedPlan||planName)+'\n'+
       '*Appointment:* '+appointment+' IST'+
+      (planNoticeKey?'\n*Plan inclusions:* '+PLAN_COPY[lang][planNoticeKey]:'')+
       (topics.length?'\n*Discussion topics:* '+topics.join(', '):'')+
       (paymentId?'\n\n*Payment ID:* '+paymentId:'');
   }
@@ -755,6 +812,12 @@ input:focus,select:focus{outline:2px solid #F8B700;outline-offset:1px}
       }
     }
     if(!$('topicPicker').hidden)topics=selectedTopics();
+    if(isQuickClarityPlan&&(!topics.length||(topics[0]==='Other'&&!$('otherTopic').value.trim()))){
+      error.textContent=PLAN_COPY[lang].topicError;
+      error.hidden=false;
+      $('topicPicker').scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
     var birthDate=('0'+d).slice(-2)+'/'+('0'+m).slice(-2)+'/'+y;
     var birthTime=hr?String(hr).padStart(2,'0')+':'+mi+' '+ap:'';
     var data={name:name,mobile:customerMobile,birthDate:birthDate,birthTime:birthTime,birthPlace:place};

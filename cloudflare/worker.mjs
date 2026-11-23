@@ -48,6 +48,7 @@ const PAYU_PLAN_PREFIXES = {
   kundali: 'kun',
   'detailed-kundali': 'det',
   matchmaking: 'mat',
+  'five-year-roadmap': 'fyr',
 };
 
 function constantTimeEqual(left, right) {

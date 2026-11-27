@@ -1092,6 +1092,39 @@ export default {
       return payuCallbackPage(callbackOrigin, transactionId, status);
     }
 
+    if (url.pathname === '/paytm-callback') {
+      if (request.method !== 'POST') return new Response('Use POST', { status: 405 });
+      let form;
+      try {
+        form = await request.formData();
+      } catch {
+        return new Response('Invalid payment response', { status: 400 });
+      }
+      const orderId = String(form.get('ORDERID') || form.get('orderId') || '');
+      if (!/^[A-Za-z0-9]{1,50}$/.test(orderId) || !env.PAYMENT_SETTINGS) {
+        return new Response('Invalid payment response', { status: 400 });
+      }
+      try {
+        const order = await env.PAYMENT_SETTINGS.get(`paytm-order:${orderId}`, 'json');
+        if (!order || order.mid !== paytmCredentials(env, order.mode).mid) {
+          return new Response('Payment order was not found', { status: 404 });
+        }
+      } catch (error) {
+        console.error('Could not resolve Paytm callback order', error);
+        return new Response('Payment confirmation is unavailable', { status: 503 });
+      }
+      const destination = new URL('https://www.astrojak.in/thank-you.html');
+      destination.searchParams.set('gateway', 'paytm');
+      destination.searchParams.set('order_id', orderId);
+      return new Response(null, {
+        status: 303,
+        headers: {
+          'Cache-Control': 'no-store',
+          Location: destination.toString(),
+        },
+      });
+    }
+
     if (url.pathname === '/admin/payment-settings') {
       if (!ALLOWED_ORIGINS.has(origin)) return response(403, { error: 'Origin not allowed' }, '');
       if (!env.ADMIN_USERNAME || env.ADMIN_USERNAME.length > 64
@@ -1904,6 +1937,7 @@ export default {
             mid: credentials.mid,
             websiteName: settings.paytmMode === 'sandbox' ? 'WEBSTAGING' : 'DEFAULT',
             orderId,
+            callbackUrl: 'https://api.astrojak.in/paytm-callback',
             txnAmount: { value: plan.price.toFixed(2), currency: 'INR' },
             userInfo: {
               custId: `C${contact.slice(-10)}`,

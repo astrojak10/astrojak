@@ -100,10 +100,13 @@ in-app browsers.
 Paytm PG uses the server-side Initiate Transaction API and the Paytm JS Checkout
 SDK. The SDK is mounted into a responsive partial-screen modal; after it closes,
 the Worker checks the signed Transaction Status API response before marking the
-order paid. The customer checkout collects only a mobile number for Paytm; an
-email field is shown only when the enabled gateway requires it (PayU or
-Easebuzz). Choose staging or production in the admin page to select the matching
-Paytm MID and Merchant Key. See [Paytm API
+order paid. The initiation request includes the required `callbackUrl`; Paytm
+posts its result to `/paytm-callback`, which redirects to the thank-you page
+only for a known order. The thank-you page still verifies payment through the
+Worker before confirming it. The customer checkout collects only a mobile
+number for Paytm; an email field is shown only when the enabled gateway
+requires it (PayU or Easebuzz). Choose staging or production in the admin page
+to select the matching Paytm MID and Merchant Key. See [Paytm API
 documentation](https://www.paytmpayments.com/docs), [Initiate Transaction
 API](https://www.paytmpayments.com/docs/api/initiate-transaction-api),
 [JS Checkout](https://www.paytmpayments.com/docs/jscheckout-invoke-payment),

@@ -335,7 +335,7 @@ async function paytmRequest(baseUrl, path, body, merchantKey) {
     && data.body
     && await paytmVerifyChecksum(JSON.stringify(data.body), merchantKey, responseSignature);
   return {
-    ok: result.ok && validSignature,
+    ok: result.ok && (!signaturePresent || validSignature),
     httpOk: result.ok,
     signaturePresent,
     signatureValid: Boolean(validSignature),
@@ -1917,27 +1917,30 @@ export default {
             credentials.merchantKey,
           );
           const token = result.data.body?.txnToken;
-          if (!result.ok || typeof token !== 'string' || !token) {
+          const resultStatus = String(result.data.body?.resultInfo?.resultStatus || '').toUpperCase();
+          const initiationSucceeded = ['S', 'SUCCESS'].includes(resultStatus);
+          if (!result.ok || !initiationSucceeded || typeof token !== 'string' || !token) {
             await env.PAYMENT_SETTINGS.delete(`paytm-order:${orderId}`);
             const code = !result.httpOk
               ? 'PAYTM_HTTP_ERROR'
-              : !result.signaturePresent
-                ? 'PAYTM_RESPONSE_SIGNATURE_MISSING'
-                : !result.signatureValid
+              : result.signaturePresent && !result.signatureValid
                   ? 'PAYTM_RESPONSE_SIGNATURE_INVALID'
-                  : 'PAYTM_TOKEN_MISSING';
+                  : !initiationSucceeded
+                    ? 'PAYTM_INITIATION_REJECTED'
+                    : 'PAYTM_TOKEN_MISSING';
             console.error('Paytm payment initiation failed', {
               status: result.status,
               code,
               resultCode: String(result.data.body?.resultInfo?.resultCode || '').slice(0, 64),
-              resultStatus: String(result.data.body?.resultInfo?.resultStatus || '').slice(0, 32),
+              resultStatus: resultStatus.slice(0, 32),
+              resultMessage: String(result.data.body?.resultInfo?.resultMsg || '').replace(/[\r\n]+/g, ' ').slice(0, 160),
             });
             const environment = settings.paytmMode === 'sandbox' ? 'staging' : 'production';
             const errorMessage = code === 'PAYTM_RESPONSE_SIGNATURE_INVALID'
               ? `Paytm ${environment} response signature could not be verified. Confirm the selected environment and that its MID and Merchant Key are a matching pair in Cloudflare.`
-              : code === 'PAYTM_RESPONSE_SIGNATURE_MISSING'
-                ? `Paytm ${environment} did not return a signed response. Check the Paytm credentials and API status.`
-                : `Paytm ${environment} checkout could not start. Check the selected environment and its MID and Merchant Key.`;
+              : code === 'PAYTM_INITIATION_REJECTED'
+                ? `Paytm ${environment} rejected checkout initiation: ${String(result.data.body?.resultInfo?.resultMsg || 'Check the MID, Merchant Key, and staging account configuration.').replace(/[\r\n]+/g, ' ').slice(0, 160)}`
+                : `Paytm ${environment} checkout could not start. Check the selected environment, MID, and Merchant Key.`;
             return response(502, {
               error: errorMessage,
               code,

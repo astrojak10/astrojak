@@ -167,7 +167,7 @@
             document.getElementById('paytm').disabled=!configured;
             document.getElementById('paytmStatus').textContent=!hasPaytmSupport
               ?'Payment API is outdated; deploy the latest Worker'
-              :configured?'Credentials configured for '+(mode==='sandbox'?'staging':'production')
+              :configured?'Credentials present for '+(mode==='sandbox'?'staging':'production')+'; Paytm verifies the MID/key pair at checkout'
                 :'Add the Paytm '+(mode==='sandbox'?'staging':'production')+' MID and 16-character Merchant Key Worker secrets';
           }
           document.getElementById('paytmMode').addEventListener('change',updatePaytmStatus);

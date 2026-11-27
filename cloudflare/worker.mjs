@@ -1970,14 +1970,25 @@ export default {
               resultMessage: String(result.data.body?.resultInfo?.resultMsg || '').replace(/[\r\n]+/g, ' ').slice(0, 160),
             });
             const environment = settings.paytmMode === 'sandbox' ? 'staging' : 'production';
+            const gatewayResultCode = String(result.data.body?.resultInfo?.resultCode || '')
+              .replace(/[^A-Za-z0-9_-]/g, '')
+              .slice(0, 32);
+            const gatewayResultStatus = resultStatus.slice(0, 32);
+            const gatewayResultMessage = String(result.data.body?.resultInfo?.resultMsg || '')
+              .replace(/[\r\n]+/g, ' ')
+              .slice(0, 160);
             const errorMessage = code === 'PAYTM_RESPONSE_SIGNATURE_INVALID'
               ? `Paytm ${environment} response signature could not be verified. Confirm the selected environment and that its MID and Merchant Key are a matching pair in Cloudflare.`
               : code === 'PAYTM_INITIATION_REJECTED'
-                ? `Paytm ${environment} rejected checkout initiation: ${String(result.data.body?.resultInfo?.resultMsg || 'Check the MID, Merchant Key, and staging account configuration.').replace(/[\r\n]+/g, ' ').slice(0, 160)}`
+                ? gatewayResultCode === '501'
+                  ? `Paytm ${environment} returned 501 System Error. Verify the ${environment === 'staging' ? 'PAYTM_STAGING_MID and PAYTM_STAGING_MERCHANT_KEY' : 'PAYTM_PRODUCTION_MID and PAYTM_PRODUCTION_MERCHANT_KEY'} are the matching active credentials for the same Paytm PG account, and that PG API access is enabled.`
+                  : `Paytm ${environment} rejected checkout initiation${gatewayResultCode ? ` (${gatewayResultCode})` : ''}: ${gatewayResultMessage || 'Check the MID, Merchant Key, and merchant configuration.'}`
                 : `Paytm ${environment} checkout could not start. Check the selected environment, MID, and Merchant Key.`;
             return response(502, {
               error: errorMessage,
               code,
+              ...(gatewayResultCode ? { gateway_result_code: gatewayResultCode } : {}),
+              ...(gatewayResultStatus ? { gateway_result_status: gatewayResultStatus } : {}),
             }, origin);
           }
           return response(200, {

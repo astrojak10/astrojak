@@ -112,6 +112,10 @@ API](https://www.paytmpayments.com/docs/api/initiate-transaction-api),
 [JS Checkout](https://www.paytmpayments.com/docs/jscheckout-invoke-payment),
 [Transaction Status API](https://www.paytmpayments.com/docs/api/v3/transaction-status-api),
 and [Checksum implementation](https://www.paytmpayments.com/docs/checksum-implementation).
+Paytm staging `501 / System Error` can indicate an invalid, inactive, or
+mismatched staging MID/key pair, or that PG API access is not enabled for the
+staging account. The test card/UPI instruments apply only after transaction
+initiation succeeds; they cannot resolve an initiation error.
 
 Pine Labs uses its OAuth client-credentials API and the Generate Checkout Link
 API in `IFRAME` mode. The returned hosted checkout URL is displayed in a

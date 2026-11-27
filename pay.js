@@ -270,8 +270,8 @@
           ? 'https://ebz-static.s3.ap-south-1.amazonaws.com/easecheckout/v2.0.0/easebuzz-checkout-v2.min.js'
           : gateway === 'paytm'
             ? (order.paytm_mode === 'sandbox'
-              ? 'https://securestage.paytmpayments.com'
-              : 'https://secure.paytmpayments.com') + '/merchantpgpui/checkoutjs/merchants/' + encodeURIComponent(order.mid) + '.js'
+              ? 'https://securegw-stage.paytm.in'
+              : 'https://securegw.paytm.in') + '/merchantpgpui/checkoutjs/merchants/' + encodeURIComponent(order.mid) + '.js'
           : 'https://checkout.razorpay.com/v1/checkout.js';
       script.onload = function () {
         if (gateway === 'paytm' && window.Paytm && window.Paytm.CheckoutJS) {

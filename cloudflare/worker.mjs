@@ -159,8 +159,8 @@ function paymentGatewayConfigured(env, gateway, settings) {
 
 function paytmBaseUrl(mode) {
   return mode === 'sandbox'
-    ? 'https://securestage.paytmpayments.com'
-    : 'https://secure.paytmpayments.com';
+    ? 'https://securegw-stage.paytm.in'
+    : 'https://securegw.paytm.in';
 }
 
 function pinelabsBaseUrl(mode) {

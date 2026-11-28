@@ -5,11 +5,11 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
-/pandit.webp
+/img/pandit.webp
   Cache-Control: public, max-age=31536000, immutable
 
-/og-image.jpg
+/img/og-image.jpg
   Cache-Control: public, max-age=31536000, immutable
 
-/reviews/*
+/img/reviews/*
   Cache-Control: public, max-age=2592000

@@ -1,4 +1,15 @@
 # Booking page is the main page (/). Old links keep working.
+/apple-touch-icon.png       /img/apple-touch-icon.png  301
+/favicon-48.png             /img/favicon-48.png        301
+/favicon.ico                /img/favicon.ico           301
+/favicon.svg                /img/favicon.svg           301
+/og-image.jpg               /img/og-image.jpg          301
+/pandit-1.png               /img/pandit-1.png          301
+/pandit-1.webp              /img/pandit-1.webp         301
+/pandit-2.png               /img/pandit-2.png          301
+/pandit.png                 /img/pandit.png            301
+/pandit.webp                /img/pandit.webp           301
+/reviews/*                  /img/reviews/:splat        301
 https://astrojak.in/*              https://www.astrojak.in/:splat  301!
 https://astrojak.netlify.app/*     https://www.astrojak.in/:splat  301!
 /book         /            301!
